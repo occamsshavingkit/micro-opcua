@@ -18,12 +18,12 @@ struct host_tcp_context {
 static opcua_statuscode_t host_listen(void *context, const char *endpoint_url) {
     struct host_tcp_context *ctx = (struct host_tcp_context *)context;
     
-    int port = 4840;
+    uint16_t port = 4840;
     
     /* Naive extraction of port from "opc.tcp://host:port" */
     const char *port_str = strrchr(endpoint_url, ':');
     if (port_str && port_str != endpoint_url + 4) { /* Skip 'opc.tcp://' */
-        port = atoi(port_str + 1);
+        port = (uint16_t)atoi(port_str + 1);
     }
     
     ctx->server_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -89,9 +89,9 @@ static opcua_statuscode_t host_read(void *context, void *connection_handle, opcu
             *bytes_read = 0;
             return MU_STATUS_GOOD;
         }
-        return MU_STATUS_BAD_COMMUNICATIONERROR;
+        return MU_STATUS_BAD_TCPINTERNALERROR;
     } else if (res == 0) {
-        return MU_STATUS_BAD_COMMUNICATIONERROR;
+        return MU_STATUS_BAD_TCPINTERNALERROR;
     }
     
     *bytes_read = (size_t)res;
@@ -108,7 +108,7 @@ static opcua_statuscode_t host_write(void *context, void *connection_handle, con
             *bytes_written = 0;
             return MU_STATUS_GOOD;
         }
-        return MU_STATUS_BAD_COMMUNICATIONERROR;
+        return MU_STATUS_BAD_TCPINTERNALERROR;
     }
     
     *bytes_written = (size_t)res;
