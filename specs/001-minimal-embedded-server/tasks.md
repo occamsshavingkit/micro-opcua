@@ -42,9 +42,9 @@
 - [X] T018 [P] Create initial conformance status document labeled profile-targeting and not CTT-verified in docs/conformance/status.md (OPC refs: N/A - QA infrastructure only)
 - [X] T019 [P] Create initial SecurityPolicy None non-production notice and crypto-pluggability note in docs/conformance/security.md (OPC refs: OPC-10000-7 4.2)
 - [X] T020 [P] Create services support matrix for Discovery, SecureChannel, Session, Browse, Read, and unsupported services in docs/conformance/services.md (OPC refs: OPC-10000-4 5.5.1, 5.6.2, 5.7.2, 5.9.2, 5.11.2, 5.2.2, 5.5.4.2, 5.6.2.2, 5.6.3.2, 5.7.2.2, 5.7.3.2, 5.7.4.2, 5.9.2.2, 5.9.2.4, 5.9.3.2, 5.9.3.4, 5.9.4.2, 5.9.4.4, 5.9.5.2, 5.9.5.3, 5.11.2.2, 5.11.2.3, 5.11.3.2, 5.11.3.4, 5.11.4.2, 5.11.4.4, 5.12.2.2, 5.12.2.4, 5.14.2.2, 5.14.5.2, 5.14.5.4, 7.38.2; OPC-10000-6 5.3, 5.4.1, 7.4, 7.5.1)
-- [ ] T021 Create size-budget ledger with 128 KiB flash and 32 KiB RAM budgets from plan.md in docs/size/feature-size-ledger.md (OPC refs: N/A - size-budget tracking only)
-- [ ] T022 Create reproducible size-report helper invoked by CMake targets in scripts/size-report.sh (OPC refs: N/A - size-report tooling only)
-- [ ] T023 [P] Create fixture directory README with byte-fixture, sidecar, and OPC UA citation rules in tests/fixtures/README.md (OPC refs: OPC-10000-6 5.2.9, 6.7.2; fixture-specific service sections supplied per fixture)
+- [X] T021 Create size-budget ledger with 128 KiB flash and 32 KiB RAM budgets from plan.md in docs/size/feature-size-ledger.md (OPC refs: N/A - size-budget tracking only)
+- [X] T022 Create reproducible size-report helper invoked by CMake targets in scripts/size-report.sh (OPC refs: N/A - size-report tooling only)
+- [X] T023 [P] Create fixture directory README with byte-fixture, sidecar, and OPC UA citation rules in tests/fixtures/README.md (OPC refs: OPC-10000-6 5.2.9, 6.7.2; fixture-specific service sections supplied per fixture)
 
 **Checkpoint**: Foundation ready - user-story tasks can start.
 
