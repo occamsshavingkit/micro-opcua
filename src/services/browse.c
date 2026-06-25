@@ -115,22 +115,14 @@ opcua_statuscode_t mu_browse_response_encode(mu_binary_writer_t *writer,
                     /* BrowseName (QualifiedName) */
                     status = mu_binary_write_uint16(writer, ref->browse_name_namespace_index);
                     if (status != MU_STATUS_GOOD) return status;
-                    mu_string_t browse_name_str = { .length = 0, .data = (opcua_byte_t *)ref->browse_name };
-                    if (ref->browse_name) {
-                        for (size_t k = 0; ref->browse_name[k] != '\0'; ++k) browse_name_str.length++;
-                    }
-                    status = mu_binary_write_string(writer, &browse_name_str);
+                    status = mu_binary_write_string(writer, &ref->browse_name);
                     if (status != MU_STATUS_GOOD) return status;
                     
                     /* DisplayName (LocalizedText) */
                     opcua_byte_t lt_mask = 2; /* Text present */
                     status = mu_binary_write_byte(writer, lt_mask);
                     if (status != MU_STATUS_GOOD) return status;
-                    mu_string_t display_name_str = { .length = 0, .data = (opcua_byte_t *)ref->display_name };
-                    if (ref->display_name) {
-                        for (size_t k = 0; ref->display_name[k] != '\0'; ++k) display_name_str.length++;
-                    }
-                    status = mu_binary_write_string(writer, &display_name_str);
+                    status = mu_binary_write_string(writer, &ref->display_name);
                     if (status != MU_STATUS_GOOD) return status;
                     
                     /* NodeClass */
@@ -148,6 +140,112 @@ opcua_statuscode_t mu_browse_response_encode(mu_binary_writer_t *writer,
     /* DiagnosticInfos array */
     status = mu_binary_write_int32(writer, 0); /* 0 or -1 means empty */
     if (status != MU_STATUS_GOOD) return status;
+    
+    return MU_STATUS_GOOD;
+}
+
+opcua_statuscode_t mu_browse_process(const mu_address_space_t *address_space,
+                                     const mu_browse_request_t *req,
+                                     mu_browse_result_t *results,
+                                     size_t max_results,
+                                     mu_reference_description_t *ref_pool,
+                                     size_t max_total_refs)
+{
+    if (!address_space || !req || !results || !ref_pool) return MU_STATUS_BAD_INTERNALERROR;
+    if (req->num_nodes_to_browse > max_results) return MU_STATUS_BAD_TOOMANYOPERATIONS;
+    
+    size_t refs_used = 0;
+    
+    for (size_t i = 0; i < req->num_nodes_to_browse; ++i) {
+        mu_browse_description_t *desc = &req->nodes_to_browse[i];
+        mu_browse_result_t *res = &results[i];
+        
+        res->status_code = MU_STATUS_GOOD;
+        res->num_references = 0;
+        res->references = NULL;
+        
+        const mu_node_t *node = mu_address_space_find_node(address_space, &desc->node_id);
+        if (!node) {
+            res->status_code = MU_STATUS_BAD_NODEIDUNKNOWN;
+            continue;
+        }
+        
+        /* Count matches */
+        size_t match_count = 0;
+        for (size_t j = 0; j < node->reference_count; ++j) {
+            const mu_reference_t *r = &node->references[j];
+            
+            if (desc->browse_direction == MU_BROWSE_DIRECTION_FORWARD && !r->is_forward) continue;
+            if (desc->browse_direction == MU_BROWSE_DIRECTION_INVERSE && r->is_forward) continue;
+            
+            if (!mu_nodeid_equal(&desc->reference_type_id, &(mu_nodeid_t){.identifier_type=MU_NODEID_NUMERIC, .namespace_index=0, .identifier.numeric=0})) {
+                if (!mu_nodeid_equal(&desc->reference_type_id, &r->reference_type_id)) continue;
+            }
+            
+            const mu_node_t *target = mu_address_space_find_node(address_space, &r->target_id);
+            if (!target) continue;
+            
+            if (desc->node_class_mask != 0) {
+                if (!((1 << (target->node_class - 1)) & desc->node_class_mask)) continue;
+            }
+            
+            match_count++;
+        }
+        
+        if (req->requested_max_references_per_node > 0 && match_count > req->requested_max_references_per_node) {
+            res->status_code = MU_STATUS_BAD_NOCONTINUATIONPOINTS;
+            continue;
+        }
+        
+        if (refs_used + match_count > max_total_refs) {
+            res->status_code = MU_STATUS_BAD_NOCONTINUATIONPOINTS; /* Or Bad_ResponseTooLarge */
+            continue;
+        }
+        
+        res->references = &ref_pool[refs_used];
+        res->num_references = match_count;
+        
+        size_t write_idx = 0;
+        for (size_t j = 0; j < node->reference_count; ++j) {
+            const mu_reference_t *r = &node->references[j];
+            
+            if (desc->browse_direction == MU_BROWSE_DIRECTION_FORWARD && !r->is_forward) continue;
+            if (desc->browse_direction == MU_BROWSE_DIRECTION_INVERSE && r->is_forward) continue;
+            
+            if (!mu_nodeid_equal(&desc->reference_type_id, &(mu_nodeid_t){.identifier_type=MU_NODEID_NUMERIC, .namespace_index=0, .identifier.numeric=0})) {
+                if (!mu_nodeid_equal(&desc->reference_type_id, &r->reference_type_id)) continue;
+            }
+            
+            const mu_node_t *target = mu_address_space_find_node(address_space, &r->target_id);
+            if (!target) continue;
+            
+            if (desc->node_class_mask != 0) {
+                if (!((1 << (target->node_class - 1)) & desc->node_class_mask)) continue;
+            }
+            
+            mu_reference_description_t *ref_desc = &res->references[write_idx++];
+            ref_desc->reference_type_id = r->reference_type_id;
+            ref_desc->is_forward = r->is_forward;
+            ref_desc->node_id = target->node_id;
+            ref_desc->browse_name_namespace_index = 0;
+            ref_desc->browse_name = target->browse_name;
+            ref_desc->display_name = target->display_name;
+            ref_desc->node_class = target->node_class;
+            
+            /* Find HasTypeDefinition if present */
+            ref_desc->type_definition = (mu_nodeid_t){.identifier_type = MU_NODEID_NUMERIC, .namespace_index = 0, .identifier.numeric = 0};
+            for (size_t k = 0; k < target->reference_count; ++k) {
+                if (target->references[k].is_forward && 
+                    target->references[k].reference_type_id.identifier_type == MU_NODEID_NUMERIC && 
+                    target->references[k].reference_type_id.identifier.numeric == 40) { /* HasTypeDefinition */
+                    ref_desc->type_definition = target->references[k].target_id;
+                    break;
+                }
+            }
+        }
+        
+        refs_used += match_count;
+    }
     
     return MU_STATUS_GOOD;
 }
