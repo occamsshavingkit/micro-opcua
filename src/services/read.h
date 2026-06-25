@@ -55,9 +55,23 @@ typedef struct {
     size_t num_nodes_to_read;
 } mu_read_request_t;
 
+typedef struct {
+    mu_datavalue_t *results;
+    size_t num_results;
+} mu_read_response_t;
+
 opcua_statuscode_t mu_read_request_decode(mu_binary_reader_t *reader, 
                                           mu_read_request_t *req,
                                           mu_read_value_id_t *nodes_array,
                                           size_t max_nodes);
+
+opcua_statuscode_t mu_read_response_encode(mu_binary_writer_t *writer, 
+                                           const mu_read_response_t *resp);
+
+opcua_statuscode_t mu_read_process(const mu_address_space_t *address_space,
+                                   const mu_read_request_t *req,
+                                   mu_read_response_t *resp,
+                                   mu_datavalue_t *results_array,
+                                   size_t max_results);
 
 #endif /* MICRO_OPCUA_SERVICES_READ_H */

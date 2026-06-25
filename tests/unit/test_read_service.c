@@ -39,7 +39,69 @@ void test_read_service_request_decode(void) {
 }
 
 void test_read_service_scalar_values(void) {
-    TEST_IGNORE_MESSAGE("Implement Read service test for scalar values");
+    mu_node_t node;
+    node.node_id = (mu_nodeid_t){.identifier_type = MU_NODEID_NUMERIC, .namespace_index = 0, .identifier.numeric = 2253};
+    node.node_class = 2; /* Variable */
+    node.reference_count = 0;
+    
+    mu_value_source_t value_source;
+    value_source.type = MU_VALUESOURCE_STATIC;
+    value_source.data.static_value.type = MU_VARIANT_TYPE_INT32;
+    value_source.data.static_value.value.i32 = 42;
+    node.value = &value_source;
+    
+    mu_address_space_t address_space;
+    address_space.nodes = &node;
+    address_space.node_count = 1;
+    
+    mu_read_request_t req;
+    req.max_age = 0;
+    req.timestamps_to_return = MU_TIMESTAMPS_TO_RETURN_NEITHER;
+    
+    mu_read_value_id_t node_to_read = {
+        .node_id = node.node_id,
+        .attribute_id = MU_ATTRIBUTEID_VALUE
+    };
+    req.nodes_to_read = &node_to_read;
+    req.num_nodes_to_read = 1;
+    
+    mu_read_response_t resp;
+    mu_datavalue_t result_dv;
+    
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_read_process(&address_space, &req, &resp, &result_dv, 1));
+    TEST_ASSERT_EQUAL(1, resp.num_results);
+    TEST_ASSERT_TRUE(resp.results[0].has_value);
+    TEST_ASSERT_EQUAL(MU_VARIANT_TYPE_INT32, resp.results[0].value.type);
+    TEST_ASSERT_EQUAL(42, resp.results[0].value.value.i32);
+    
+    /* Encode */
+    opcua_byte_t buffer[256];
+    mu_binary_writer_t writer;
+    mu_binary_writer_init(&writer, buffer, sizeof(buffer));
+    
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_read_response_encode(&writer, &resp));
+    
+    /* Decode to verify */
+    mu_binary_reader_t reader;
+    mu_binary_reader_init(&reader, buffer, writer.position);
+    
+    opcua_int32_t num_results;
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_int32(&reader, &num_results));
+    TEST_ASSERT_EQUAL(1, num_results);
+    
+    /* DataValue Encoding Mask */
+    opcua_byte_t mask;
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_byte(&reader, &mask));
+    TEST_ASSERT_EQUAL(1, mask); /* has_value = true, everything else false */
+    
+    /* Variant */
+    opcua_byte_t type_id;
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_byte(&reader, &type_id));
+    TEST_ASSERT_EQUAL(MU_VARIANT_TYPE_INT32, type_id);
+    
+    opcua_int32_t val;
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_int32(&reader, &val));
+    TEST_ASSERT_EQUAL(42, val);
 }
 
 int main(void) {
