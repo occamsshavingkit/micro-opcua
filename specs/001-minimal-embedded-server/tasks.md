@@ -22,7 +22,7 @@
 - [X] T007 Create Unity unit-test target skeleton and test discovery rules in tests/unit/CMakeLists.txt (OPC refs: N/A - test infrastructure only)
 - [X] T008 [P] Create shared Unity configuration for host tests in tests/support/unity_config.h (OPC refs: N/A - test infrastructure only)
 - [X] T009 [P] Create CI workflow skeleton for host build, tests, static analysis, sanitizer, fuzz compile, and Pico cross-compile in .github/workflows/ci.yml (OPC refs: N/A - CI orchestration only)
-- [ ] T010 [P] Create developer build target summary matching quickstart.md in docs/adr/0001-build-and-test-workflow.md (OPC refs: N/A - developer workflow documentation only)
+- [X] T010 [P] Create developer build target summary matching quickstart.md in docs/adr/0001-build-and-test-workflow.md (OPC refs: N/A - developer workflow documentation only)
 
 ---
 
