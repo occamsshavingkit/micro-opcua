@@ -226,7 +226,7 @@
 - [X] T138 [US4] Implement MessageChunk size, type, and chunk validation failures in src/core/message_chunk.c (OPC refs: OPC-10000-6 6.7.2, 6.7.3)
 - [X] T139 [US4] Implement Binary reader bounds errors for truncated primitive, String, and array reads in src/encoding/binary_reader.c (OPC refs: OPC-10000-6 5.2.1, 5.2.2.4, 5.2.5)
 - [X] T140 [US4] Implement NodeId invalid encoding mask rejection in src/encoding/binary_nodeid.c (OPC refs: OPC-10000-6 5.2.2.9)
-- [ ] T141 [US4] Implement ExtensionObject invalid encoding and bounded body-length rejection in src/encoding/binary_extension_object.c (OPC refs: OPC-10000-6 5.2.2.15)
+- [X] T141 [US4] Implement ExtensionObject invalid encoding and bounded body-length rejection in src/encoding/binary_extension_object.c (OPC refs: OPC-10000-6 5.2.2.15)
 - [ ] T142 [US4] Implement invalid service-state StatusCode mapping for pre-Session Browse/Read and pre-SecureChannel Session services in src/core/service_dispatch.c (OPC refs: OPC-10000-4 5.6.2.2, 5.7.2.1, 5.9.2.2, 5.11.2.2, 7.38.2)
 - [ ] T143 [US4] Implement unsupported SecurityPolicy rejection in OpenSecureChannel handling in src/services/secure_channel.c (OPC refs: OPC-10000-4 5.6.2.2, 7.38.2; OPC-10000-6 6.7.4)
 - [ ] T144 [US4] Implement unsupported identity-token rejection in ActivateSession handling in src/services/session.c (OPC refs: OPC-10000-4 5.7.3.2, 7.38.2, 7.40.1, 7.40.3, 7.41)
