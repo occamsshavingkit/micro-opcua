@@ -7,8 +7,6 @@ void tearDown(void) {}
 
 /* These tests assume binary encoding APIs that will be implemented in subsequent tasks */
 void test_binary_nodeid_numeric_roundtrip(void) {
-    TEST_IGNORE_MESSAGE("Implement binary NodeId numeric test");
-#if 0
     opcua_byte_t buffer[64];
     mu_binary_writer_t writer;
     mu_binary_reader_t reader;
@@ -23,12 +21,9 @@ void test_binary_nodeid_numeric_roundtrip(void) {
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_nodeid(&reader, &read_id));
     
     TEST_ASSERT_TRUE(mu_nodeid_equal(&id, &read_id));
-#endif
 }
 
 void test_binary_nodeid_string_roundtrip(void) {
-    TEST_IGNORE_MESSAGE("Implement binary NodeId string test");
-#if 0
     opcua_byte_t buffer[64];
     mu_binary_writer_t writer;
     mu_binary_reader_t reader;
@@ -43,7 +38,6 @@ void test_binary_nodeid_string_roundtrip(void) {
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_nodeid(&reader, &read_id));
     
     TEST_ASSERT_TRUE(mu_nodeid_equal(&id, &read_id));
-#endif
 }
 
 int main(void) {

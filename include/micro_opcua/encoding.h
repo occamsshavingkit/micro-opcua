@@ -52,4 +52,7 @@ opcua_statuscode_t mu_binary_write_string(mu_binary_writer_t *writer, const mu_s
 opcua_statuscode_t mu_binary_read_bytestring(mu_binary_reader_t *reader, mu_bytestring_t *value);
 opcua_statuscode_t mu_binary_write_bytestring(mu_binary_writer_t *writer, const mu_bytestring_t *value);
 
+opcua_statuscode_t mu_binary_read_nodeid(mu_binary_reader_t *reader, mu_nodeid_t *value);
+opcua_statuscode_t mu_binary_write_nodeid(mu_binary_writer_t *writer, const mu_nodeid_t *value);
+
 #endif /* MICRO_OPCUA_ENCODING_H */
