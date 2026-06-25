@@ -17,8 +17,11 @@ const char* mu_status_name(opcua_statuscode_t status)
         case MU_STATUS_BAD_SECURITYCHECKSFAILED: return "Bad_SecurityChecksFailed";
         case MU_STATUS_BAD_REQUESTTOOLARGE: return "Bad_RequestTooLarge";
         case MU_STATUS_BAD_RESPONSETOOLARGE: return "Bad_ResponseTooLarge";
-        case MU_STATUS_BAD_IDENTITYTOKENINVALID: return "Bad_IdentityTokenInvalid";
         case MU_STATUS_BAD_SESSIONIDINVALID: return "Bad_SessionIdInvalid";
+        case MU_STATUS_BAD_IDENTITYTOKENINVALID: return "Bad_IdentityTokenInvalid";
+        case MU_STATUS_BAD_NODEIDUNKNOWN: return "Bad_NodeIdUnknown";
+        case MU_STATUS_BAD_TOOMANYOPERATIONS: return "Bad_TooManyOperations";
+        case MU_STATUS_BAD_NOCONTINUATIONPOINTS: return "Bad_NoContinuationPoints";
 
         /* TCP Specific StatusCodes */
         case MU_STATUS_BAD_TCPSERVERTOOBUSY: return "Bad_TcpServerTooBusy";

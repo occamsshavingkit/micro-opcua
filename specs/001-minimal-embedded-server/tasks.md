@@ -184,7 +184,7 @@
 - [X] T112 [US3] Implement Browse request decode and static reference traversal in src/services/browse.c (OPC refs: OPC-10000-4 5.9.2.2; OPC-10000-6 5.2.9)
 - [X] T113 [US3] Implement Browse response encoding with ReferenceDescription fields in src/services/browse.c (OPC refs: OPC-10000-4 5.9.2.2, 7.29)
 - [X] T114 [US3] Implement Browse requestedMaxReferencesPerNode, response-size bounds, and no-continuation behavior in src/services/browse.c (OPC refs: OPC-10000-4 5.9.2.2, 5.9.2.4, 7.9)
-- [ ] T115 [US3] Implement Read request decode for Value and metadata attributes needed by tested clients in src/services/read.c (OPC refs: OPC-10000-4 5.11.2.2, 5.11.2.3; OPC-10000-6 5.2.9)
+- [X] T115 [US3] Implement Read request decode for Value and metadata attributes needed by tested clients in src/services/read.c (OPC refs: OPC-10000-4 5.11.2.2, 5.11.2.3; OPC-10000-6 5.2.9)
 - [ ] T116 [US3] Implement Read response encoding with DataValue values from the static address space in src/services/read.c (OPC refs: OPC-10000-4 5.11.2.3; OPC-10000-6 5.2.2.17)
 - [ ] T117 [US3] Integrate TCP, chunk, dispatch, service handlers, and bounded server poll loop in src/core/server.c (OPC refs: OPC-10000-4 5.5.1, 5.5.2.2, 5.5.4.2, 5.6.2.2, 5.6.3.2, 5.7.2.2, 5.7.3.2, 5.7.4.2, 5.9.2.2, 5.11.2.2; OPC-10000-6 6.7.2, 6.7.4, 7.1.2.3, 7.1.2.4, 7.2)
 - [ ] T118 [US3] Implement host socket transport adapter for integration tests without exposing POSIX types in src/platform/host_tcp_adapter.c (OPC refs: OPC-10000-6 7.2)
