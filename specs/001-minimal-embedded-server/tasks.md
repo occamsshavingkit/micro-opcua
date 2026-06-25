@@ -217,7 +217,7 @@
 - [X] T132 [P] [US4] Add unsupported SecurityPolicy and identity-token rejection tests derived from docs/conformance/identity-policy.md in tests/unit/test_security_identity_errors.c (OPC refs: OPC-10000-4 5.6.2.2, 5.7.3.2, 7.40.1, 7.40.3, 7.41; OPC-10000-6 6.7.4)
 - [X] T133 [P] [US4] Add second-client integration test expecting OPC UA TCP busy/error behavior in tests/integration/test_single_client_limit.c (OPC refs: OPC-10000-6 7.1.5)
 - [X] T134 [P] [US4] Add fuzz target for Binary reader entry point in tests/fuzz/fuzz_binary_reader.c (OPC refs: OPC-10000-6 5.2.1)
-- [ ] T135 [P] [US4] Add fuzz target for MessageChunk parser in tests/fuzz/fuzz_message_chunk.c (OPC refs: OPC-10000-6 6.7.2, 6.7.3)
+- [X] T135 [P] [US4] Add fuzz target for MessageChunk parser in tests/fuzz/fuzz_message_chunk.c (OPC refs: OPC-10000-6 6.7.2, 6.7.3)
 - [ ] T136 [P] [US4] Add fuzz target for NodeId, String, array, ExtensionObject, Variant, and DataValue decode surfaces in tests/fuzz/fuzz_binary_types.c (OPC refs: OPC-10000-6 5.2.2.4, 5.2.2.9, 5.2.2.15, 5.2.2.16, 5.2.2.17, 5.2.5)
 
 ### Implementation for User Story 4
