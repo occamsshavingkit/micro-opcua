@@ -139,7 +139,7 @@
 - [X] T070 [P] [US3] Add ExtensionObject header tests in tests/unit/test_binary_extension_object.c (OPC refs: OPC-10000-6 5.2.2.15)
 - [X] T071 [P] [US3] Add Variant and DataValue tests for Boolean, Int32, UInt32, Float, and String in tests/unit/test_binary_variant_datavalue.c (OPC refs: OPC-10000-6 5.2.2.16, 5.2.2.17)
 - [X] T072 [P] [US3] Add Hello/Acknowledge byte fixtures and sidecars in tests/fixtures/opcua-tcp/hello_ack.md (OPC refs: OPC-10000-6 7.1.2.3, 7.1.2.4)
-- [ ] T073 [P] [US3] Add MessageChunk header and sequence header fixtures in tests/fixtures/uasc/message_chunk.md (OPC refs: OPC-10000-6 6.7.2, 6.7.2.4)
+- [X] T073 [P] [US3] Add MessageChunk header and sequence header fixtures in tests/fixtures/uasc/message_chunk.md (OPC refs: OPC-10000-6 6.7.2, 6.7.2.4)
 - [ ] T074 [P] [US3] Add OpenSecureChannel SecurityPolicy None fixtures in tests/fixtures/services/open_secure_channel.md (OPC refs: OPC-10000-4 5.6.2.2; OPC-10000-6 6.7.4, 6.7.7)
 - [ ] T075 [P] [US3] Add FindServers and GetEndpoints fixtures in tests/fixtures/services/discovery.md (OPC refs: OPC-10000-4 5.5.2.2, 5.5.4.2)
 - [ ] T076 [P] [US3] Add DiscoveryEndpoint no-session unit tests for FindServers and GetEndpoints in tests/unit/test_discovery_endpoint.c (OPC refs: OPC-10000-4 3.1.3, 5.5.1, 5.5.2.2, 5.5.4.2)
