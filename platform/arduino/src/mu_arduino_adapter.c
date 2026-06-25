@@ -1,5 +1,5 @@
-/* platform/arduino/src/mu_arduino_adapter.c */
 #include "mu_arduino_adapter.h"
+#include "micro_opcua/status.h"
 #include <string.h>
 
 /* Forward declare Arduino SDK specifics internally to avoid leakage */
