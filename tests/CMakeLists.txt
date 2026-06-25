@@ -20,5 +20,5 @@ if(MICRO_OPCUA_BUILD_TESTS)
 endif()
 
 if(MICRO_OPCUA_BUILD_FUZZERS AND MICRO_OPCUA_IS_HOST)
-    # add_subdirectory(fuzz)
+    add_subdirectory(fuzz)
 endif()
