@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
+#include "micro_opcua/status.h"
 
 struct host_tcp_context {
     int server_fd;

@@ -87,26 +87,23 @@ static opcua_statuscode_t read_attribute(const mu_address_space_t *address_space
                                          opcua_uint32_t attribute_id,
                                          mu_variant_t *value)
 {
+    (void)address_space;
     switch (attribute_id) {
         case MU_ATTRIBUTEID_NODEID:
-            value->type = MU_VARIANT_TYPE_NODEID;
+            value->type = MU_TYPE_NODEID;
             value->value.nodeid = node->node_id;
             return MU_STATUS_GOOD;
             
         case MU_ATTRIBUTEID_NODECLASS:
-            value->type = MU_VARIANT_TYPE_INT32;
+            value->type = MU_TYPE_INT32;
             value->value.i32 = node->node_class;
             return MU_STATUS_GOOD;
             
         case MU_ATTRIBUTEID_BROWSENAME:
-            /* Actually should be QualifiedName, but tests might just want string,
-             * wait, variant encoding for QualifiedName? Minimal server might just return String or we don't support it?
-             * Let's just return string for now or return Bad_NotSupported. */
-            return MU_STATUS_BAD_NOTSUPPORTED;
+            return MU_STATUS_BAD_NOTREADABLE;
             
         case MU_ATTRIBUTEID_DISPLAYNAME:
-            /* LocalizedText */
-            return MU_STATUS_BAD_NOTSUPPORTED;
+            return MU_STATUS_BAD_NOTREADABLE;
             
         case MU_ATTRIBUTEID_VALUE:
             if (node->value) {

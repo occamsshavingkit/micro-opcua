@@ -46,7 +46,7 @@ void test_read_service_scalar_values(void) {
     
     mu_value_source_t value_source;
     value_source.type = MU_VALUESOURCE_STATIC;
-    value_source.data.static_value.type = MU_VARIANT_TYPE_INT32;
+    value_source.data.static_value.type = MU_TYPE_INT32;
     value_source.data.static_value.value.i32 = 42;
     node.value = &value_source;
     
@@ -71,7 +71,7 @@ void test_read_service_scalar_values(void) {
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_read_process(&address_space, &req, &resp, &result_dv, 1));
     TEST_ASSERT_EQUAL(1, resp.num_results);
     TEST_ASSERT_TRUE(resp.results[0].has_value);
-    TEST_ASSERT_EQUAL(MU_VARIANT_TYPE_INT32, resp.results[0].value.type);
+    TEST_ASSERT_EQUAL(MU_TYPE_INT32, resp.results[0].value.type);
     TEST_ASSERT_EQUAL(42, resp.results[0].value.value.i32);
     
     /* Encode */
@@ -97,7 +97,7 @@ void test_read_service_scalar_values(void) {
     /* Variant */
     opcua_byte_t type_id;
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_byte(&reader, &type_id));
-    TEST_ASSERT_EQUAL(MU_VARIANT_TYPE_INT32, type_id);
+    TEST_ASSERT_EQUAL(MU_TYPE_INT32, type_id);
     
     opcua_int32_t val;
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_int32(&reader, &val));
