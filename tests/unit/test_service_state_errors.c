@@ -5,6 +5,10 @@
 void setUp(void) {}
 void tearDown(void) {}
 
+#include "../../src/core/server_internal.h"
+#include "../../src/core/service_dispatch.h"
+#include <string.h>
+
 void test_browse_before_activate_session(void) {
     mu_server_t server;
     memset(&server, 0, sizeof(server));
