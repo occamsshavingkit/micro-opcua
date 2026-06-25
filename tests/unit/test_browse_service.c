@@ -6,7 +6,6 @@ void setUp(void) {}
 void tearDown(void) {}
 
 #include "../../src/services/browse.h"
-#include "micro_opcua/binary_codec.h"
 
 void test_browse_service_static_references(void) {
     opcua_byte_t buffer[256];
@@ -14,26 +13,29 @@ void test_browse_service_static_references(void) {
     mu_binary_writer_init(&writer, buffer, sizeof(buffer));
     
     /* ViewDescription */
-    mu_binary_encode_nodeid(&writer, &(mu_nodeid_t){.identifier_type = MU_NODEID_NUMERIC, .namespace_index = 0, .identifier.numeric = 0}); /* empty nodeid */
-    mu_binary_encode_int64(&writer, 0); /* timestamp */
-    mu_binary_encode_uint32(&writer, 0); /* view version */
+    mu_nodeid_t empty_nodeid = {.identifier_type = MU_NODEID_NUMERIC, .namespace_index = 0, .identifier.numeric = 0};
+    mu_binary_write_nodeid(&writer, &empty_nodeid); /* empty nodeid */
+    mu_binary_write_int64(&writer, 0); /* timestamp */
+    mu_binary_write_uint32(&writer, 0); /* view version */
     
     /* RequestedMaxReferencesPerNode */
-    mu_binary_encode_uint32(&writer, 10);
+    mu_binary_write_uint32(&writer, 10);
     
     /* NoOfNodesToBrowse */
-    mu_binary_encode_int32(&writer, 1);
+    mu_binary_write_int32(&writer, 1);
     
     /* NodesToBrowse[0] */
-    mu_binary_encode_nodeid(&writer, &(mu_nodeid_t){.identifier_type = MU_NODEID_NUMERIC, .namespace_index = 0, .identifier.numeric = 84}); /* RootFolder */
-    mu_binary_encode_uint32(&writer, MU_BROWSE_DIRECTION_FORWARD);
-    mu_binary_encode_nodeid(&writer, &(mu_nodeid_t){.identifier_type = MU_NODEID_NUMERIC, .namespace_index = 0, .identifier.numeric = 33}); /* HierarchicalReferences */
-    mu_binary_encode_boolean(&writer, true);
-    mu_binary_encode_uint32(&writer, 0xFFFFFFFF); /* All classes */
-    mu_binary_encode_uint32(&writer, 0x3F); /* Result mask */
+    mu_nodeid_t root_folder = {.identifier_type = MU_NODEID_NUMERIC, .namespace_index = 0, .identifier.numeric = 84};
+    mu_nodeid_t hier_ref = {.identifier_type = MU_NODEID_NUMERIC, .namespace_index = 0, .identifier.numeric = 33};
+    mu_binary_write_nodeid(&writer, &root_folder); /* RootFolder */
+    mu_binary_write_uint32(&writer, MU_BROWSE_DIRECTION_FORWARD);
+    mu_binary_write_nodeid(&writer, &hier_ref); /* HierarchicalReferences */
+    mu_binary_write_boolean(&writer, true);
+    mu_binary_write_uint32(&writer, 0xFFFFFFFF); /* All classes */
+    mu_binary_write_uint32(&writer, 0x3F); /* Result mask */
     
     mu_binary_reader_t reader;
-    mu_binary_reader_init(&reader, buffer, writer.offset);
+    mu_binary_reader_init(&reader, buffer, writer.position);
     
     mu_browse_request_t req;
     mu_browse_description_t desc[2];
