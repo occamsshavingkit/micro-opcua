@@ -1,7 +1,10 @@
 /* examples/minimal_server/main.c */
+#define _DEFAULT_SOURCE
+#define _XOPEN_SOURCE 500
 #include "micro_opcua/micro_opcua.h"
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <unistd.h>

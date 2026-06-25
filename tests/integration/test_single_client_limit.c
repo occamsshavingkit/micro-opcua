@@ -42,6 +42,9 @@ static opcua_statuscode_t mock_read(void *context, void *handle, opcua_byte_t *b
             *bytes_read = 8;
             return MU_STATUS_GOOD;
         }
+    } else if (handle == mock->client_handle) {
+        *bytes_read = 0;
+        return MU_STATUS_GOOD;
     }
     return MU_STATUS_BAD_INTERNALERROR; /* Stop polling */
 }
@@ -59,11 +62,23 @@ static opcua_statuscode_t mock_write(void *context, void *handle, const opcua_by
     return MU_STATUS_GOOD;
 }
 
+#include "fake_platform.h"
+
 static void mock_close(void *context, void *handle) {
     mock_tcp_t *mock = (mock_tcp_t*)context;
     if (handle == mock->second_handle) {
         mock->close_called = true;
     }
+}
+
+static opcua_statuscode_t mock_listen(void *context, const char *url) {
+    (void)context;
+    (void)url;
+    return MU_STATUS_GOOD;
+}
+
+static void mock_shutdown(void *context) {
+    (void)context;
 }
 
 void test_single_client_limit_second_connection(void) {
@@ -75,11 +90,27 @@ void test_single_client_limit_second_connection(void) {
     mock_ctx.client_handle = (void*)1;
     mock_ctx.second_handle = (void*)2;
     
+    config.endpoint_url = "opc.tcp://localhost:4840";
+    opcua_byte_t rx_buf[8192];
+    opcua_byte_t tx_buf[8192];
+    config.receive_buffer = rx_buf;
+    config.receive_buffer_size = sizeof(rx_buf);
+    config.send_buffer = tx_buf;
+    config.send_buffer_size = sizeof(tx_buf);
+    config.max_sessions = 1;
+    config.max_secure_channels = 1;
+    config.max_chunk_count = 1;
+    config.max_message_size = 8192;
+    
+    fake_platform_init(NULL, &config.time_adapter, &config.entropy_adapter);
+    
     config.tcp_adapter.context = &mock_ctx;
+    config.tcp_adapter.listen = mock_listen;
     config.tcp_adapter.accept = mock_accept;
     config.tcp_adapter.read = mock_read;
     config.tcp_adapter.write = mock_write;
     config.tcp_adapter.close_connection = mock_close;
+    config.tcp_adapter.shutdown = mock_shutdown;
     
     opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_t *server = NULL;
