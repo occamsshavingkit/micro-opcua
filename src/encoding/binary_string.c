@@ -17,17 +17,17 @@ opcua_statuscode_t mu_binary_read_string(mu_binary_reader_t *reader, mu_string_t
     
     if (value->length > MU_MAX_STRING_LENGTH) return MU_STATUS_BAD_ENCODINGLIMITSEXCEEDED;
     
-    if (reader->position + value->length > reader->length) {
+    if (reader->position + (size_t)value->length > reader->length) {
         return MU_STATUS_BAD_DECODINGERROR;
     }
     
     value->data = reader->buffer + reader->position;
-    reader->position += value->length;
+    reader->position += (size_t)value->length;
     return MU_STATUS_GOOD;
 }
 
 opcua_statuscode_t mu_binary_write_string(mu_binary_writer_t *writer, const mu_string_t *value) {
-    if (!value || value->length == -1 || value->data == NULL) {
+    if (!value || value->length == -1) {
         return mu_binary_write_int32(writer, -1);
     }
     
@@ -39,11 +39,11 @@ opcua_statuscode_t mu_binary_write_string(mu_binary_writer_t *writer, const mu_s
     if (status != MU_STATUS_GOOD) return status;
     
     if (value->length > 0) {
-        if (writer->position + value->length > writer->length) {
+        if (writer->position + (size_t)value->length > writer->length) {
             return MU_STATUS_BAD_ENCODINGERROR;
         }
-        memcpy(writer->buffer + writer->position, value->data, value->length);
-        writer->position += value->length;
+        memcpy(writer->buffer + writer->position, value->data, (size_t)value->length);
+        writer->position += (size_t)value->length;
     }
     
     return MU_STATUS_GOOD;
