@@ -4,6 +4,7 @@
 
 #include "micro_opcua/opcua_types.h"
 #include "micro_opcua/status.h"
+#include <stddef.h>
 
 typedef enum {
     MU_SESSION_STATE_CLOSED = 0,
