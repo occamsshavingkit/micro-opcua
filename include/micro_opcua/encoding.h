@@ -47,4 +47,9 @@ opcua_statuscode_t mu_binary_write_float(mu_binary_writer_t *writer, opcua_float
 opcua_statuscode_t mu_binary_write_double(mu_binary_writer_t *writer, opcua_double_t value);
 opcua_statuscode_t mu_binary_write_statuscode(mu_binary_writer_t *writer, opcua_statuscode_t value);
 
+opcua_statuscode_t mu_binary_read_string(mu_binary_reader_t *reader, mu_string_t *value);
+opcua_statuscode_t mu_binary_write_string(mu_binary_writer_t *writer, const mu_string_t *value);
+opcua_statuscode_t mu_binary_read_bytestring(mu_binary_reader_t *reader, mu_bytestring_t *value);
+opcua_statuscode_t mu_binary_write_bytestring(mu_binary_writer_t *writer, const mu_bytestring_t *value);
+
 #endif /* MICRO_OPCUA_ENCODING_H */
