@@ -61,6 +61,11 @@ typedef struct {
 /* Address space validation */
 opcua_statuscode_t mu_address_space_validate(const mu_address_space_t *address_space);
 
+/* NodeId helpers */
+opcua_boolean_t mu_nodeid_equal(const mu_nodeid_t *n1, const mu_nodeid_t *n2);
+opcua_boolean_t mu_nodeid_in_namespace(const mu_nodeid_t *node_id, opcua_uint16_t namespace_index);
+const mu_node_t *mu_address_space_find_node(const mu_address_space_t *address_space, const mu_nodeid_t *node_id);
+
 #ifdef __cplusplus
 }
 #endif
