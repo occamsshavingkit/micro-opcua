@@ -17,7 +17,7 @@
 - [X] T002 Create reusable CMake option helpers for host, pico, and arduino-skeleton builds in cmake/MicroOpcUaOptions.cmake (OPC refs: N/A - build infrastructure only)
 - [X] T003 Create warning and C11 standard configuration with warnings-as-errors support in cmake/MicroOpcUaWarnings.cmake (OPC refs: N/A - C toolchain configuration only)
 - [X] T004 [P] Create clang-format configuration for C headers, C sources, CMake, and Markdown in .clang-format (OPC refs: N/A - formatting infrastructure only)
-- [ ] T005 [P] Create static-analysis CMake targets for format-check (clang-format), cppcheck, and optional clang-tidy in cmake/MicroOpcUaStaticAnalysis.cmake (OPC refs: N/A - static-analysis infrastructure only)
+- [X] T005 [P] Create static-analysis CMake targets for format-check (clang-format), cppcheck, and optional clang-tidy in cmake/MicroOpcUaStaticAnalysis.cmake (OPC refs: N/A - static-analysis infrastructure only)
 - [ ] T006 Create top-level test registration for Unity, integration tests, fixtures, and fuzz targets in tests/CMakeLists.txt (OPC refs: N/A - test infrastructure only)
 - [ ] T007 Create Unity unit-test target skeleton and test discovery rules in tests/unit/CMakeLists.txt (OPC refs: N/A - test infrastructure only)
 - [ ] T008 [P] Create shared Unity configuration for host tests in tests/support/unity_config.h (OPC refs: N/A - test infrastructure only)
