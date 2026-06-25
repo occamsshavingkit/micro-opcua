@@ -3,6 +3,7 @@
 #define MICRO_OPCUA_SERVICE_MESSAGE_H
 
 #include "micro_opcua/opcua_types.h"
+#include "micro_opcua/types.h"
 #include "micro_opcua/status.h"
 #include <stddef.h>
 
