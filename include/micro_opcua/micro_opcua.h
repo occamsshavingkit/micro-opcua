@@ -9,6 +9,7 @@
 #include "micro_opcua/platform.h"
 #include "micro_opcua/server.h"
 #include "micro_opcua/encoding.h"
+#include "micro_opcua/opcua_ids.h"
 
 #include "micro_opcua/address_space.h"
 

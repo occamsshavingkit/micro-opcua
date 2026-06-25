@@ -1,0 +1,34 @@
+/* include/micro_opcua/opcua_ids.h */
+#ifndef MICRO_OPCUA_OPCUA_IDS_H
+#define MICRO_OPCUA_OPCUA_IDS_H
+
+#include "micro_opcua/opcua_types.h"
+
+#define MU_ID_FINDSERVERSREQUEST              422
+#define MU_ID_FINDSERVERSRESPONSE             425
+#define MU_ID_GETENDPOINTSREQUEST             428
+#define MU_ID_GETENDPOINTSRESPONSE            431
+
+#define MU_ID_OPENSECURECHANNELREQUEST        446
+#define MU_ID_OPENSECURECHANNELRESPONSE       449
+#define MU_ID_CLOSESECURECHANNELREQUEST       452
+#define MU_ID_CLOSESECURECHANNELRESPONSE      455
+
+#define MU_ID_CREATESESSIONREQUEST            461
+#define MU_ID_CREATESESSIONRESPONSE           464
+#define MU_ID_ACTIVATESESSIONREQUEST          467
+#define MU_ID_ACTIVATESESSIONRESPONSE         470
+#define MU_ID_CLOSESESSIONREQUEST             473
+#define MU_ID_CLOSESESSIONRESPONSE            476
+
+#define MU_ID_BROWSEREQUEST                   527
+#define MU_ID_BROWSERESPONSE                  530
+#define MU_ID_BROWSENEXTREQUEST               533
+#define MU_ID_BROWSENEXTRESPONSE              536
+
+#define MU_ID_READREQUEST                     631
+#define MU_ID_READRESPONSE                    634
+#define MU_ID_WRITEREQUEST                    673
+#define MU_ID_WRITERESPONSE                   676
+
+#endif /* MICRO_OPCUA_OPCUA_IDS_H */
