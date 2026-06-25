@@ -59,8 +59,8 @@ void test_browse_service_response_encode(void) {
         .is_forward = true,
         .node_id = {.identifier_type = MU_NODEID_NUMERIC, .namespace_index = 0, .identifier.numeric = 85},
         .browse_name_namespace_index = 0,
-        .browse_name = "Objects",
-        .display_name = "Objects",
+        .browse_name = {.length = 7, .data = (opcua_byte_t *)"Objects"},
+        .display_name = {.length = 7, .data = (opcua_byte_t *)"Objects"},
         .node_class = 1, /* Object */
         .type_definition = {.identifier_type = MU_NODEID_NUMERIC, .namespace_index = 0, .identifier.numeric = 61}
     };

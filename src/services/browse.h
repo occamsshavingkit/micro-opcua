@@ -36,8 +36,8 @@ typedef struct {
     opcua_boolean_t is_forward;
     mu_nodeid_t node_id;
     opcua_uint16_t browse_name_namespace_index;
-    const char *browse_name;
-    const char *display_name;
+    mu_string_t browse_name;
+    mu_string_t display_name;
     opcua_uint32_t node_class;
     mu_nodeid_t type_definition;
 } mu_reference_description_t;
@@ -52,6 +52,24 @@ typedef struct {
     mu_browse_result_t *results;
     size_t num_results;
 } mu_browse_response_t;
+
+/* Decodes the body of a BrowseRequest (after the RequestHeader) */
+opcua_statuscode_t mu_browse_request_decode(mu_binary_reader_t *reader, 
+                                            mu_browse_request_t *req,
+                                            mu_browse_description_t *desc_array,
+                                            size_t max_desc);
+
+/* Encodes the body of a BrowseResponse (after the ResponseHeader) */
+opcua_statuscode_t mu_browse_response_encode(mu_binary_writer_t *writer, 
+                                             const mu_browse_response_t *resp);
+
+/* Processes a BrowseRequest to produce a BrowseResponse */
+opcua_statuscode_t mu_browse_process(const mu_address_space_t *address_space,
+                                     const mu_browse_request_t *req,
+                                     mu_browse_result_t *results,
+                                     size_t max_results,
+                                     mu_reference_description_t *ref_pool,
+                                     size_t max_total_refs);
 
 /* Decodes the body of a BrowseRequest (after the RequestHeader) */
 opcua_statuscode_t mu_browse_request_decode(mu_binary_reader_t *reader, 
