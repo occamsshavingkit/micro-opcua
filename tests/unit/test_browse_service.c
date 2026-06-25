@@ -49,8 +49,58 @@ void test_browse_service_static_references(void) {
     TEST_ASSERT_TRUE(req.nodes_to_browse[0].include_subtypes);
 }
 
+void test_browse_service_response_encode(void) {
+    opcua_byte_t buffer[256];
+    mu_binary_writer_t writer;
+    mu_binary_writer_init(&writer, buffer, sizeof(buffer));
+    
+    mu_reference_description_t ref = {
+        .reference_type_id = {.identifier_type = MU_NODEID_NUMERIC, .namespace_index = 0, .identifier.numeric = 35},
+        .is_forward = true,
+        .node_id = {.identifier_type = MU_NODEID_NUMERIC, .namespace_index = 0, .identifier.numeric = 85},
+        .browse_name_namespace_index = 0,
+        .browse_name = "Objects",
+        .display_name = "Objects",
+        .node_class = 1, /* Object */
+        .type_definition = {.identifier_type = MU_NODEID_NUMERIC, .namespace_index = 0, .identifier.numeric = 61}
+    };
+    
+    mu_browse_result_t res = {
+        .status_code = MU_STATUS_GOOD,
+        .references = &ref,
+        .num_references = 1
+    };
+    
+    mu_browse_response_t resp = {
+        .results = &res,
+        .num_results = 1
+    };
+    
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_browse_response_encode(&writer, &resp));
+    
+    mu_binary_reader_t reader;
+    mu_binary_reader_init(&reader, buffer, writer.position);
+    
+    opcua_int32_t num_results;
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_int32(&reader, &num_results));
+    TEST_ASSERT_EQUAL(1, num_results);
+    
+    opcua_statuscode_t status;
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_statuscode(&reader, &status));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, status);
+    
+    opcua_int32_t cp_len;
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_int32(&reader, &cp_len));
+    TEST_ASSERT_EQUAL(-1, cp_len);
+    
+    opcua_int32_t num_refs;
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_int32(&reader, &num_refs));
+    TEST_ASSERT_EQUAL(1, num_refs);
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_browse_service_static_references);
+    RUN_TEST(test_browse_service_response_encode);
     return UNITY_END();
 }
