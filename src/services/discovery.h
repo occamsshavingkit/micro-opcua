@@ -22,4 +22,45 @@ typedef struct {
 opcua_statuscode_t mu_discovery_get_application_description(const mu_server_config_t *config, 
                                                             mu_application_description_t *desc);
 
+/* MessageSecurityMode */
+typedef enum {
+    MU_MESSAGE_SECURITY_MODE_INVALID = 0,
+    MU_MESSAGE_SECURITY_MODE_NONE = 1,
+    MU_MESSAGE_SECURITY_MODE_SIGN = 2,
+    MU_MESSAGE_SECURITY_MODE_SIGNANDENCRYPT = 3
+} mu_message_security_mode_t;
+
+/* UserTokenType */
+typedef enum {
+    MU_USER_TOKEN_TYPE_ANONYMOUS = 0,
+    MU_USER_TOKEN_TYPE_USERNAME = 1,
+    MU_USER_TOKEN_TYPE_CERTIFICATE = 2,
+    MU_USER_TOKEN_TYPE_ISSUEDTOKEN = 3
+} mu_user_token_type_t;
+
+typedef struct {
+    const char *policy_id;
+    mu_user_token_type_t token_type;
+    const char *issued_token_type;
+    const char *issuer_endpoint_url;
+    const char *security_policy_uri;
+} mu_user_token_policy_t;
+
+typedef struct {
+    const char *endpoint_url;
+    mu_application_description_t server;
+    /* ServerCertificate is empty */
+    mu_message_security_mode_t security_mode;
+    const char *security_policy_uri;
+    
+    mu_user_token_policy_t user_identity_tokens[1]; /* only 1 supported: Anonymous */
+    size_t num_user_identity_tokens;
+    
+    const char *transport_profile_uri;
+    opcua_byte_t security_level;
+} mu_endpoint_description_t;
+
+opcua_statuscode_t mu_discovery_get_endpoint_description(const mu_server_config_t *config, 
+                                                         mu_endpoint_description_t *desc);
+
 #endif /* MICRO_OPCUA_SERVICES_DISCOVERY_H */
