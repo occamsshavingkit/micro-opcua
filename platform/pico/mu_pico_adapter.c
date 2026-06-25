@@ -1,5 +1,5 @@
-/* platform/pico/mu_pico_adapter.c */
 #include "mu_pico_adapter.h"
+#include "micro_opcua/status.h"
 #include <string.h>
 
 /* 
