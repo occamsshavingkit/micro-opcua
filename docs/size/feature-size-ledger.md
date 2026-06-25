@@ -11,3 +11,4 @@ This document tracks the cumulative memory footprint of the server against the h
 
 | Date | Feature/Component | Flash Impact (bytes) | RAM Impact (bytes) | Cumulative Flash | Cumulative RAM | Notes |
 |------|-------------------|----------------------|--------------------|------------------|----------------|-------|
+| 2026-06-25 | US1: Core API & Config | ~1000 | ~4096 | ~1000 | ~4096 | Storage size defined as 4KB. Actual Flash TBD. |
