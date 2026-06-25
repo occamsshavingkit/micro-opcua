@@ -10,6 +10,7 @@ add_library(micro_opcua STATIC
     services/secure_channel.c
     services/session.c
     services/discovery.c
+    services/browse.c
     address_space/address_space.c
     address_space/node_id.c
     address_space/value_source.c
