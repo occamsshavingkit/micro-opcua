@@ -138,7 +138,7 @@
 - [X] T069 [P] [US3] Add Binary NodeId tests for numeric and string variants in tests/unit/test_binary_nodeid.c (OPC refs: OPC-10000-6 5.2.2.9)
 - [X] T070 [P] [US3] Add ExtensionObject header tests in tests/unit/test_binary_extension_object.c (OPC refs: OPC-10000-6 5.2.2.15)
 - [X] T071 [P] [US3] Add Variant and DataValue tests for Boolean, Int32, UInt32, Float, and String in tests/unit/test_binary_variant_datavalue.c (OPC refs: OPC-10000-6 5.2.2.16, 5.2.2.17)
-- [ ] T072 [P] [US3] Add Hello/Acknowledge byte fixtures and sidecars in tests/fixtures/opcua-tcp/hello_ack.md (OPC refs: OPC-10000-6 7.1.2.3, 7.1.2.4)
+- [X] T072 [P] [US3] Add Hello/Acknowledge byte fixtures and sidecars in tests/fixtures/opcua-tcp/hello_ack.md (OPC refs: OPC-10000-6 7.1.2.3, 7.1.2.4)
 - [ ] T073 [P] [US3] Add MessageChunk header and sequence header fixtures in tests/fixtures/uasc/message_chunk.md (OPC refs: OPC-10000-6 6.7.2, 6.7.2.4)
 - [ ] T074 [P] [US3] Add OpenSecureChannel SecurityPolicy None fixtures in tests/fixtures/services/open_secure_channel.md (OPC refs: OPC-10000-4 5.6.2.2; OPC-10000-6 6.7.4, 6.7.7)
 - [ ] T075 [P] [US3] Add FindServers and GetEndpoints fixtures in tests/fixtures/services/discovery.md (OPC refs: OPC-10000-4 5.5.2.2, 5.5.4.2)
