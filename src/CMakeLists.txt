@@ -1,7 +1,8 @@
 # src/CMakeLists.txt
-add_library(micro_opcua STATIC
+set(MICRO_OPCUA_CORE_SOURCES
     core/server.c
     core/status.c
+    core/tcp_connection.c
     address_space/address_space.c
     address_space/node_id.c
     address_space/value_source.c
