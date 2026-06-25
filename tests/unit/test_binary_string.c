@@ -7,8 +7,6 @@ void tearDown(void) {}
 
 /* These tests assume binary encoding APIs that will be implemented in subsequent tasks */
 void test_binary_string_roundtrip(void) {
-    TEST_IGNORE_MESSAGE("Implement binary string tests");
-#if 0
     opcua_byte_t buffer[128];
     mu_binary_writer_t writer;
     mu_binary_reader_t reader;
@@ -34,12 +32,9 @@ void test_binary_string_roundtrip(void) {
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_string(&reader, &read_str));
     TEST_ASSERT_EQUAL(4, read_str.length);
     TEST_ASSERT_EQUAL_MEMORY("test", read_str.data, 4);
-#endif
 }
 
 void test_binary_string_over_limit(void) {
-    TEST_IGNORE_MESSAGE("Implement binary string over-limit test");
-#if 0
     opcua_byte_t buffer[128];
     mu_binary_writer_t writer;
     mu_binary_reader_t reader;
@@ -50,7 +45,6 @@ void test_binary_string_over_limit(void) {
     
     mu_binary_writer_init(&writer, buffer, sizeof(buffer));
     TEST_ASSERT_EQUAL(MU_STATUS_BAD_ENCODINGLIMITSEXCEEDED, mu_binary_write_string(&writer, &long_str));
-#endif
 }
 
 int main(void) {
