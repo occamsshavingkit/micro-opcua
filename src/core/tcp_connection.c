@@ -25,7 +25,7 @@ opcua_statuscode_t mu_tcp_process_hello(
         return MU_STATUS_BAD_INTERNALERROR;
     }
 
-    if (length < 8) return MU_STATUS_BAD_TCPMESSAGETOOINVALID;
+    if (length < 8) return MU_STATUS_BAD_TCPMESSAGETOOLARGE;
 
     if (message[0] != 'H' || message[1] != 'E' || message[2] != 'L' || message[3] != 'F') {
         return MU_STATUS_BAD_TCPMESSAGETYPEINVALID;
@@ -39,7 +39,7 @@ opcua_statuscode_t mu_tcp_process_hello(
     opcua_statuscode_t status = mu_binary_read_int32(&reader, &message_size);
     if (status != MU_STATUS_GOOD) return status;
     
-    if (message_size > (opcua_int32_t)length) return MU_STATUS_BAD_TCPMESSAGETOOINVALID;
+    if (message_size > (opcua_int32_t)length) return MU_STATUS_BAD_TCPMESSAGETOOLARGE;
     
     opcua_uint32_t protocol_version, receive_buffer_size, send_buffer_size;
     opcua_uint32_t max_message_size, max_chunk_count;
@@ -64,8 +64,8 @@ opcua_statuscode_t mu_tcp_process_hello(
 
     /* Negotiate values */
     connection->protocol_version = protocol_version;
-    connection->receive_buffer_size = receive_buffer_size < config->send_buffer_size ? receive_buffer_size : config->send_buffer_size;
-    connection->send_buffer_size = send_buffer_size < config->receive_buffer_size ? send_buffer_size : config->receive_buffer_size;
+    connection->receive_buffer_size = receive_buffer_size < (opcua_uint32_t)config->send_buffer_size ? receive_buffer_size : (opcua_uint32_t)config->send_buffer_size;
+    connection->send_buffer_size = send_buffer_size < (opcua_uint32_t)config->receive_buffer_size ? send_buffer_size : (opcua_uint32_t)config->receive_buffer_size;
     connection->max_message_size = max_message_size < config->max_message_size ? max_message_size : config->max_message_size;
     connection->max_chunk_count = max_chunk_count < config->max_chunk_count ? max_chunk_count : config->max_chunk_count;
 
