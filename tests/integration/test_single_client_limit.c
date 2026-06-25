@@ -59,12 +59,11 @@ static opcua_statuscode_t mock_write(void *context, void *handle, const opcua_by
     return MU_STATUS_GOOD;
 }
 
-static opcua_statuscode_t mock_close(void *context, void *handle) {
+static void mock_close(void *context, void *handle) {
     mock_tcp_t *mock = (mock_tcp_t*)context;
     if (handle == mock->second_handle) {
         mock->close_called = true;
     }
-    return MU_STATUS_GOOD;
 }
 
 void test_single_client_limit_second_connection(void) {
@@ -82,23 +81,24 @@ void test_single_client_limit_second_connection(void) {
     config.tcp_adapter.write = mock_write;
     config.tcp_adapter.close_connection = mock_close;
     
-    mu_server_t server;
-    mu_server_init(&server, &config);
+    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    mu_server_t *server = NULL;
+    mu_server_init(storage, sizeof(storage), &config, &server);
     
     /* First poll: accepts the first connection */
-    mu_server_poll(&server);
-    TEST_ASSERT_EQUAL_PTR(mock_ctx.client_handle, server.client_handle);
+    mu_server_poll(server);
+    TEST_ASSERT_EQUAL_PTR(mock_ctx.client_handle, server->client_handle);
     TEST_ASSERT_EQUAL(1, mock_ctx.accept_calls);
     
     /* Second poll: first connection is active, so it will check for a second connection and reject it */
-    mu_server_poll(&server);
+    mu_server_poll(server);
     TEST_ASSERT_EQUAL(2, mock_ctx.accept_calls);
     TEST_ASSERT_TRUE(mock_ctx.read_called);
     TEST_ASSERT_TRUE(mock_ctx.write_called);
     TEST_ASSERT_TRUE(mock_ctx.close_called);
     
     /* The server should remain connected to the first client */
-    TEST_ASSERT_EQUAL_PTR(mock_ctx.client_handle, server.client_handle);
+    TEST_ASSERT_EQUAL_PTR(mock_ctx.client_handle, server->client_handle);
     
     /* The second client should have received an ERR message */
     TEST_ASSERT_GREATER_THAN(8, mock_ctx.written_len);

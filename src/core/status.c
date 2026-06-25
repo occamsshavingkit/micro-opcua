@@ -1,5 +1,6 @@
 /* src/core/status.c */
 #include "micro_opcua/status.h"
+#include <stddef.h>
 
 const char* mu_status_name(opcua_statuscode_t status)
 {

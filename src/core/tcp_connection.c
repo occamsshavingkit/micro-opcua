@@ -1,6 +1,7 @@
 /* src/core/tcp_connection.c */
 #include "tcp_connection.h"
 #include "micro_opcua/encoding.h"
+#include <string.h>
 
 void mu_tcp_connection_init(mu_tcp_connection_t *connection) {
     if (connection) {
