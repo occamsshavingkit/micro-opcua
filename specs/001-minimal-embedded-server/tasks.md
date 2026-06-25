@@ -58,12 +58,12 @@
 
 ### Tests for User Story 1
 
-- [ ] T024 [P] [US1] Add public-header compilation smoke test including every public header in tests/unit/test_public_headers.c (OPC refs: N/A - public-header compile coverage only)
-- [ ] T025 [P] [US1] Add server configuration validation tests for null buffers, invalid endpoint scheme, and default one-client limits in tests/unit/test_server_config.c (OPC refs: OPC-10000-6 7.1.2.3, 7.1.2.4, 7.2)
-- [ ] T026 [P] [US1] Add no-heap lifecycle test that wraps malloc/free and validates init/poll/close do not allocate after init in tests/unit/test_no_heap_lifecycle.c (OPC refs: N/A - embedded memory-discipline test only)
-- [ ] T027 [P] [US1] Add platform adapter contract tests for null optional persistence and crypto callbacks in tests/unit/test_platform_adapter_contract.c (OPC refs: N/A - platform adapter contract test only)
-- [ ] T028 [P] [US1] Add status-name unit tests for Good, Bad_ServiceUnsupported, Bad_DecodingError, and TCP busy mappings in tests/unit/test_status.c (OPC refs: OPC-10000-4 7.38.2; OPC-10000-6 7.1.5)
-- [ ] T029 [P] [US1] Add Pico public-header compile smoke target that includes only portable headers in platform/pico/test_public_headers.c (OPC refs: N/A - embedded public-header compile coverage only)
+- [X] T024 [P] [US1] Add public-header compilation smoke test including every public header in tests/unit/test_public_headers.c (OPC refs: N/A - public-header compile coverage only)
+- [X] T025 [P] [US1] Add server configuration validation tests for null buffers, invalid endpoint scheme, and default one-client limits in tests/unit/test_server_config.c (OPC refs: OPC-10000-6 7.1.2.3, 7.1.2.4, 7.2)
+- [X] T026 [P] [US1] Add no-heap lifecycle test that wraps malloc/free and validates init/poll/close do not allocate after init in tests/unit/test_no_heap_lifecycle.c (OPC refs: N/A - embedded memory-discipline test only)
+- [X] T027 [P] [US1] Add platform adapter contract tests for null optional persistence and crypto callbacks in tests/unit/test_platform_adapter_contract.c (OPC refs: N/A - platform adapter contract test only)
+- [X] T028 [P] [US1] Add status-name unit tests for Good, Bad_ServiceUnsupported, Bad_DecodingError, and TCP busy mappings in tests/unit/test_status.c (OPC refs: OPC-10000-4 7.38.2; OPC-10000-6 7.1.5)
+- [X] T029 [P] [US1] Add Pico public-header compile smoke target that includes only portable headers in platform/pico/test_public_headers.c (OPC refs: N/A - embedded public-header compile coverage only)
 
 ### Implementation for User Story 1
 
