@@ -9,6 +9,19 @@
 #include "../services/read.h"
 #include "../services/service_header.h"
 #include <stddef.h>
+#include <string.h>
+
+#define MU_SERVER_NONCE_LENGTH 32
+
+/* Fill a ServerNonce from the entropy adapter (zeros if unavailable). */
+static void fill_server_nonce(mu_server_t *server, opcua_byte_t *nonce, size_t len) {
+    if (server->config.entropy_adapter.generate_random != NULL &&
+        server->config.entropy_adapter.generate_random(
+            server->config.entropy_adapter.context, nonce, len) == MU_STATUS_GOOD) {
+        return;
+    }
+    memset(nonce, 0, len);
+}
 
 static const mu_service_handler_t g_supported_services[] = {
     { MU_ID_FINDSERVERSREQUEST,        MU_ID_FINDSERVERSRESPONSE,        false },
@@ -109,11 +122,50 @@ static opcua_statuscode_t handle_open_secure_channel(mu_server_t *server,
     s = mu_binary_write_int64(w, now);                            if (s != MU_STATUS_GOOD) return s; /* SecurityToken.CreatedAt */
     s = mu_binary_write_uint32(w, revised);                       if (s != MU_STATUS_GOOD) return s; /* SecurityToken.RevisedLifetime */
 
-    mu_bytestring_t server_nonce = { 0, NULL }; /* empty for SecurityPolicy None */
+    opcua_byte_t nonce_buf[MU_SERVER_NONCE_LENGTH];
+    fill_server_nonce(server, nonce_buf, sizeof(nonce_buf));
+    mu_bytestring_t server_nonce = { (opcua_int32_t)sizeof(nonce_buf), nonce_buf };
     s = mu_binary_write_bytestring(w, &server_nonce);             if (s != MU_STATUS_GOOD) return s;
 
     *response_length = w->position;
     return MU_STATUS_GOOD;
+}
+
+/* Best-effort decode of a CreateSessionRequest up to RequestedSessionTimeout.
+   Tolerates a truncated request body (leaves *timeout at 0, which mu_session_create
+   then bounds to the minimum). */
+static void read_requested_session_timeout(mu_binary_reader_t *r, double *timeout) {
+    mu_string_t str;
+    mu_bytestring_t bs;
+    opcua_uint32_t u;
+    opcua_int32_t n;
+    opcua_byte_t mask;
+
+    *timeout = 0.0;
+
+    if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD) return;      /* ClientDescription.applicationUri */
+    if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD) return;      /* productUri */
+    if (mu_binary_read_byte(r, &mask) != MU_STATUS_GOOD) return;       /* applicationName LocalizedText mask */
+    if ((mask & 0x01) && (mu_binary_read_string(r, &str) != MU_STATUS_GOOD)) return; /* locale */
+    if ((mask & 0x02) && (mu_binary_read_string(r, &str) != MU_STATUS_GOOD)) return; /* text */
+    if (mu_binary_read_uint32(r, &u) != MU_STATUS_GOOD) return;        /* applicationType */
+    if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD) return;      /* gatewayServerUri */
+    if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD) return;      /* discoveryProfileUri */
+    if (mu_binary_read_int32(r, &n) != MU_STATUS_GOOD) return;         /* discoveryUrls count */
+    for (opcua_int32_t i = 0; i < n; ++i) {
+        if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD) return;
+    }
+    if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD) return;      /* ServerUri */
+    if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD) return;      /* EndpointUrl */
+    if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD) return;      /* SessionName */
+    if (mu_binary_read_bytestring(r, &bs) != MU_STATUS_GOOD) return;   /* ClientNonce */
+    if (mu_binary_read_bytestring(r, &bs) != MU_STATUS_GOOD) return;   /* ClientCertificate */
+    {
+        double t;
+        if (mu_binary_read_double(r, &t) == MU_STATUS_GOOD) {
+            *timeout = t;
+        }
+    }
 }
 
 /* CreateSession (OPC 10000-4 5.7.2.2). Thin path: parse the RequestHeader, create
@@ -129,9 +181,12 @@ static opcua_statuscode_t handle_create_session(mu_server_t *server,
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
     if (s != MU_STATUS_GOOD) return s;
 
+    double requested = 0.0;
+    read_requested_session_timeout(r, &requested); /* honor the client's request when present */
+
     double revised = 0.0;
     opcua_uint32_t session_id = 0, auth_token = 0;
-    s = mu_session_create(&server->session, 0.0, &revised, &session_id, &auth_token);
+    s = mu_session_create(&server->session, requested, &revised, &session_id, &auth_token);
     if (s != MU_STATUS_GOOD) return s;
 
     s = write_response_prefix(w, MU_ID_CREATESESSIONRESPONSE, req.request_handle, MU_STATUS_GOOD);
@@ -139,15 +194,18 @@ static opcua_statuscode_t handle_create_session(mu_server_t *server,
 
     mu_nodeid_t sid = { 0, MU_NODEID_NUMERIC, { session_id } };
     mu_nodeid_t tok = { 0, MU_NODEID_NUMERIC, { auth_token } };
-    mu_bytestring_t empty_bs = { 0, NULL };
     mu_bytestring_t null_bs = { -1, NULL };
     mu_string_t null_str = { -1, NULL };
 
-    s = mu_binary_write_nodeid(w, &sid);          if (s != MU_STATUS_GOOD) return s; /* SessionId */
-    s = mu_binary_write_nodeid(w, &tok);          if (s != MU_STATUS_GOOD) return s; /* AuthenticationToken */
-    s = mu_binary_write_double(w, revised);       if (s != MU_STATUS_GOOD) return s; /* RevisedSessionTimeout */
-    s = mu_binary_write_bytestring(w, &empty_bs); if (s != MU_STATUS_GOOD) return s; /* ServerNonce */
-    s = mu_binary_write_bytestring(w, &null_bs);  if (s != MU_STATUS_GOOD) return s; /* ServerCertificate */
+    opcua_byte_t nonce_buf[MU_SERVER_NONCE_LENGTH];
+    fill_server_nonce(server, nonce_buf, sizeof(nonce_buf));
+    mu_bytestring_t server_nonce = { (opcua_int32_t)sizeof(nonce_buf), nonce_buf };
+
+    s = mu_binary_write_nodeid(w, &sid);              if (s != MU_STATUS_GOOD) return s; /* SessionId */
+    s = mu_binary_write_nodeid(w, &tok);              if (s != MU_STATUS_GOOD) return s; /* AuthenticationToken */
+    s = mu_binary_write_double(w, revised);           if (s != MU_STATUS_GOOD) return s; /* RevisedSessionTimeout */
+    s = mu_binary_write_bytestring(w, &server_nonce); if (s != MU_STATUS_GOOD) return s; /* ServerNonce */
+    s = mu_binary_write_bytestring(w, &null_bs);      if (s != MU_STATUS_GOOD) return s; /* ServerCertificate */
 
     /* ServerEndpoints: the same single endpoint a Client would get from GetEndpoints. */
     {
@@ -210,9 +268,11 @@ static opcua_statuscode_t handle_activate_session(mu_server_t *server,
     s = write_response_prefix(w, MU_ID_ACTIVATESESSIONRESPONSE, req.request_handle, activate_result);
     if (s != MU_STATUS_GOOD) return s;
 
-    mu_bytestring_t empty_bs = { 0, NULL };
-    s = mu_binary_write_bytestring(w, &empty_bs); if (s != MU_STATUS_GOOD) return s; /* ServerNonce */
-    s = mu_binary_write_int32(w, 0);              if (s != MU_STATUS_GOOD) return s; /* Results[] */
+    opcua_byte_t nonce_buf[MU_SERVER_NONCE_LENGTH];
+    fill_server_nonce(server, nonce_buf, sizeof(nonce_buf));
+    mu_bytestring_t server_nonce = { (opcua_int32_t)sizeof(nonce_buf), nonce_buf };
+    s = mu_binary_write_bytestring(w, &server_nonce); if (s != MU_STATUS_GOOD) return s; /* ServerNonce */
+    s = mu_binary_write_int32(w, 0);                  if (s != MU_STATUS_GOOD) return s; /* Results[] */
     s = mu_binary_write_int32(w, 0);              if (s != MU_STATUS_GOOD) return s; /* DiagnosticInfos[] */
 
     *response_length = w->position;
