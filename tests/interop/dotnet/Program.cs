@@ -60,10 +60,10 @@ namespace MicroOpcUa.Interop
             config.CertificateValidator.CertificateValidation += (s, e) => { e.Accept = true; };
 
             var app = new ApplicationInstance { ApplicationConfiguration = config };
-            await app.CheckApplicationInstanceCertificate(false, CertificateFactory.DefaultKeySize).ConfigureAwait(false);
+            await app.CheckApplicationInstanceCertificatesAsync(false).ConfigureAwait(false);
 
             Console.WriteLine($"Connecting to {url} with the OPC Foundation .NET reference client ...");
-            var selected = CoreClientUtils.SelectEndpoint(config, url, useSecurity: false, operationTimeout: 15000);
+            var selected = CoreClientUtils.SelectEndpoint(config, url, false, 15000);
             var endpoint = new ConfiguredEndpoint(null, selected, EndpointConfiguration.Create(config));
 
             using var session = await Session.Create(
