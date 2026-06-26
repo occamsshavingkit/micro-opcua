@@ -5,8 +5,12 @@
 #include "../services/discovery.h"
 #include "../services/session.h"
 #include "../services/secure_channel.h"
+#ifdef MICRO_OPCUA_SERVICE_BROWSE
 #include "../services/browse.h"
+#endif
+#ifdef MICRO_OPCUA_SERVICE_READ
 #include "../services/read.h"
+#endif
 #include "../services/service_header.h"
 #ifdef MICRO_OPCUA_SECURITY
 #include "../security/sym_chunk.h"
@@ -27,15 +31,21 @@ static void fill_server_nonce(mu_server_t *server, opcua_byte_t *nonce, size_t l
 }
 
 static const mu_service_handler_t g_supported_services[] = {
+#ifdef MICRO_OPCUA_SERVICE_DISCOVERY
     { MU_ID_FINDSERVERSREQUEST,        MU_ID_FINDSERVERSRESPONSE,        false },
     { MU_ID_GETENDPOINTSREQUEST,       MU_ID_GETENDPOINTSRESPONSE,       false },
+#endif
     { MU_ID_OPENSECURECHANNELREQUEST,  MU_ID_OPENSECURECHANNELRESPONSE,  false },
     { MU_ID_CLOSESECURECHANNELREQUEST, MU_ID_CLOSESECURECHANNELRESPONSE, false },
     { MU_ID_CREATESESSIONREQUEST,      MU_ID_CREATESESSIONRESPONSE,      false }, /* Does not require an activated session */
     { MU_ID_ACTIVATESESSIONREQUEST,    MU_ID_ACTIVATESESSIONRESPONSE,    false }, /* Does not require an activated session to activate */
     { MU_ID_CLOSESESSIONREQUEST,       MU_ID_CLOSESESSIONRESPONSE,       true  },
+#ifdef MICRO_OPCUA_SERVICE_BROWSE
     { MU_ID_BROWSEREQUEST,             MU_ID_BROWSERESPONSE,             true  },
+#endif
+#ifdef MICRO_OPCUA_SERVICE_READ
     { MU_ID_READREQUEST,               MU_ID_READRESPONSE,               true  }
+#endif
 };
 
 static const size_t g_num_supported_services = sizeof(g_supported_services) / sizeof(g_supported_services[0]);
@@ -388,6 +398,7 @@ static opcua_statuscode_t handle_close_session(mu_server_t *server,
     return MU_STATUS_GOOD;
 }
 
+#ifdef MICRO_OPCUA_SERVICE_DISCOVERY
 /* GetEndpoints (OPC 10000-4 5.5.2): return the server's single endpoint. The
    request's EndpointUrl/LocaleIds/ProfileUris filters are not applied (thin path). */
 static opcua_statuscode_t handle_get_endpoints(mu_server_t *server,
@@ -442,6 +453,8 @@ static opcua_statuscode_t handle_find_servers(mu_server_t *server,
     return MU_STATUS_GOOD;
 }
 
+#endif /* MICRO_OPCUA_SERVICE_DISCOVERY */
+
 /* Per-request operation bounds (bounded, stack-allocated). Sized so a standards
    client's connect-time batch reads (e.g. the .NET stack reading the ~12
    ServerCapabilities/OperationLimits properties at once) are accepted rather than
@@ -451,6 +464,7 @@ static opcua_statuscode_t handle_find_servers(mu_server_t *server,
 #define MU_DISPATCH_MAX_BROWSE_NODES 8
 #define MU_DISPATCH_MAX_BROWSE_REFS  32
 
+#ifdef MICRO_OPCUA_SERVICE_READ
 /* Read (OPC 10000-4 5.11.2): decode the request after the RequestHeader, read each
    attribute from the address space, and encode the ReadResponse. */
 static opcua_statuscode_t handle_read(mu_server_t *server,
@@ -480,7 +494,9 @@ static opcua_statuscode_t handle_read(mu_server_t *server,
     *response_length = w->position;
     return MU_STATUS_GOOD;
 }
+#endif /* MICRO_OPCUA_SERVICE_READ */
 
+#ifdef MICRO_OPCUA_SERVICE_BROWSE
 /* Browse (OPC 10000-4 5.9.2): decode the request after the RequestHeader, traverse
    references in the address space, and encode the BrowseResponse. */
 static opcua_statuscode_t handle_browse(mu_server_t *server,
@@ -516,6 +532,7 @@ static opcua_statuscode_t handle_browse(mu_server_t *server,
     *response_length = w->position;
     return MU_STATUS_GOOD;
 }
+#endif /* MICRO_OPCUA_SERVICE_BROWSE */
 
 opcua_statuscode_t mu_service_dispatch(
     mu_server_t *server,
@@ -554,20 +571,26 @@ opcua_statuscode_t mu_service_dispatch(
     switch (request_id) {
         case MU_ID_OPENSECURECHANNELREQUEST:
             return handle_open_secure_channel(server, &reader, &writer, response_length);
+#ifdef MICRO_OPCUA_SERVICE_DISCOVERY
         case MU_ID_GETENDPOINTSREQUEST:
             return handle_get_endpoints(server, &reader, &writer, response_length);
         case MU_ID_FINDSERVERSREQUEST:
             return handle_find_servers(server, &reader, &writer, response_length);
+#endif
         case MU_ID_CREATESESSIONREQUEST:
             return handle_create_session(server, &reader, &writer, response_length);
         case MU_ID_ACTIVATESESSIONREQUEST:
             return handle_activate_session(server, &reader, &writer, response_length);
         case MU_ID_CLOSESESSIONREQUEST:
             return handle_close_session(server, &reader, &writer, response_length);
+#ifdef MICRO_OPCUA_SERVICE_READ
         case MU_ID_READREQUEST:
             return handle_read(server, &reader, &writer, response_length);
+#endif
+#ifdef MICRO_OPCUA_SERVICE_BROWSE
         case MU_ID_BROWSEREQUEST:
             return handle_browse(server, &reader, &writer, response_length);
+#endif
         default:
             /* Not yet wired (discovery/session/browse/read): succeed with no body. */
             *response_length = 0;

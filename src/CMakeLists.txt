@@ -12,8 +12,6 @@ add_library(micro_opcua STATIC
     services/session.c
     services/service_header.c
     services/discovery.c
-    services/browse.c
-    services/read.c
     address_space/address_space.c
     address_space/node_id.c
     address_space/value_source.c
@@ -27,6 +25,19 @@ add_library(micro_opcua STATIC
     security/security_policy.c
     generated/opcua_ids.c
 )
+
+# Optional services compile out at the source + dispatch-table level.
+if(MICRO_OPCUA_SERVICE_READ)
+    target_sources(micro_opcua PRIVATE services/read.c)
+    target_compile_definitions(micro_opcua PUBLIC MICRO_OPCUA_SERVICE_READ=1)
+endif()
+if(MICRO_OPCUA_SERVICE_BROWSE)
+    target_sources(micro_opcua PRIVATE services/browse.c)
+    target_compile_definitions(micro_opcua PUBLIC MICRO_OPCUA_SERVICE_BROWSE=1)
+endif()
+if(MICRO_OPCUA_SERVICE_DISCOVERY)
+    target_compile_definitions(micro_opcua PUBLIC MICRO_OPCUA_SERVICE_DISCOVERY=1)
+endif()
 
 # SecurityPolicy Basic256Sha256: the asym/sym chunk crypto and key derivation.
 # Excluded entirely from a None-only build to keep the embedded footprint minimal.

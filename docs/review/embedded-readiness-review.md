@@ -133,7 +133,10 @@ replay or gap/abort detection despite the machinery existing.
 Fix: feed the decoded sequence number from each unwrap into
 `mu_sequence_validate(&channel.sequence, ...)` and abort the channel on non-GOOD.
 
-### M2 — Services are all-or-nothing
+### M2 — Services are all-or-nothing — ADDRESSED
+**Status:** Fixed. New `MICRO_OPCUA_SERVICE_READ`, `MICRO_OPCUA_SERVICE_BROWSE`, and `MICRO_OPCUA_SERVICE_DISCOVERY` options (default ON) gate the service source files and the matching dispatch-table rows + switch cases, so unselected services compile out entirely (verified: a minimal None-only build without Read/Browse/Discovery is ~22 KB smaller and excludes read.c/browse.c). The OpenSecureChannel/Session services remain always-present; discovery.c's endpoint encoder stays (CreateSession needs it). Original finding:
+
+
 `src/CMakeLists.txt:11-16`, `src/core/service_dispatch.c` (`g_supported_services[]`
 + dispatch `switch`). Only `MICRO_OPCUA_SECURITY` gates anything; Browse, Read,
 Discovery (GetEndpoints/FindServers), and Session are always compiled and the
