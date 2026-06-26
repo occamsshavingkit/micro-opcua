@@ -8,9 +8,6 @@
 #define MU_SYM_HEADER_SIZE 16   /* type+IsFinal(4) + MessageSize(4) + SecureChannelId(4) + TokenId(4) */
 #define MU_SYM_SIG_LEN     MU_B256S256_SIGNATURE_LENGTH       /* 32 (HMAC-SHA256) */
 #define MU_SYM_BLOCK       MU_B256S256_ENCRYPTION_BLOCK_SIZE  /* 16 (AES) */
-/* Scratch for the signed (and possibly decrypted) region; bounds MSG body size.
-   Sized to hold a discovery response carrying certificates in each endpoint. */
-#define MU_SYM_SCRATCH 8192
 
 opcua_statuscode_t mu_sym_keys_derive(const mu_crypto_adapter_t *crypto,
                                       const opcua_byte_t *secret, size_t secret_len,
@@ -119,8 +116,8 @@ opcua_statuscode_t mu_sym_chunk_wrap(
 opcua_statuscode_t mu_sym_chunk_unwrap(
     const mu_crypto_adapter_t *crypto,
     mu_message_security_mode_t mode, const mu_sym_keys_t *keys,
-    const opcua_byte_t *chunk, size_t chunk_len,
-    opcua_byte_t *out_body, size_t out_cap, size_t *out_body_len,
+    opcua_byte_t *chunk, size_t chunk_len,
+    const opcua_byte_t **out_body, size_t *out_body_len,
     mu_sym_chunk_info_t *info)
 {
     if (!crypto || !keys || !chunk || !out_body || !out_body_len || !info) return MU_STATUS_BAD_INTERNALERROR;
@@ -136,54 +133,41 @@ opcua_statuscode_t mu_sym_chunk_unwrap(
     info->token_id = get_u32(chunk + 12);
     info->mode = mode;
 
-    if (mode == MU_MESSAGE_SECURITY_MODE_SIGN) {
-        if (msg_size < MU_SYM_HEADER_SIZE + 8 + MU_SYM_SIG_LEN) return MU_STATUS_BAD_DECODINGERROR;
-        size_t signed_len = msg_size - MU_SYM_SIG_LEN;
-        opcua_byte_t mac[MU_SYM_SIG_LEN];
-        opcua_statuscode_t s = crypto->hmac_sha256(crypto->context, keys->signing_key,
-                                                   sizeof(keys->signing_key), chunk, signed_len, mac);
+    /* The chunk is decrypted in place: after AES-CBC decrypt the buffer holds
+       [cleartext header | plaintext], so the HMAC input is already contiguous and
+       no scratch buffer is needed. The recovered body is returned as a pointer
+       into `chunk`. */
+    if (mode == MU_MESSAGE_SECURITY_MODE_SIGN_AND_ENCRYPT) {
+        size_t cipher_len = msg_size - MU_SYM_HEADER_SIZE;
+        if (cipher_len == 0 || cipher_len % MU_SYM_BLOCK != 0) return MU_STATUS_BAD_DECODINGERROR;
+        opcua_statuscode_t s = crypto->aes256_cbc_decrypt(crypto->context, keys->encrypting_key, keys->iv,
+                                                          chunk + MU_SYM_HEADER_SIZE, cipher_len,
+                                                          chunk + MU_SYM_HEADER_SIZE);
         if (s != MU_STATUS_GOOD) return s;
-        if (memcmp(mac, chunk + signed_len, MU_SYM_SIG_LEN) != 0) return MU_STATUS_BAD_SECURITYCHECKSFAILED;
-        info->sequence_number = get_u32(chunk + MU_SYM_HEADER_SIZE);
-        info->request_id = get_u32(chunk + MU_SYM_HEADER_SIZE + 4);
-        size_t body_len = signed_len - MU_SYM_HEADER_SIZE - 8;
-        if (body_len > out_cap) return MU_STATUS_BAD_RESPONSETOOLARGE;
-        memcpy(out_body, chunk + MU_SYM_HEADER_SIZE + 8, body_len);
-        *out_body_len = body_len;
-        return MU_STATUS_GOOD;
+    } else if (mode != MU_MESSAGE_SECURITY_MODE_SIGN) {
+        return MU_STATUS_BAD_SECURITYMODEREJECTED;
     }
-    if (mode != MU_MESSAGE_SECURITY_MODE_SIGN_AND_ENCRYPT) return MU_STATUS_BAD_SECURITYMODEREJECTED;
 
-    size_t cipher_len = msg_size - MU_SYM_HEADER_SIZE;
-    if (cipher_len == 0 || cipher_len % MU_SYM_BLOCK != 0) return MU_STATUS_BAD_DECODINGERROR;
-    if (MU_SYM_HEADER_SIZE + cipher_len > MU_SYM_SCRATCH) return MU_STATUS_BAD_RESPONSETOOLARGE;
-
-    /* Decrypt into a buffer prefixed with the cleartext header, so the HMAC input
-       [header | plaintext-minus-signature] is contiguous. */
-    opcua_byte_t buf[MU_SYM_SCRATCH];
-    memcpy(buf, chunk, MU_SYM_HEADER_SIZE);
-    opcua_statuscode_t s = crypto->aes256_cbc_decrypt(crypto->context, keys->encrypting_key, keys->iv,
-                                                      chunk + MU_SYM_HEADER_SIZE, cipher_len,
-                                                      buf + MU_SYM_HEADER_SIZE);
-    if (s != MU_STATUS_GOOD) return s;
-
-    size_t enc_len = cipher_len;
-    if (enc_len < MU_SYM_SIG_LEN + 1 + 8) return MU_STATUS_BAD_SECURITYCHECKSFAILED;
-    size_t signed_len = MU_SYM_HEADER_SIZE + enc_len - MU_SYM_SIG_LEN;
+    if (msg_size < MU_SYM_HEADER_SIZE + 8 + MU_SYM_SIG_LEN) return MU_STATUS_BAD_DECODINGERROR;
+    size_t signed_len = msg_size - MU_SYM_SIG_LEN;   /* header + SeqHeader + body [+ pad] */
     opcua_byte_t mac[MU_SYM_SIG_LEN];
-    s = crypto->hmac_sha256(crypto->context, keys->signing_key, sizeof(keys->signing_key), buf, signed_len, mac);
+    opcua_statuscode_t s = crypto->hmac_sha256(crypto->context, keys->signing_key,
+                                               sizeof(keys->signing_key), chunk, signed_len, mac);
     if (s != MU_STATUS_GOOD) return s;
-    if (memcmp(mac, buf + signed_len, MU_SYM_SIG_LEN) != 0) return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+    if (memcmp(mac, chunk + signed_len, MU_SYM_SIG_LEN) != 0) return MU_STATUS_BAD_SECURITYCHECKSFAILED;
 
-    size_t pad_count = buf[signed_len - 1];
-    if (enc_len < MU_SYM_SIG_LEN + 1 + pad_count + 8) return MU_STATUS_BAD_SECURITYCHECKSFAILED;
-    size_t seqbody_len = enc_len - MU_SYM_SIG_LEN - 1 - pad_count;
+    /* Strip padding (SignAndEncrypt only; Sign has none). */
+    size_t pad_count = 0;
+    if (mode == MU_MESSAGE_SECURITY_MODE_SIGN_AND_ENCRYPT) {
+        pad_count = chunk[signed_len - 1];
+        if (signed_len < MU_SYM_HEADER_SIZE + 8 + 1 + pad_count) return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+        pad_count += 1; /* include the PaddingSize byte itself */
+    }
+    size_t seqbody_len = signed_len - MU_SYM_HEADER_SIZE - pad_count;
 
-    info->sequence_number = get_u32(buf + MU_SYM_HEADER_SIZE);
-    info->request_id = get_u32(buf + MU_SYM_HEADER_SIZE + 4);
-    size_t body_len = seqbody_len - 8;
-    if (body_len > out_cap) return MU_STATUS_BAD_RESPONSETOOLARGE;
-    memcpy(out_body, buf + MU_SYM_HEADER_SIZE + 8, body_len);
-    *out_body_len = body_len;
+    info->sequence_number = get_u32(chunk + MU_SYM_HEADER_SIZE);
+    info->request_id = get_u32(chunk + MU_SYM_HEADER_SIZE + 4);
+    *out_body = chunk + MU_SYM_HEADER_SIZE + 8;
+    *out_body_len = seqbody_len - 8;
     return MU_STATUS_GOOD;
 }

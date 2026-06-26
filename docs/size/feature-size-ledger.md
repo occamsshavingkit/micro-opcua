@@ -66,8 +66,17 @@ chunk code, key derivation, certificate handling, or crypto adapter is compiled.
 So the security layer costs **~14.8 KiB of code** on the host build (the portable
 `asym_chunk`/`sym_chunk`/`key_derivation`/`certificate` part is ~9.6 KiB; the rest
 is the host OpenSSL adapter, which an embedded target replaces with a smaller
-mbedTLS/PSA backend). The secured path also uses ~16 KiB of transient stack
-scratch — present only when a crypto adapter is configured, never on the None path.
+mbedTLS/PSA backend).
+
+### Secured-path stack (after in-place decrypt)
+MSG chunks are decrypted in place in the receive buffer, so the secured request
+path no longer copies into multi-KiB scratch. Measured frames (`-fstack-usage`,
+host gcc): `handle_data_chunk_secure` **6.5 KiB** (`respbody[5120]` + a 1 KiB OPN
+buffer), `mu_sym_chunk_unwrap` **176 B** (was ~8.3 KiB). **Peak secured-path stack
+≈ 12 KiB** (during a Read/Browse dispatch: the response buffer plus the 32-deep
+`nodes`/`results`/`ref_pool` arrays), down from ~25 KiB. This is present only when
+a crypto adapter is configured; the None path peaks at ~5.5 KiB. **A secure build
+should provision ≥ 16 KiB of stack.**
 
 ## Notes
 - The ~4.9 KiB peak stack grew from ~2 KiB when `MU_DISPATCH_MAX_READ_NODES` was

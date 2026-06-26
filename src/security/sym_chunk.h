@@ -48,13 +48,15 @@ opcua_statuscode_t mu_sym_chunk_wrap(
     const opcua_byte_t *body, size_t body_len,
     opcua_byte_t *out, size_t out_cap, size_t *out_len);
 
-/* Parse, decrypt (if needed), and verify a symmetric chunk, recovering the body
-   (without the SequenceHeader). `mode` is the expected security mode. */
+/* Parse, decrypt (in place), and verify a symmetric chunk, recovering the body
+   (without the SequenceHeader). `chunk` is mutable and is decrypted in place;
+   `*out_body` points into it (no copy, no scratch buffer). `mode` is the expected
+   security mode. */
 opcua_statuscode_t mu_sym_chunk_unwrap(
     const mu_crypto_adapter_t *crypto,
     mu_message_security_mode_t mode, const mu_sym_keys_t *keys,
-    const opcua_byte_t *chunk, size_t chunk_len,
-    opcua_byte_t *out_body, size_t out_cap, size_t *out_body_len,
+    opcua_byte_t *chunk, size_t chunk_len,
+    const opcua_byte_t **out_body, size_t *out_body_len,
     mu_sym_chunk_info_t *info);
 
 #endif /* MICRO_OPCUA_SYM_CHUNK_H */

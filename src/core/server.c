@@ -104,10 +104,13 @@ opcua_statuscode_t mu_server_init(void *storage, size_t storage_size, const mu_s
     return MU_STATUS_GOOD;
 }
 
-/* Largest decrypted request / response body handled on the secured path. Sized to
-   hold a GetEndpoints/CreateSession response, which carries the server certificate
-   in each advertised endpoint. */
-#define MU_SECURE_BODY_MAX 8192
+/* Secured-path response scratch — sized to hold the largest service response, a
+   GetEndpoints/CreateSession reply that carries the server certificate in each
+   advertised endpoint (~3.8 KiB with an RSA-2048 cert). */
+#define MU_SECURE_RESP_MAX 5120
+/* OPN request body (OpenSecureChannelRequest) is tiny; MSG requests are decrypted
+   in place in the receive buffer and need no scratch here. */
+#define MU_SECURE_OPN_REQ_MAX 1024
 
 static void send_buffer_chunk(mu_server_t *server, size_t total) {
     size_t bytes_written;
@@ -183,13 +186,22 @@ static void handle_data_chunk_plaintext(mu_server_t *server, const opcua_byte_t 
 #ifdef MICRO_OPCUA_SECURITY
 /* Secured (or secure-capable) OPN/MSG handling: a crypto adapter is present, so
    OPN chunks are unwrapped/wrapped asymmetrically (None or Basic256Sha256) and
-   MSG chunks symmetrically once the channel has keys. The decrypted request and
-   the response body live in local scratch; the chunk modules frame the wire. */
-static void handle_data_chunk_secure(mu_server_t *server, const opcua_byte_t *msg, size_t msg_len, bool is_opn)
+   MSG chunks symmetrically once the channel has keys. MSG chunks are decrypted in
+   place in the receive buffer (no request scratch); only the response body needs
+   a local buffer. `msg` is the mutable receive buffer. */
+static void handle_data_chunk_secure(mu_server_t *server, opcua_byte_t *msg, size_t msg_len, bool is_opn)
 {
     const mu_crypto_adapter_t *crypto = server->config.crypto_adapter;
-    opcua_byte_t reqscratch[MU_SECURE_BODY_MAX];
-    opcua_byte_t respbody[MU_SECURE_BODY_MAX];
+
+    /* MSG on a None channel is plaintext — handle before reserving secure scratch. */
+    if (!is_opn && server->secure_channel.policy == MU_SECURITY_POLICY_NONE_ID) {
+        handle_data_chunk_plaintext(server, msg, msg_len, false);
+        return;
+    }
+
+    opcua_byte_t respbody[MU_SECURE_RESP_MAX];
+    opcua_byte_t opn_buf[MU_SECURE_OPN_REQ_MAX]; /* OPN request only */
+    const opcua_byte_t *req_full = NULL;         /* [request-type NodeId][RequestHeader][...] */
     size_t req_len = 0;
     opcua_uint32_t response_request_id = 0;
     const opcua_byte_t *client_cert = NULL;
@@ -198,7 +210,7 @@ static void handle_data_chunk_secure(mu_server_t *server, const opcua_byte_t *ms
     if (is_opn) {
         mu_asym_chunk_info_t ai;
         memset(&ai, 0, sizeof(ai));
-        if (mu_asym_chunk_unwrap(crypto, msg, msg_len, reqscratch, sizeof(reqscratch), &req_len, &ai) != MU_STATUS_GOOD) {
+        if (mu_asym_chunk_unwrap(crypto, msg, msg_len, opn_buf, sizeof(opn_buf), &req_len, &ai) != MU_STATUS_GOOD) {
             return;
         }
         /* Record the negotiated policy before dispatch so the OPN handler can
@@ -207,27 +219,24 @@ static void handle_data_chunk_secure(mu_server_t *server, const opcua_byte_t *ms
         response_request_id = ai.request_id;
         client_cert = ai.sender_cert;
         client_cert_len = ai.sender_cert_len;
-    } else if (server->secure_channel.policy == MU_SECURITY_POLICY_NONE_ID) {
-        /* The client chose the None endpoint; MSG chunks are plaintext. */
-        handle_data_chunk_plaintext(server, msg, msg_len, false);
-        return;
+        req_full = opn_buf;
     } else {
         if (!server->secure_channel.keys_valid) return;
         mu_sym_chunk_info_t si;
         memset(&si, 0, sizeof(si));
+        /* Decrypts msg in place; req_full points into msg. */
         if (mu_sym_chunk_unwrap(crypto, server->secure_channel.mode, &server->secure_channel.client_keys,
-                                msg, msg_len, reqscratch, sizeof(reqscratch), &req_len, &si) != MU_STATUS_GOOD) {
+                                msg, msg_len, &req_full, &req_len, &si) != MU_STATUS_GOOD) {
             return;
         }
         response_request_id = si.request_id;
     }
 
-    /* reqscratch holds the service body: [request-type NodeId][RequestHeader][...]. */
     mu_binary_reader_t rr;
-    mu_binary_reader_init(&rr, reqscratch, req_len);
+    mu_binary_reader_init(&rr, req_full, req_len);
     mu_nodeid_t request_type;
     if (mu_binary_read_nodeid(&rr, &request_type) != MU_STATUS_GOOD) return;
-    const opcua_byte_t *req_body = reqscratch + rr.position;
+    const opcua_byte_t *req_body = req_full + rr.position;
     size_t req_body_len = req_len - rr.position;
 
     size_t resp_len = sizeof(respbody);
@@ -263,7 +272,7 @@ static void handle_data_chunk_secure(mu_server_t *server, const opcua_byte_t *ms
 /* Process one complete message (HELLO during connect, otherwise an OPN/MSG/CLO
    chunk) and send any response. Sets client_handle to NULL if the connection is
    closed (HELLO failure or CloseSecureChannel). */
-static void process_message(mu_server_t *server, const opcua_byte_t *msg, size_t msg_len)
+static void process_message(mu_server_t *server, opcua_byte_t *msg, size_t msg_len)
 {
     opcua_statuscode_t status;
 

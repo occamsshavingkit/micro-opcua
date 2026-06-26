@@ -54,13 +54,13 @@ void test_sign_and_encrypt_roundtrip(void) {
     /* Encrypted region must be a multiple of the AES block. */
     TEST_ASSERT_EQUAL(0, (chunk_len - 16) % MU_B256S256_ENCRYPTION_BLOCK_SIZE);
 
-    opcua_byte_t recovered[1024];
+    const opcua_byte_t *recovered = NULL;
     size_t recovered_len = 0;
     mu_sym_chunk_info_t info;
     memset(&info, 0, sizeof(info));
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
         mu_sym_chunk_unwrap(&crypto, MU_MESSAGE_SECURITY_MODE_SIGN_AND_ENCRYPT, &keys,
-                            chunk, chunk_len, recovered, sizeof(recovered), &recovered_len, &info));
+                            chunk, chunk_len, &recovered, &recovered_len, &info));
     TEST_ASSERT_EQUAL(sizeof(body), recovered_len);
     TEST_ASSERT_EQUAL_MEMORY(body, recovered, sizeof(body));
     TEST_ASSERT_EQUAL(MU_MESSAGE_SECURITY_MODE_SIGN_AND_ENCRYPT, info.mode);
@@ -83,13 +83,13 @@ void test_sign_only_roundtrip(void) {
     /* Sign-only: header(16) + SeqHeader(8) + body + HMAC(32), no padding. */
     TEST_ASSERT_EQUAL(16 + 8 + sizeof(body) + MU_B256S256_SIGNATURE_LENGTH, chunk_len);
 
-    opcua_byte_t recovered[1024];
+    const opcua_byte_t *recovered = NULL;
     size_t recovered_len = 0;
     mu_sym_chunk_info_t info;
     memset(&info, 0, sizeof(info));
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
         mu_sym_chunk_unwrap(&crypto, MU_MESSAGE_SECURITY_MODE_SIGN, &keys,
-                            chunk, chunk_len, recovered, sizeof(recovered), &recovered_len, &info));
+                            chunk, chunk_len, &recovered, &recovered_len, &info));
     TEST_ASSERT_EQUAL(sizeof(body), recovered_len);
     TEST_ASSERT_EQUAL_MEMORY(body, recovered, sizeof(body));
     TEST_ASSERT_EQUAL(MU_MESSAGE_SECURITY_MODE_SIGN, info.mode);
@@ -105,13 +105,13 @@ void test_tampered_body_rejected(void) {
                           1, 1, 1, 1, body, sizeof(body), chunk, sizeof(chunk), &chunk_len));
     chunk[20] ^= 0x01; /* corrupt inside the encrypted region */
 
-    opcua_byte_t recovered[1024];
+    const opcua_byte_t *recovered = NULL;
     size_t recovered_len = 0;
     mu_sym_chunk_info_t info;
     memset(&info, 0, sizeof(info));
     TEST_ASSERT_NOT_EQUAL(MU_STATUS_GOOD,
         mu_sym_chunk_unwrap(&crypto, MU_MESSAGE_SECURITY_MODE_SIGN_AND_ENCRYPT, &keys,
-                            chunk, chunk_len, recovered, sizeof(recovered), &recovered_len, &info));
+                            chunk, chunk_len, &recovered, &recovered_len, &info));
 }
 
 void test_wrong_keys_rejected(void) {
@@ -129,13 +129,13 @@ void test_wrong_keys_rejected(void) {
     memset(b, 0xBB, sizeof(b));
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_sym_keys_derive(&crypto, a, 32, b, 32, &other));
 
-    opcua_byte_t recovered[1024];
+    const opcua_byte_t *recovered = NULL;
     size_t recovered_len = 0;
     mu_sym_chunk_info_t info;
     memset(&info, 0, sizeof(info));
     TEST_ASSERT_NOT_EQUAL(MU_STATUS_GOOD,
         mu_sym_chunk_unwrap(&crypto, MU_MESSAGE_SECURITY_MODE_SIGN, &other,
-                            chunk, chunk_len, recovered, sizeof(recovered), &recovered_len, &info));
+                            chunk, chunk_len, &recovered, &recovered_len, &info));
 }
 
 int main(void) {
