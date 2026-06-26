@@ -15,3 +15,7 @@ add_test(NAME test_single_client_limit COMMAND test_single_client_limit)
 add_executable(test_server_handshake test_server_handshake.c)
 target_link_libraries(test_server_handshake PRIVATE micro_opcua micro_opcua_test_support unity)
 add_test(NAME test_server_handshake COMMAND test_server_handshake)
+
+add_executable(test_server_framing test_server_framing.c)
+target_link_libraries(test_server_framing PRIVATE micro_opcua micro_opcua_test_support unity)
+add_test(NAME test_server_framing COMMAND test_server_framing)

@@ -50,6 +50,30 @@ static opcua_statuscode_t write_response_prefix(mu_binary_writer_t *w,
     return mu_response_header_encode(w, &rh);
 }
 
+opcua_statuscode_t mu_write_service_fault(opcua_byte_t *buffer, size_t *length,
+                                          opcua_uint32_t request_handle,
+                                          opcua_statuscode_t service_result)
+{
+    if (!buffer || !length) return MU_STATUS_BAD_INTERNALERROR;
+
+    mu_binary_writer_t w;
+    mu_binary_writer_init(&w, buffer, *length);
+
+    mu_nodeid_t type = { 0, MU_NODEID_NUMERIC, { MU_ID_SERVICEFAULT } };
+    opcua_statuscode_t s = mu_binary_write_nodeid(&w, &type);
+    if (s != MU_STATUS_GOOD) return s;
+
+    mu_response_header_t rh;
+    rh.timestamp = 0;
+    rh.request_handle = request_handle;
+    rh.service_result = service_result;
+    s = mu_response_header_encode(&w, &rh);
+    if (s != MU_STATUS_GOOD) return s;
+
+    *length = w.position;
+    return MU_STATUS_GOOD;
+}
+
 /* OpenSecureChannel (OPC 10000-4 5.6.2.2): decode the request, open/renew the
    channel, and encode OpenSecureChannelResponse (ChannelSecurityToken + nonce). */
 static opcua_statuscode_t handle_open_secure_channel(mu_server_t *server,
@@ -272,10 +296,14 @@ static opcua_statuscode_t handle_find_servers(mu_server_t *server,
     return MU_STATUS_GOOD;
 }
 
-/* Per-request operation bounds for the Nano profile (bounded, stack-allocated). */
-#define MU_DISPATCH_MAX_READ_NODES   8
-#define MU_DISPATCH_MAX_BROWSE_NODES 4
-#define MU_DISPATCH_MAX_BROWSE_REFS  16
+/* Per-request operation bounds (bounded, stack-allocated). Sized so a standards
+   client's connect-time batch reads (e.g. the .NET stack reading the ~12
+   ServerCapabilities/OperationLimits properties at once) are accepted rather than
+   rejected with Bad_TooManyOperations; missing nodes return per-node
+   Bad_NodeIdUnknown, which clients tolerate. */
+#define MU_DISPATCH_MAX_READ_NODES   32
+#define MU_DISPATCH_MAX_BROWSE_NODES 8
+#define MU_DISPATCH_MAX_BROWSE_REFS  32
 
 /* Read (OPC 10000-4 5.11.2): decode the request after the RequestHeader, read each
    attribute from the address space, and encode the ReadResponse. */
