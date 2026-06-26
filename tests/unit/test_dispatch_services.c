@@ -14,6 +14,9 @@ void setUp(void) {}
 void tearDown(void) {}
 
 static opcua_datetime_t fake_time(void *c) { (void)c; return 0; }
+static opcua_statuscode_t fake_entropy(void *c, opcua_byte_t *buf, size_t len) {
+    (void)c; if (buf) memset(buf, 0x42, len); return MU_STATUS_GOOD;
+}
 
 /* Write a RequestHeader (OPC 10000-4 7.32) with the given requestHandle. */
 static void write_request_header(mu_binary_writer_t *w, opcua_uint32_t handle) {
@@ -91,12 +94,66 @@ void test_dispatch_open_secure_channel(void) {
 
 #include "../../src/services/session.h"
 
+/* A full CreateSessionRequest body (after the request-type NodeId): RequestHeader,
+   ClientDescription, ServerUri, EndpointUrl, SessionName, ClientNonce,
+   ClientCertificate, RequestedSessionTimeout, MaxResponseMessageSize. */
+static size_t build_create_session_body(opcua_byte_t *buf, size_t cap, opcua_double_t requested_timeout) {
+    mu_binary_writer_t w;
+    mu_binary_writer_init(&w, buf, cap);
+    write_request_header(&w, 7);
+    mu_string_t ns = { -1, NULL };
+    mu_bytestring_t nb = { -1, NULL };
+    /* ClientDescription (ApplicationDescription) */
+    mu_binary_write_string(&w, &ns);           /* applicationUri */
+    mu_binary_write_string(&w, &ns);           /* productUri */
+    mu_binary_write_byte(&w, 0x00);            /* applicationName LocalizedText (empty) */
+    mu_binary_write_uint32(&w, 1);             /* applicationType = CLIENT */
+    mu_binary_write_string(&w, &ns);           /* gatewayServerUri */
+    mu_binary_write_string(&w, &ns);           /* discoveryProfileUri */
+    mu_binary_write_int32(&w, 0);              /* discoveryUrls[] */
+    mu_binary_write_string(&w, &ns);           /* ServerUri */
+    mu_binary_write_string(&w, &ns);           /* EndpointUrl */
+    mu_binary_write_string(&w, &ns);           /* SessionName */
+    mu_binary_write_bytestring(&w, &nb);       /* ClientNonce */
+    mu_binary_write_bytestring(&w, &nb);       /* ClientCertificate */
+    mu_binary_write_double(&w, requested_timeout);
+    mu_binary_write_uint32(&w, 0);             /* MaxResponseMessageSize */
+    return w.position;
+}
+
+void test_dispatch_create_session_honors_timeout(void) {
+    mu_server_t server;
+    memset(&server, 0, sizeof(server));
+    server.secure_channel.is_open = true;
+    mu_session_init(&server.session);
+    server.config.time_adapter.get_time = fake_time;
+    server.config.entropy_adapter.generate_random = fake_entropy;
+
+    opcua_byte_t req[256];
+    size_t req_len = build_create_session_body(req, sizeof(req), 1200000.0); /* within [10000, 3600000] */
+
+    opcua_byte_t resp[1024];
+    size_t resp_len = sizeof(resp);
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
+        mu_service_dispatch(&server, MU_ID_CREATESESSIONREQUEST, req, req_len, resp, &resp_len));
+
+    mu_binary_reader_t r;
+    mu_binary_reader_init(&r, resp, resp_len);
+    mu_nodeid_t type; mu_binary_read_nodeid(&r, &type);
+    opcua_uint32_t handle; opcua_statuscode_t result;
+    skip_response_header(&r, &handle, &result);
+    mu_nodeid_t sid, tok; mu_binary_read_nodeid(&r, &sid); mu_binary_read_nodeid(&r, &tok);
+    opcua_double_t revised; mu_binary_read_double(&r, &revised);
+    TEST_ASSERT_EQUAL(1200000, (opcua_int64_t)revised); /* the client's requested timeout, honored */
+}
+
 void test_dispatch_create_session(void) {
     mu_server_t server;
     memset(&server, 0, sizeof(server));
     server.secure_channel.is_open = true;
     mu_session_init(&server.session);
     server.config.time_adapter.get_time = fake_time;
+    server.config.entropy_adapter.generate_random = fake_entropy;
 
     /* CreateSessionRequest body: just the RequestHeader is parsed in the thin path. */
     opcua_byte_t req[256];
@@ -130,6 +187,11 @@ void test_dispatch_create_session(void) {
     TEST_ASSERT_EQUAL(1, session_id.identifier.numeric);
     TEST_ASSERT_EQUAL(12345, auth_token.identifier.numeric);
     TEST_ASSERT_EQUAL(10000, (opcua_int64_t)revised); /* revised session timeout, bounded to min */
+
+    mu_string_t server_nonce;
+    mu_binary_read_string(&r, &server_nonce); /* ServerNonce: a real entropy-filled 32-byte nonce */
+    TEST_ASSERT_EQUAL(32, server_nonce.length);
+    TEST_ASSERT_EQUAL(0x42, server_nonce.data[0]);
 }
 
 /* Append an ActivateSession body: ClientSignature + empty cert/locale arrays +
@@ -436,6 +498,7 @@ int main(void) {
     RUN_TEST(test_service_fault_encode);
     RUN_TEST(test_dispatch_open_secure_channel);
     RUN_TEST(test_dispatch_create_session);
+    RUN_TEST(test_dispatch_create_session_honors_timeout);
     RUN_TEST(test_dispatch_activate_session);
     RUN_TEST(test_dispatch_close_session);
     RUN_TEST(test_dispatch_read_value);

@@ -46,6 +46,20 @@ static const mu_value_source_t s_serverarray_value = {
     { .static_value = { .type = MU_TYPE_STRING, .value.array = s_server_array, .is_array = true, .array_length = 1 } }
 };
 
+/*
+ * OperationLimits (OPC 10000-5): advertise the server's per-request maxima so a
+ * client self-limits its batch Read/Browse instead of overflowing the dispatch
+ * caps. Values match MU_DISPATCH_MAX_{READ_NODES,BROWSE_NODES} in service_dispatch.c.
+ *   MaxNodesPerRead   = ns=0;i=11705
+ *   MaxNodesPerBrowse = ns=0;i=11710
+ */
+static const mu_value_source_t s_max_nodes_per_read_value = {
+    MU_VALUESOURCE_STATIC, { .static_value = { MU_TYPE_UINT32, { .ui32 = 32 } } }
+};
+static const mu_value_source_t s_max_nodes_per_browse_value = {
+    MU_VALUESOURCE_STATIC, { .static_value = { MU_TYPE_UINT32, { .ui32 = 8 } } }
+};
+
 static const mu_node_t s_nodes[] = {
     {
         { 0, MU_NODEID_NUMERIC, { 85 } },
@@ -82,10 +96,28 @@ static const mu_node_t s_nodes[] = {
         NULL,
         0,
         &s_serverarray_value
+    },
+    {
+        { 0, MU_NODEID_NUMERIC, { 11705 } },
+        MU_NODECLASS_VARIABLE,
+        { 15, (const opcua_byte_t *)"MaxNodesPerRead" },
+        { 15, (const opcua_byte_t *)"MaxNodesPerRead" },
+        NULL,
+        0,
+        &s_max_nodes_per_read_value
+    },
+    {
+        { 0, MU_NODEID_NUMERIC, { 11710 } },
+        MU_NODECLASS_VARIABLE,
+        { 17, (const opcua_byte_t *)"MaxNodesPerBrowse" },
+        { 17, (const opcua_byte_t *)"MaxNodesPerBrowse" },
+        NULL,
+        0,
+        &s_max_nodes_per_browse_value
     }
 };
 
 const mu_address_space_t g_minimal_address_space = {
     s_nodes,
-    4
+    6
 };
