@@ -88,7 +88,7 @@ static void secure_call(mock_t *mock, mu_server_t *server, mu_crypto_adapter_t *
                         const mu_sym_keys_t *c2s, const mu_sym_keys_t *s2c,
                         opcua_uint32_t scid, opcua_uint32_t token, opcua_uint32_t seq,
                         const opcua_byte_t *body, size_t body_len, opcua_uint32_t expect_type,
-                        opcua_byte_t *rbody, size_t rcap, mu_binary_reader_t *resp) {
+                        mu_binary_reader_t *resp) {
     opcua_byte_t chunk[CHUNK_CAP]; size_t mlen = 0;
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
         mu_sym_chunk_wrap(cc, MU_MESSAGE_SECURITY_MODE_SIGN_AND_ENCRYPT, c2s, "MSG",
@@ -96,10 +96,11 @@ static void secure_call(mock_t *mock, mu_server_t *server, mu_crypto_adapter_t *
     mock->inbound_count = 0; mock->read_index = 0;
     enqueue(mock, chunk, mlen);
     mu_server_poll(server);
-    size_t rblen = 0; mu_sym_chunk_info_t si; memset(&si, 0, sizeof(si));
+    /* Unwrap decrypts mock->last_write in place; rbody points into it. */
+    const opcua_byte_t *rbody = NULL; size_t rblen = 0; mu_sym_chunk_info_t si; memset(&si, 0, sizeof(si));
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
         mu_sym_chunk_unwrap(cc, MU_MESSAGE_SECURITY_MODE_SIGN_AND_ENCRYPT, s2c,
-                            mock->last_write, mock->last_write_len, rbody, rcap, &rblen, &si));
+                            mock->last_write, mock->last_write_len, &rbody, &rblen, &si));
     TEST_ASSERT_EQUAL(expect_type, parse_decoded(rbody, rblen, resp));
 }
 
@@ -216,14 +217,13 @@ void test_secure_handshake_read(void) {
         mu_sym_keys_derive(&client_crypto, client_nonce, 32, server_nonce.data, 32, &s2c));
 
     mu_binary_reader_t resp;
-    opcua_byte_t rbody[8192];
 
     /* GetEndpoints over the secured channel. */
     mu_binary_writer_init(&w, tmp, sizeof(tmp));
     { mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_GETENDPOINTSREQUEST}}; mu_binary_write_nodeid(&w, &t); }
     write_request_header(&w, 0, 2);
     secure_call(&mock, server, &client_crypto, &c2s, &s2c, scid, token_id, 2, tmp, w.position,
-                MU_ID_GETENDPOINTSRESPONSE, rbody, sizeof(rbody), &resp);
+                MU_ID_GETENDPOINTSRESPONSE, &resp);
 
     /* CreateSession with a full ClientDescription + ClientNonce + ClientCertificate,
        so the server computes a real ServerSignature over (ClientCert || ClientNonce). */
@@ -246,7 +246,7 @@ void test_secure_handshake_read(void) {
       mu_binary_write_double(&w, 60000.0);        /* RequestedSessionTimeout */
       mu_binary_write_uint32(&w, 0); }            /* MaxResponseMessageSize */
     secure_call(&mock, server, &client_crypto, &c2s, &s2c, scid, token_id, 3, tmp, w.position,
-                MU_ID_CREATESESSIONRESPONSE, rbody, sizeof(rbody), &resp);
+                MU_ID_CREATESESSIONRESPONSE, &resp);
 
     /* ActivateSession (anonymous). */
     mu_binary_writer_init(&w, tmp, sizeof(tmp));
@@ -257,7 +257,7 @@ void test_secure_handshake_read(void) {
       mu_binary_write_int32(&w, 0); mu_binary_write_int32(&w, 0);
       mu_nodeid_t anon = {0, MU_NODEID_NUMERIC, {321}}; mu_binary_write_extension_object_header(&w, &anon, 0); }
     secure_call(&mock, server, &client_crypto, &c2s, &s2c, scid, token_id, 4, tmp, w.position,
-                MU_ID_ACTIVATESESSIONRESPONSE, rbody, sizeof(rbody), &resp);
+                MU_ID_ACTIVATESESSIONRESPONSE, &resp);
 
     /* Read MyVar1 Value -> 42, proving the full secured request/response path. */
     mu_binary_writer_init(&w, tmp, sizeof(tmp));
@@ -270,7 +270,7 @@ void test_secure_handshake_read(void) {
       mu_binary_write_nodeid(&w, &v); mu_binary_write_uint32(&w, 13); mu_binary_write_string(&w, &ns);
       mu_binary_write_uint16(&w, 0); mu_binary_write_string(&w, &ns); }
     secure_call(&mock, server, &client_crypto, &c2s, &s2c, scid, token_id, 5, tmp, w.position,
-                MU_ID_READRESPONSE, rbody, sizeof(rbody), &resp);
+                MU_ID_READRESPONSE, &resp);
 
     { opcua_int32_t nres; mu_binary_read_int32(&resp, &nres); TEST_ASSERT_EQUAL(1, nres);
       opcua_byte_t mask; mu_binary_read_byte(&resp, &mask); TEST_ASSERT_EQUAL(0x01, mask);
