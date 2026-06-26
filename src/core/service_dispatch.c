@@ -296,10 +296,14 @@ static opcua_statuscode_t handle_find_servers(mu_server_t *server,
     return MU_STATUS_GOOD;
 }
 
-/* Per-request operation bounds for the Nano profile (bounded, stack-allocated). */
-#define MU_DISPATCH_MAX_READ_NODES   8
-#define MU_DISPATCH_MAX_BROWSE_NODES 4
-#define MU_DISPATCH_MAX_BROWSE_REFS  16
+/* Per-request operation bounds (bounded, stack-allocated). Sized so a standards
+   client's connect-time batch reads (e.g. the .NET stack reading the ~12
+   ServerCapabilities/OperationLimits properties at once) are accepted rather than
+   rejected with Bad_TooManyOperations; missing nodes return per-node
+   Bad_NodeIdUnknown, which clients tolerate. */
+#define MU_DISPATCH_MAX_READ_NODES   32
+#define MU_DISPATCH_MAX_BROWSE_NODES 8
+#define MU_DISPATCH_MAX_BROWSE_REFS  32
 
 /* Read (OPC 10000-4 5.11.2): decode the request after the RequestHeader, read each
    attribute from the address space, and encode the ReadResponse. */
