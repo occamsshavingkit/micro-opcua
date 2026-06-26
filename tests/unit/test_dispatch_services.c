@@ -413,8 +413,27 @@ void test_dispatch_find_servers(void) {
     TEST_ASSERT_EQUAL_MEMORY("urn:test:app", app_uri.data, 12);
 }
 
+void test_service_fault_encode(void) {
+    opcua_byte_t buf[64];
+    size_t len = sizeof(buf);
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
+        mu_write_service_fault(buf, &len, 0, MU_STATUS_BAD_SERVICEUNSUPPORTED));
+
+    mu_binary_reader_t r;
+    mu_binary_reader_init(&r, buf, len);
+    mu_nodeid_t type;
+    mu_binary_read_nodeid(&r, &type);
+    TEST_ASSERT_EQUAL(MU_ID_SERVICEFAULT, type.identifier.numeric);
+    opcua_int64_t ts; opcua_uint32_t h; opcua_statuscode_t res;
+    mu_binary_read_int64(&r, &ts);
+    mu_binary_read_uint32(&r, &h);
+    mu_binary_read_statuscode(&r, &res);
+    TEST_ASSERT_EQUAL(MU_STATUS_BAD_SERVICEUNSUPPORTED, res);
+}
+
 int main(void) {
     UNITY_BEGIN();
+    RUN_TEST(test_service_fault_encode);
     RUN_TEST(test_dispatch_open_secure_channel);
     RUN_TEST(test_dispatch_create_session);
     RUN_TEST(test_dispatch_activate_session);

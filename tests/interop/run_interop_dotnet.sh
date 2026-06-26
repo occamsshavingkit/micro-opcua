@@ -33,4 +33,8 @@ for _ in $(seq 1 50); do
 done
 
 echo "Running OPC Foundation .NET reference-client interop against $SERVER ..."
-dotnet run -c Release --no-build --project "$PROJ" -- opc.tcp://localhost:4840
+if ! dotnet run -c Release --no-build --project "$PROJ" -- opc.tcp://localhost:4840; then
+    echo "--- server log ---" >&2
+    cat /tmp/mu_interop_dotnet_server.log >&2 || true
+    exit 1
+fi

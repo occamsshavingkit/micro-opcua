@@ -226,6 +226,16 @@ opcua_statuscode_t mu_server_poll(mu_server_t *server)
 
         status = mu_service_dispatch(server, request_type.identifier.numeric, req_body, req_body_len, resp_body, &payload_len);
 
+        if (status != MU_STATUS_GOOD) {
+            /* Always answer: send a ServiceFault rather than letting the client time out. */
+            payload_len = server->config.send_buffer_size - body_offset;
+            if (mu_write_service_fault(resp_body, &payload_len, 0, status) == MU_STATUS_GOOD) {
+                status = MU_STATUS_GOOD;
+            } else {
+                payload_len = 0;
+            }
+        }
+
         if (status == MU_STATUS_GOOD && payload_len > 0) {
             opcua_uint32_t out_seq = ++server->secure_channel.out_sequence_number;
             size_t total = 0;

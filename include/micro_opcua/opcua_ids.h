@@ -23,6 +23,8 @@
 
 #define MU_ID_ANONYMOUSIDENTITYTOKEN_ENCODING_DEFAULTBINARY 321
 
+#define MU_ID_SERVICEFAULT                    397  /* ServiceFault_Encoding_DefaultBinary */
+
 #define MU_ID_BROWSEREQUEST                   527
 #define MU_ID_BROWSERESPONSE                  530
 #define MU_ID_BROWSENEXTREQUEST               533
