@@ -213,6 +213,77 @@ static opcua_statuscode_t handle_close_session(mu_server_t *server,
     return MU_STATUS_GOOD;
 }
 
+/* Per-request operation bounds for the Nano profile (bounded, stack-allocated). */
+#define MU_DISPATCH_MAX_READ_NODES   8
+#define MU_DISPATCH_MAX_BROWSE_NODES 4
+#define MU_DISPATCH_MAX_BROWSE_REFS  16
+
+/* Read (OPC 10000-4 5.11.2): decode the request after the RequestHeader, read each
+   attribute from the address space, and encode the ReadResponse. */
+static opcua_statuscode_t handle_read(mu_server_t *server,
+                                      mu_binary_reader_t *r,
+                                      mu_binary_writer_t *w,
+                                      size_t *response_length)
+{
+    mu_request_header_t req;
+    opcua_statuscode_t s = mu_request_header_decode(r, &req);
+    if (s != MU_STATUS_GOOD) return s;
+
+    mu_read_request_t rreq;
+    mu_read_value_id_t nodes[MU_DISPATCH_MAX_READ_NODES];
+    s = mu_read_request_decode(r, &rreq, nodes, MU_DISPATCH_MAX_READ_NODES);
+    if (s != MU_STATUS_GOOD) return s;
+
+    mu_read_response_t rresp;
+    mu_datavalue_t results[MU_DISPATCH_MAX_READ_NODES];
+    s = mu_read_process(server->config.address_space, &rreq, &rresp, results, MU_DISPATCH_MAX_READ_NODES);
+    if (s != MU_STATUS_GOOD) return s;
+
+    s = write_response_prefix(w, MU_ID_READRESPONSE, req.request_handle, MU_STATUS_GOOD);
+    if (s != MU_STATUS_GOOD) return s;
+    s = mu_read_response_encode(w, &rresp);
+    if (s != MU_STATUS_GOOD) return s;
+
+    *response_length = w->position;
+    return MU_STATUS_GOOD;
+}
+
+/* Browse (OPC 10000-4 5.9.2): decode the request after the RequestHeader, traverse
+   references in the address space, and encode the BrowseResponse. */
+static opcua_statuscode_t handle_browse(mu_server_t *server,
+                                        mu_binary_reader_t *r,
+                                        mu_binary_writer_t *w,
+                                        size_t *response_length)
+{
+    mu_request_header_t req;
+    opcua_statuscode_t s = mu_request_header_decode(r, &req);
+    if (s != MU_STATUS_GOOD) return s;
+
+    mu_browse_request_t breq;
+    mu_browse_description_t descs[MU_DISPATCH_MAX_BROWSE_NODES];
+    s = mu_browse_request_decode(r, &breq, descs, MU_DISPATCH_MAX_BROWSE_NODES);
+    if (s != MU_STATUS_GOOD) return s;
+
+    mu_browse_result_t results[MU_DISPATCH_MAX_BROWSE_NODES];
+    mu_reference_description_t ref_pool[MU_DISPATCH_MAX_BROWSE_REFS];
+    s = mu_browse_process(server->config.address_space, &breq,
+                          results, MU_DISPATCH_MAX_BROWSE_NODES,
+                          ref_pool, MU_DISPATCH_MAX_BROWSE_REFS);
+    if (s != MU_STATUS_GOOD) return s;
+
+    s = write_response_prefix(w, MU_ID_BROWSERESPONSE, req.request_handle, MU_STATUS_GOOD);
+    if (s != MU_STATUS_GOOD) return s;
+
+    mu_browse_response_t bresp;
+    bresp.results = results;
+    bresp.num_results = breq.num_nodes_to_browse;
+    s = mu_browse_response_encode(w, &bresp);
+    if (s != MU_STATUS_GOOD) return s;
+
+    *response_length = w->position;
+    return MU_STATUS_GOOD;
+}
+
 opcua_statuscode_t mu_service_dispatch(
     mu_server_t *server,
     opcua_uint32_t request_id,
@@ -256,6 +327,10 @@ opcua_statuscode_t mu_service_dispatch(
             return handle_activate_session(server, &reader, &writer, response_length);
         case MU_ID_CLOSESESSIONREQUEST:
             return handle_close_session(server, &reader, &writer, response_length);
+        case MU_ID_READREQUEST:
+            return handle_read(server, &reader, &writer, response_length);
+        case MU_ID_BROWSEREQUEST:
+            return handle_browse(server, &reader, &writer, response_length);
         default:
             /* Not yet wired (discovery/session/browse/read): succeed with no body. */
             *response_length = 0;

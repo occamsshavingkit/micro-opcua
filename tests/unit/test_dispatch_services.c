@@ -229,11 +229,133 @@ void test_dispatch_close_session(void) {
     TEST_ASSERT_EQUAL(MU_ID_CLOSESESSIONRESPONSE, type.identifier.numeric);
 }
 
+#include "../../src/services/read.h"
+#include "../../src/services/browse.h"
+
+/* Small address space: Objects(85) Organizes MyVar1(1000, Int32=42). */
+static const mu_reference_t s_obj_refs[] = {
+    { { 0, MU_NODEID_NUMERIC, { 35 } }, { 1, MU_NODEID_NUMERIC, { 1000 } }, true }
+};
+static const mu_reference_t s_var_refs[] = {
+    { { 0, MU_NODEID_NUMERIC, { 35 } }, { 0, MU_NODEID_NUMERIC, { 85 } }, false }
+};
+static const mu_value_source_t s_var_value = {
+    MU_VALUESOURCE_STATIC, { .static_value = { MU_TYPE_INT32, { .i32 = 42 } } }
+};
+static const mu_node_t s_nodes[] = {
+    { { 0, MU_NODEID_NUMERIC, { 85 } }, MU_NODECLASS_OBJECT,
+      { 7, (const opcua_byte_t *)"Objects" }, { 7, (const opcua_byte_t *)"Objects" }, s_obj_refs, 1, NULL },
+    { { 1, MU_NODEID_NUMERIC, { 1000 } }, MU_NODECLASS_VARIABLE,
+      { 6, (const opcua_byte_t *)"MyVar1" }, { 6, (const opcua_byte_t *)"MyVar1" }, s_var_refs, 1, &s_var_value }
+};
+static const mu_address_space_t s_address_space = { s_nodes, 2 };
+
+static void activated_server(mu_server_t *server) {
+    memset(server, 0, sizeof(*server));
+    server->secure_channel.is_open = true;
+    server->config.time_adapter.get_time = fake_time;
+    server->config.address_space = &s_address_space;
+    mu_session_init(&server->session);
+    double rev; opcua_uint32_t sid, tok;
+    mu_session_create(&server->session, 10000.0, &rev, &sid, &tok);
+    mu_session_activate(&server->session, tok, 321);
+}
+
+void test_dispatch_read_value(void) {
+    mu_server_t server;
+    activated_server(&server);
+
+    opcua_byte_t req[256];
+    mu_binary_writer_t w;
+    mu_binary_writer_init(&w, req, sizeof(req));
+    write_request_header(&w, 5);
+    mu_string_t null_str = { -1, NULL };
+    mu_binary_write_double(&w, 0.0);                 /* MaxAge */
+    mu_binary_write_uint32(&w, 3);                   /* TimestampsToReturn = NEITHER */
+    mu_binary_write_int32(&w, 1);                    /* NoOfNodesToRead */
+    mu_nodeid_t var = { 1, MU_NODEID_NUMERIC, { 1000 } };
+    mu_binary_write_nodeid(&w, &var);               /* nodeId */
+    mu_binary_write_uint32(&w, 13);                  /* attributeId = Value */
+    mu_binary_write_string(&w, &null_str);          /* indexRange */
+    mu_binary_write_uint16(&w, 0);                   /* dataEncoding.namespaceIndex */
+    mu_binary_write_string(&w, &null_str);          /* dataEncoding.name */
+    size_t req_len = w.position;
+
+    opcua_byte_t resp[256];
+    size_t resp_len = sizeof(resp);
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
+        mu_service_dispatch(&server, MU_ID_READREQUEST, req, req_len, resp, &resp_len));
+
+    mu_binary_reader_t r;
+    mu_binary_reader_init(&r, resp, resp_len);
+    mu_nodeid_t type; mu_binary_read_nodeid(&r, &type);
+    TEST_ASSERT_EQUAL(MU_ID_READRESPONSE, type.identifier.numeric);
+    opcua_uint32_t handle; opcua_statuscode_t result;
+    skip_response_header(&r, &handle, &result);
+    TEST_ASSERT_EQUAL(5, handle);
+
+    opcua_int32_t count; mu_binary_read_int32(&r, &count);
+    TEST_ASSERT_EQUAL(1, count);
+    opcua_byte_t mask; mu_binary_read_byte(&r, &mask);
+    TEST_ASSERT_EQUAL(0x01, mask);                   /* has value */
+    opcua_byte_t vtype; mu_binary_read_byte(&r, &vtype);
+    TEST_ASSERT_EQUAL(MU_TYPE_INT32, vtype);
+    opcua_int32_t val; mu_binary_read_int32(&r, &val);
+    TEST_ASSERT_EQUAL(42, val);
+}
+
+void test_dispatch_browse(void) {
+    mu_server_t server;
+    activated_server(&server);
+
+    opcua_byte_t req[256];
+    mu_binary_writer_t w;
+    mu_binary_writer_init(&w, req, sizeof(req));
+    write_request_header(&w, 9);
+    mu_nodeid_t empty = { 0, MU_NODEID_NUMERIC, { 0 } };
+    mu_binary_write_nodeid(&w, &empty);             /* ViewDescription.viewId */
+    mu_binary_write_int64(&w, 0);                    /* timestamp */
+    mu_binary_write_uint32(&w, 0);                   /* viewVersion */
+    mu_binary_write_uint32(&w, 0);                   /* RequestedMaxReferencesPerNode */
+    mu_binary_write_int32(&w, 1);                    /* NoOfNodesToBrowse */
+    mu_nodeid_t objects = { 0, MU_NODEID_NUMERIC, { 85 } };
+    mu_binary_write_nodeid(&w, &objects);           /* nodeId */
+    mu_binary_write_uint32(&w, 0);                   /* browseDirection = FORWARD */
+    mu_binary_write_nodeid(&w, &empty);             /* referenceTypeId (any) */
+    mu_binary_write_boolean(&w, false);             /* includeSubtypes */
+    mu_binary_write_uint32(&w, 0);                   /* nodeClassMask */
+    mu_binary_write_uint32(&w, 0x3F);                /* resultMask */
+    size_t req_len = w.position;
+
+    opcua_byte_t resp[512];
+    size_t resp_len = sizeof(resp);
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
+        mu_service_dispatch(&server, MU_ID_BROWSEREQUEST, req, req_len, resp, &resp_len));
+
+    mu_binary_reader_t r;
+    mu_binary_reader_init(&r, resp, resp_len);
+    mu_nodeid_t type; mu_binary_read_nodeid(&r, &type);
+    TEST_ASSERT_EQUAL(MU_ID_BROWSERESPONSE, type.identifier.numeric);
+    opcua_uint32_t handle; opcua_statuscode_t result;
+    skip_response_header(&r, &handle, &result);
+    TEST_ASSERT_EQUAL(9, handle);
+
+    opcua_int32_t n_results; mu_binary_read_int32(&r, &n_results);
+    TEST_ASSERT_EQUAL(1, n_results);
+    opcua_statuscode_t op_status; mu_binary_read_statuscode(&r, &op_status);
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, op_status);
+    opcua_int32_t cp_len; mu_binary_read_int32(&r, &cp_len);  /* continuationPoint (null) */
+    opcua_int32_t n_refs; mu_binary_read_int32(&r, &n_refs);
+    TEST_ASSERT_EQUAL(1, n_refs);                    /* Objects -> MyVar1 */
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_dispatch_open_secure_channel);
     RUN_TEST(test_dispatch_create_session);
     RUN_TEST(test_dispatch_activate_session);
     RUN_TEST(test_dispatch_close_session);
+    RUN_TEST(test_dispatch_read_value);
+    RUN_TEST(test_dispatch_browse);
     return UNITY_END();
 }
