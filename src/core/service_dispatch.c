@@ -156,17 +156,20 @@ static opcua_statuscode_t handle_open_secure_channel(mu_server_t *server,
     return MU_STATUS_GOOD;
 }
 
-/* Best-effort decode of a CreateSessionRequest up to RequestedSessionTimeout.
-   Tolerates a truncated request body (leaves *timeout at 0, which mu_session_create
-   then bounds to the minimum). */
-static void read_requested_session_timeout(mu_binary_reader_t *r, double *timeout) {
+/* Best-effort decode of a CreateSessionRequest, capturing the ClientNonce,
+   ClientCertificate, and RequestedSessionTimeout (the latter two are needed to
+   compute the ServerSignature on a secured channel). Tolerates a truncated body
+   (outputs are left null / *timeout 0, which mu_session_create bounds up). */
+static void read_create_session_request(mu_binary_reader_t *r, double *timeout,
+                                        mu_bytestring_t *client_nonce, mu_bytestring_t *client_cert) {
     mu_string_t str;
-    mu_bytestring_t bs;
     opcua_uint32_t u;
     opcua_int32_t n;
     opcua_byte_t mask;
 
     *timeout = 0.0;
+    client_nonce->length = -1; client_nonce->data = NULL;
+    client_cert->length = -1;  client_cert->data = NULL;
 
     if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD) return;      /* ClientDescription.applicationUri */
     if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD) return;      /* productUri */
@@ -183,8 +186,8 @@ static void read_requested_session_timeout(mu_binary_reader_t *r, double *timeou
     if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD) return;      /* ServerUri */
     if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD) return;      /* EndpointUrl */
     if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD) return;      /* SessionName */
-    if (mu_binary_read_bytestring(r, &bs) != MU_STATUS_GOOD) return;   /* ClientNonce */
-    if (mu_binary_read_bytestring(r, &bs) != MU_STATUS_GOOD) return;   /* ClientCertificate */
+    if (mu_binary_read_bytestring(r, client_nonce) != MU_STATUS_GOOD) return;  /* ClientNonce */
+    if (mu_binary_read_bytestring(r, client_cert) != MU_STATUS_GOOD) return;   /* ClientCertificate */
     {
         double t;
         if (mu_binary_read_double(r, &t) == MU_STATUS_GOOD) {
@@ -207,7 +210,8 @@ static opcua_statuscode_t handle_create_session(mu_server_t *server,
     if (s != MU_STATUS_GOOD) return s;
 
     double requested = 0.0;
-    read_requested_session_timeout(r, &requested); /* honor the client's request when present */
+    mu_bytestring_t client_nonce = { -1, NULL }, client_cert = { -1, NULL };
+    read_create_session_request(r, &requested, &client_nonce, &client_cert);
 
     double revised = 0.0;
     opcua_uint32_t session_id = 0, auth_token = 0;
@@ -259,8 +263,44 @@ static opcua_statuscode_t handle_create_session(mu_server_t *server,
     }
 
     s = mu_binary_write_int32(w, 0);              if (s != MU_STATUS_GOOD) return s; /* ServerSoftwareCertificates[] */
-    s = mu_binary_write_string(w, &null_str);     if (s != MU_STATUS_GOOD) return s; /* ServerSignature.algorithm */
-    s = mu_binary_write_bytestring(w, &null_bs);  if (s != MU_STATUS_GOOD) return s; /* ServerSignature.signature */
+
+    /* ServerSignature: on a secured channel, sign ClientCertificate || ClientNonce
+       with the server's private key (RSA-PKCS1.5-SHA256). This proves the server
+       holds the private key for its certificate (OPC 10000-4 5.6.2.2). On None it
+       is the null/null signature. */
+    {
+        bool wrote_sig = false;
+#ifdef MICRO_OPCUA_SECURITY
+        static const char SIG_URI[] = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256";
+        if (server->secure_channel.policy == MU_SECURITY_POLICY_BASIC256SHA256_ID &&
+            server->config.crypto_adapter != NULL &&
+            server->config.crypto_adapter->rsa_sha256_sign != NULL &&
+            client_cert.length > 0) {
+            const mu_crypto_adapter_t *cr = server->config.crypto_adapter;
+            size_t cc = (size_t)client_cert.length;
+            size_t cn = client_nonce.length > 0 ? (size_t)client_nonce.length : 0;
+            opcua_byte_t to_sign[1536];
+            if (cc + cn <= sizeof(to_sign)) {
+                memcpy(to_sign, client_cert.data, cc);
+                if (cn > 0) memcpy(to_sign + cc, client_nonce.data, cn);
+                opcua_byte_t sig[512];
+                size_t sig_len = sizeof(sig);
+                if (cr->rsa_sha256_sign(cr->context, to_sign, cc + cn, sig, &sig_len) == MU_STATUS_GOOD) {
+                    mu_string_t alg = { (opcua_int32_t)(sizeof(SIG_URI) - 1), (const opcua_byte_t *)SIG_URI };
+                    mu_bytestring_t sig_bs = { (opcua_int32_t)sig_len, sig };
+                    s = mu_binary_write_string(w, &alg);     if (s != MU_STATUS_GOOD) return s;
+                    s = mu_binary_write_bytestring(w, &sig_bs); if (s != MU_STATUS_GOOD) return s;
+                    wrote_sig = true;
+                }
+            }
+        }
+#endif
+        if (!wrote_sig) {
+            s = mu_binary_write_string(w, &null_str);    if (s != MU_STATUS_GOOD) return s; /* ServerSignature.algorithm */
+            s = mu_binary_write_bytestring(w, &null_bs); if (s != MU_STATUS_GOOD) return s; /* ServerSignature.signature */
+        }
+    }
+
     s = mu_binary_write_uint32(w, 0);             if (s != MU_STATUS_GOOD) return s; /* MaxRequestMessageSize */
 
     *response_length = w->position;

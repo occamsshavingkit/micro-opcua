@@ -112,6 +112,8 @@ void test_secure_handshake_read(void) {
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_host_crypto_adapter_init(&client_crypto));
     const opcua_byte_t *server_cert = NULL; size_t server_cert_len = 0;
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, server_crypto.get_own_certificate(server_crypto.context, &server_cert, &server_cert_len));
+    const opcua_byte_t *client_cert = NULL; size_t client_cert_len = 0;
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, client_crypto.get_own_certificate(client_crypto.context, &client_cert, &client_cert_len));
 
     /* Address space: Objects(85) Organizes MyVar1(1000, Int32=42). */
     static const mu_reference_t var_refs[] = {
@@ -223,10 +225,26 @@ void test_secure_handshake_read(void) {
     secure_call(&mock, server, &client_crypto, &c2s, &s2c, scid, token_id, 2, tmp, w.position,
                 MU_ID_GETENDPOINTSRESPONSE, rbody, sizeof(rbody), &resp);
 
-    /* CreateSession. */
+    /* CreateSession with a full ClientDescription + ClientNonce + ClientCertificate,
+       so the server computes a real ServerSignature over (ClientCert || ClientNonce). */
     mu_binary_writer_init(&w, tmp, sizeof(tmp));
     { mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_CREATESESSIONREQUEST}}; mu_binary_write_nodeid(&w, &t); }
     write_request_header(&w, 0, 3);
+    { mu_string_t ns = {-1, NULL};
+      mu_binary_write_string(&w, &ns);            /* ClientDescription.applicationUri */
+      mu_binary_write_string(&w, &ns);            /* productUri */
+      mu_binary_write_byte(&w, 0x00);             /* applicationName LocalizedText: no fields */
+      mu_binary_write_uint32(&w, 1);              /* applicationType Client */
+      mu_binary_write_string(&w, &ns);            /* gatewayServerUri */
+      mu_binary_write_string(&w, &ns);            /* discoveryProfileUri */
+      mu_binary_write_int32(&w, 0);               /* discoveryUrls[] */
+      mu_binary_write_string(&w, &ns);            /* ServerUri */
+      mu_binary_write_string(&w, &ns);            /* EndpointUrl */
+      mu_binary_write_string(&w, &ns);            /* SessionName */
+      mu_bytestring_t cn = {32, client_nonce}; mu_binary_write_bytestring(&w, &cn);             /* ClientNonce */
+      mu_bytestring_t cc = {(opcua_int32_t)client_cert_len, client_cert}; mu_binary_write_bytestring(&w, &cc); /* ClientCertificate */
+      mu_binary_write_double(&w, 60000.0);        /* RequestedSessionTimeout */
+      mu_binary_write_uint32(&w, 0); }            /* MaxResponseMessageSize */
     secure_call(&mock, server, &client_crypto, &c2s, &s2c, scid, token_id, 3, tmp, w.position,
                 MU_ID_CREATESESSIONRESPONSE, rbody, sizeof(rbody), &resp);
 
