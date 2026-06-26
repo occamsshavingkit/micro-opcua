@@ -9,6 +9,7 @@ add_library(micro_opcua STATIC
     core/service_dispatch.c
     services/secure_channel.c
     services/session.c
+    services/service_header.c
     services/discovery.c
     services/browse.c
     services/read.c

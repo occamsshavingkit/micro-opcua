@@ -78,6 +78,9 @@ This document maps implementation and test files back to OPC UA normative sectio
 | `secure_channel.h` | TBD | TBD | TBD | TBD |
 | `discovery.h` | TBD | TBD | TBD | TBD |
 | `service_dispatch.c` | TBD | TBD | TBD | TBD |
+| `service_header.c` | RequestHeader / ResponseHeader | Part 4 | 7.32, 7.33 | Common request/response header codec |
+| `service_header.h` | RequestHeader / ResponseHeader | Part 4 | 7.32, 7.33 | Common request/response header types |
+| `test_service_header.c` | Tests | Part 4 | 7.32, 7.33 | Test request/response header codec |
 | `sequence.c` | TBD | TBD | TBD | TBD |
 | `service_message.h` | TBD | TBD | TBD | TBD |
 | `service_message.c` | TBD | TBD | TBD | TBD |
