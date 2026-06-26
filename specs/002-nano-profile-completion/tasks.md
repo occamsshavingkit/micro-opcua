@@ -74,7 +74,7 @@ Existing convention: View Service Set is OPC 10000-4 §5.9; service handlers liv
 
 ## US3 — Conformance traceability (P1, Claude)
 
-- [ ] T011 [Claude] Fill `docs/conformance/{status,profile-nano,services}.md` with
+- [X] T011 [Claude] Fill `docs/conformance/{status,profile-nano,services}.md` with
   the Nano conformance-unit → service/feature → test mapping, and add the new files
   to `docs/traceability/files-to-sections.md`. Keep `profile-targeting` (no CTT yet).
   (OPC refs: OPC 10000-7 Nano 2017 profile, §4.2)
