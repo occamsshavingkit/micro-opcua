@@ -99,3 +99,22 @@ jobs:
         run: PICO_SDK_PATH=~/pico-sdk cmake -S . -B build/pico -DMICRO_OPCUA_PLATFORM=pico -DMICRO_OPCUA_BUILD_EXAMPLES=ON
       - name: Build
         run: cmake --build build/pico || true
+
+  freestanding-core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ARM toolchain
+        run: sudo apt-get update && sudo apt-get install -y gcc-arm-none-eabi
+      - name: Compile core sources with -ffreestanding (no libc/OS)
+        run: |
+          # Verify the portable core (everything but the host-only platform
+          # adapters) builds for a bare-metal, freestanding ARM target. Catches a
+          # hosted-header dependency regression leaking into the core.
+          set -e
+          for f in $(find src -name '*.c' -not -path 'src/platform/host_*'); do
+            echo "freestanding: $f"
+            arm-none-eabi-gcc -ffreestanding -ffunction-sections -fdata-sections \
+              -std=c11 -Iinclude -Isrc -Wall -Wextra -Werror -DMICRO_OPCUA_SECURITY=1 \
+              -c "$f" -o /dev/null
+          done

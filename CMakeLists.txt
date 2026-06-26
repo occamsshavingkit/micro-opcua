@@ -27,6 +27,7 @@ endif()
 # Phase 1 setup will include other cmake files
 include(cmake/MicroOpcUaOptions.cmake)
 include(cmake/MicroOpcUaWarnings.cmake)
+include(cmake/MicroOpcUaCodegen.cmake)
 include(cmake/MicroOpcUaStaticAnalysis.cmake)
 
 add_subdirectory(src)

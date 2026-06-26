@@ -95,7 +95,15 @@ recover the wedged slot.
 Fix: check the status, and on a short write either retain the unsent tail behind a
 send-cursor drained on later polls, or close the connection (reclaiming the slot).
 
-### H4 — No size-oriented build flags (`-Os`, function/data sections, `--gc-sections`)
+### H4 — No size-oriented build flags (`-Os`, function/data sections, `--gc-sections`) — ADDRESSED
+**Status:** Fixed. `cmake/MicroOpcUaCodegen.cmake` compiles the library with
+`-ffunction-sections -fdata-sections` and exports `-Wl,--gc-sections` as an
+INTERFACE link option, so every executable linking `micro_opcua` strips
+unreferenced functions/data at link time (verified: dead `mu_is_unsupported_service`
+is absent from the linked example). An opt-in `MICRO_OPCUA_OPTIMIZE_SIZE` adds
+`-Os`. Original finding:
+
+
 `CMakeLists.txt`, `cmake/MicroOpcUaWarnings.cmake`, `platform/arduino/platformio.ini`.
 No `-Os`/`-Oz`, no `-ffunction-sections -fdata-sections`, no `-Wl,--gc-sections`,
 no default `CMAKE_BUILD_TYPE` (a bare build is `-O0`). Without section GC the
@@ -139,7 +147,13 @@ though the logic is pure bounds/compare with no real FP math.
 Fix: read the 8 bytes and treat the timeout as integer milliseconds; read-and-ignore
 maxAge without `double` arithmetic.
 
-### M4 — No freestanding build is declared or verified
+### M4 — No freestanding build is declared or verified — ADDRESSED
+**Status:** Fixed. A `freestanding-core` CI job compiles every core source
+(everything but the host-only platform adapters, including the security layer)
+with `arm-none-eabi-gcc -ffreestanding -Wall -Wextra -Werror`, catching any
+hosted-header dependency leaking into the core. Original finding:
+
+
 CMake never sets `-ffreestanding`/`-nostdlib` and no target/CI compiles the core
 without libc; the Pico build links full newlib, and the Arduino skeleton has no
 compiled target. The core *is* structurally freestanding (only `<stdint.h>`/
