@@ -8,6 +8,9 @@
 #include "../services/browse.h"
 #include "../services/read.h"
 #include "../services/service_header.h"
+#ifdef MICRO_OPCUA_SECURITY
+#include "../security/sym_chunk.h"
+#endif
 #include <stddef.h>
 #include <string.h>
 
@@ -127,6 +130,28 @@ static opcua_statuscode_t handle_open_secure_channel(mu_server_t *server,
     mu_bytestring_t server_nonce = { (opcua_int32_t)sizeof(nonce_buf), nonce_buf };
     s = mu_binary_write_bytestring(w, &server_nonce);             if (s != MU_STATUS_GOOD) return s;
 
+    /* Record the negotiated MessageSecurityMode and, for a secured channel,
+       derive the symmetric key sets from the nonces (OPC 10000-6 6.7.5). */
+    server->secure_channel.mode = (mu_message_security_mode_t)security_mode;
+#ifdef MICRO_OPCUA_SECURITY
+    if (server->secure_channel.policy == MU_SECURITY_POLICY_BASIC256SHA256_ID &&
+        server->config.crypto_adapter != NULL) {
+        const mu_crypto_adapter_t *cr = server->config.crypto_adapter;
+        size_t cn_len = client_nonce.length > 0 ? (size_t)client_nonce.length : 0;
+        if (cn_len == 0) return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+        /* Inbound (client->server) keys use ServerNonce as secret; outbound the reverse. */
+        s = mu_sym_keys_derive(cr, nonce_buf, sizeof(nonce_buf), client_nonce.data, cn_len,
+                               &server->secure_channel.client_keys);
+        if (s != MU_STATUS_GOOD) return s;
+        s = mu_sym_keys_derive(cr, client_nonce.data, cn_len, nonce_buf, sizeof(nonce_buf),
+                               &server->secure_channel.server_keys);
+        if (s != MU_STATUS_GOOD) return s;
+        server->secure_channel.keys_valid = true;
+    }
+#else
+    (void)client_nonce;
+#endif
+
     *response_length = w->position;
     return MU_STATUS_GOOD;
 }
@@ -205,14 +230,32 @@ static opcua_statuscode_t handle_create_session(mu_server_t *server,
     s = mu_binary_write_nodeid(w, &tok);              if (s != MU_STATUS_GOOD) return s; /* AuthenticationToken */
     s = mu_binary_write_double(w, revised);           if (s != MU_STATUS_GOOD) return s; /* RevisedSessionTimeout */
     s = mu_binary_write_bytestring(w, &server_nonce); if (s != MU_STATUS_GOOD) return s; /* ServerNonce */
-    s = mu_binary_write_bytestring(w, &null_bs);      if (s != MU_STATUS_GOOD) return s; /* ServerCertificate */
 
-    /* ServerEndpoints: the same single endpoint a Client would get from GetEndpoints. */
+    /* ServerCertificate: the server's own cert when a crypto adapter is present. */
     {
-        mu_endpoint_description_t ep;
-        s = mu_discovery_get_endpoint_description(&server->config, &ep); if (s != MU_STATUS_GOOD) return s;
-        s = mu_binary_write_int32(w, 1);          if (s != MU_STATUS_GOOD) return s; /* ServerEndpoints[] */
-        s = mu_endpoint_description_encode(w, &ep); if (s != MU_STATUS_GOOD) return s;
+        mu_bytestring_t server_cert = null_bs;
+        if (server->config.crypto_adapter != NULL &&
+            server->config.crypto_adapter->get_own_certificate != NULL) {
+            const opcua_byte_t *c = NULL; size_t clen = 0;
+            if (server->config.crypto_adapter->get_own_certificate(
+                    server->config.crypto_adapter->context, &c, &clen) == MU_STATUS_GOOD) {
+                server_cert.length = (opcua_int32_t)clen;
+                server_cert.data = c;
+            }
+        }
+        s = mu_binary_write_bytestring(w, &server_cert); if (s != MU_STATUS_GOOD) return s;
+    }
+
+    /* ServerEndpoints: the same set a Client would get from GetEndpoints. */
+    {
+        mu_endpoint_description_t eps[MU_DISCOVERY_MAX_ENDPOINTS];
+        size_t count = 0;
+        s = mu_discovery_get_endpoints(&server->config, eps, MU_DISCOVERY_MAX_ENDPOINTS, &count);
+        if (s != MU_STATUS_GOOD) return s;
+        s = mu_binary_write_int32(w, (opcua_int32_t)count); if (s != MU_STATUS_GOOD) return s; /* ServerEndpoints[] */
+        for (size_t i = 0; i < count; ++i) {
+            s = mu_endpoint_description_encode(w, &eps[i]); if (s != MU_STATUS_GOOD) return s;
+        }
     }
 
     s = mu_binary_write_int32(w, 0);              if (s != MU_STATUS_GOOD) return s; /* ServerSoftwareCertificates[] */
@@ -316,16 +359,19 @@ static opcua_statuscode_t handle_get_endpoints(mu_server_t *server,
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
     if (s != MU_STATUS_GOOD) return s;
 
-    mu_endpoint_description_t ep;
-    s = mu_discovery_get_endpoint_description(&server->config, &ep);
+    mu_endpoint_description_t eps[MU_DISCOVERY_MAX_ENDPOINTS];
+    size_t count = 0;
+    s = mu_discovery_get_endpoints(&server->config, eps, MU_DISCOVERY_MAX_ENDPOINTS, &count);
     if (s != MU_STATUS_GOOD) return s;
 
     s = write_response_prefix(w, MU_ID_GETENDPOINTSRESPONSE, req.request_handle, MU_STATUS_GOOD);
     if (s != MU_STATUS_GOOD) return s;
-    s = mu_binary_write_int32(w, 1); /* Endpoints[] */
+    s = mu_binary_write_int32(w, (opcua_int32_t)count); /* Endpoints[] */
     if (s != MU_STATUS_GOOD) return s;
-    s = mu_endpoint_description_encode(w, &ep);
-    if (s != MU_STATUS_GOOD) return s;
+    for (size_t i = 0; i < count; ++i) {
+        s = mu_endpoint_description_encode(w, &eps[i]);
+        if (s != MU_STATUS_GOOD) return s;
+    }
 
     *response_length = w->position;
     return MU_STATUS_GOOD;
