@@ -62,3 +62,4 @@ target_include_directories(micro_opcua PUBLIC
 )
 
 micro_opcua_apply_warnings(micro_opcua)
+micro_opcua_apply_codegen(micro_opcua)
