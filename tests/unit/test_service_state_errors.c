@@ -14,7 +14,7 @@ void test_browse_before_activate_session(void) {
     memset(&server, 0, sizeof(server));
     server.tcp_conn.state = MU_TCP_STATE_ESTABLISHED;
     server.secure_channel.is_open = true;
-    server.session.state = MU_SESSION_STATE_CLOSED;
+    server.sessions[0].state = MU_SESSION_STATE_CLOSED;
     
     opcua_byte_t req[1], resp[1]; size_t resp_len = 1;
     TEST_ASSERT_EQUAL(MU_STATUS_BAD_SESSIONIDINVALID, mu_service_dispatch(&server, MU_ID_BROWSEREQUEST, req, 1, resp, &resp_len));
@@ -25,7 +25,7 @@ void test_read_before_activate_session(void) {
     memset(&server, 0, sizeof(server));
     server.tcp_conn.state = MU_TCP_STATE_ESTABLISHED;
     server.secure_channel.is_open = true;
-    server.session.state = MU_SESSION_STATE_CREATED; /* Created but not activated */
+    server.sessions[0].state = MU_SESSION_STATE_CREATED; /* Created but not activated */
     
     opcua_byte_t req[1], resp[1]; size_t resp_len = 1;
     TEST_ASSERT_EQUAL(MU_STATUS_BAD_SESSIONIDINVALID, mu_service_dispatch(&server, MU_ID_READREQUEST, req, 1, resp, &resp_len));

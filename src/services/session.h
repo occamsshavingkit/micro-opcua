@@ -24,6 +24,13 @@ typedef struct {
 
 void mu_session_init(mu_session_t *session);
 
+mu_session_t *mu_session_find_by_token(mu_session_t *sessions,
+                                       size_t count,
+                                       opcua_uint32_t auth_token);
+
+mu_session_t *mu_session_find_free(mu_session_t *sessions,
+                                   size_t count);
+
 /* Create the (single) session. The requested/revised SessionTimeout are passed as
    the raw IEEE-754 bits of the wire Duration; the value is clamped to
    [10000, 3600000] ms via integer bit comparison (valid for positive doubles). */

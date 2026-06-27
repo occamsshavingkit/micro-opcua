@@ -95,6 +95,22 @@ static opcua_statuscode_t write_response_prefix(mu_binary_writer_t *w,
     return mu_response_header_encode(w, &rh);
 }
 
+static opcua_uint32_t read_auth_token_from_request(const opcua_byte_t *request_body,
+                                                   size_t request_length)
+{
+    mu_binary_reader_t reader;
+    mu_nodeid_t token;
+
+    mu_binary_reader_init(&reader, request_body, request_length);
+    if (mu_binary_read_nodeid(&reader, &token) != MU_STATUS_GOOD) {
+        return 0u;
+    }
+    if (token.identifier_type != MU_NODEID_NUMERIC) {
+        return 0u;
+    }
+    return token.identifier.numeric;
+}
+
 opcua_statuscode_t mu_write_service_fault(opcua_byte_t *buffer, size_t *length,
                                           opcua_uint32_t request_handle,
                                           opcua_statuscode_t service_result)
@@ -246,14 +262,23 @@ static opcua_statuscode_t handle_create_session(mu_server_t *server,
 
     opcua_uint64_t revised_bits = 0;
     opcua_uint32_t session_id = 0, auth_token = 0;
-    s = mu_session_create(&server->session, requested_bits, &revised_bits, &session_id, &auth_token);
+    mu_session_t *slot = mu_session_find_free(server->sessions, MU_MAX_SESSIONS);
+    if (slot == NULL) {
+        return MU_STATUS_BAD_TOOMANYSESSIONS;
+    }
+
+    s = mu_session_create(slot, requested_bits, &revised_bits, &session_id, &auth_token);
     if (s != MU_STATUS_GOOD) return s;
+
+    size_t idx = (size_t)(slot - server->sessions);
+    slot->session_id = (opcua_uint32_t)(idx + 1u);
+    slot->auth_token = (opcua_uint32_t)(12345u + idx);
 
     s = write_response_prefix(w, MU_ID_CREATESESSIONRESPONSE, req.request_handle, MU_STATUS_GOOD);
     if (s != MU_STATUS_GOOD) return s;
 
-    mu_nodeid_t sid = { 0, MU_NODEID_NUMERIC, { session_id } };
-    mu_nodeid_t tok = { 0, MU_NODEID_NUMERIC, { auth_token } };
+    mu_nodeid_t sid = { 0, MU_NODEID_NUMERIC, { slot->session_id } };
+    mu_nodeid_t tok = { 0, MU_NODEID_NUMERIC, { slot->auth_token } };
     mu_bytestring_t null_bs = { -1, NULL };
     mu_string_t null_str = { -1, NULL };
 
@@ -374,10 +399,18 @@ static opcua_statuscode_t handle_activate_session(mu_server_t *server,
     s = mu_binary_read_extension_object_header(r, &token_type, &token_body_len);
     if (s != MU_STATUS_GOOD) return s;
 
-    opcua_statuscode_t activate_result =
-        mu_session_activate(&server->session,
-                            req.authentication_token.identifier.numeric,
-                            token_type.identifier.numeric);
+    opcua_uint32_t auth_token = 0u;
+    opcua_statuscode_t activate_result = MU_STATUS_BAD_SESSIONIDINVALID;
+    if (req.authentication_token.identifier_type == MU_NODEID_NUMERIC) {
+        auth_token = req.authentication_token.identifier.numeric;
+        mu_session_t *slot =
+            mu_session_find_by_token(server->sessions, MU_MAX_SESSIONS, auth_token);
+        if (slot != NULL) {
+            activate_result = mu_session_activate(slot,
+                                                  auth_token,
+                                                  token_type.identifier.numeric);
+        }
+    }
 
     s = write_response_prefix(w, MU_ID_ACTIVATESESSIONRESPONSE, req.request_handle, activate_result);
     if (s != MU_STATUS_GOOD) return s;
@@ -407,10 +440,28 @@ static opcua_statuscode_t handle_close_session(mu_server_t *server,
     s = mu_binary_read_boolean(r, &delete_subscriptions);
     if (s != MU_STATUS_GOOD) return s;
 
-    opcua_statuscode_t close_result =
-        mu_session_close(&server->session,
-                         req.authentication_token.identifier.numeric,
-                         delete_subscriptions);
+    opcua_statuscode_t close_result = MU_STATUS_BAD_SESSIONIDINVALID;
+    if (server->active_session != NULL &&
+        req.authentication_token.identifier_type == MU_NODEID_NUMERIC) {
+        close_result =
+            mu_session_close(server->active_session,
+                             req.authentication_token.identifier.numeric,
+                             delete_subscriptions);
+#if MICRO_OPCUA_SUBSCRIPTIONS
+        if (close_result == MU_STATUS_GOOD) {
+            opcua_uint32_t session_id = server->active_session->session_id;
+            for (size_t i = 0; i < MU_MAX_SUBSCRIPTIONS; ++i) {
+                mu_subscription_t *sub = &server->subs.subscriptions[i];
+                if (sub->in_use && sub->session_id == session_id) {
+                    (void)mu_subscription_delete(&server->subs, session_id, sub->subscription_id);
+                }
+            }
+        }
+#endif
+        if (close_result == MU_STATUS_GOOD) {
+            server->active_session = NULL;
+        }
+    }
 
     s = write_response_prefix(w, MU_ID_CLOSESESSIONRESPONSE, req.request_handle, close_result);
     if (s != MU_STATUS_GOOD) return s;
@@ -669,7 +720,7 @@ static opcua_statuscode_t handle_create_subscription(mu_server_t *server,
 
     mu_subscription_t *sub = NULL;
     s = mu_subscription_create(&server->subs,
-                               server->session.session_id,
+                               server->active_session->session_id,
                                publishing_interval_ms,
                                requested_lifetime_count,
                                requested_max_keep_alive_count,
@@ -719,7 +770,7 @@ static opcua_statuscode_t handle_modify_subscription(mu_server_t *server,
     s = mu_binary_read_byte(r, &priority); if (s != MU_STATUS_GOOD) return s;
 
     mu_subscription_t *sub =
-        mu_subscription_find(&server->subs, server->session.session_id, subscription_id);
+        mu_subscription_find(&server->subs, server->active_session->session_id, subscription_id);
     if (sub == NULL) {
         return MU_STATUS_BAD_SUBSCRIPTIONIDINVALID;
     }
@@ -777,7 +828,7 @@ static opcua_statuscode_t handle_set_publishing_mode(mu_server_t *server,
 
         mu_subscription_t *sub =
             mu_subscription_find(&server->subs,
-                                 server->session.session_id,
+                                 server->active_session->session_id,
                                  subscription_id);
         opcua_statuscode_t result = MU_STATUS_BAD_SUBSCRIPTIONIDINVALID;
         if (sub != NULL) {
@@ -816,7 +867,7 @@ static opcua_statuscode_t handle_create_monitored_items(mu_server_t *server,
     (void)timestamps_to_return;
 
     mu_subscription_t *sub =
-        mu_subscription_find(&server->subs, server->session.session_id, subscription_id);
+        mu_subscription_find(&server->subs, server->active_session->session_id, subscription_id);
     if (sub == NULL) {
         return MU_STATUS_BAD_SUBSCRIPTIONIDINVALID;
     }
@@ -934,7 +985,7 @@ static opcua_statuscode_t handle_modify_monitored_items(mu_server_t *server,
     (void)timestamps_to_return;
 
     mu_subscription_t *sub =
-        mu_subscription_find(&server->subs, server->session.session_id, subscription_id);
+        mu_subscription_find(&server->subs, server->active_session->session_id, subscription_id);
     if (sub == NULL) {
         return MU_STATUS_BAD_SUBSCRIPTIONIDINVALID;
     }
@@ -1013,7 +1064,7 @@ static opcua_statuscode_t handle_set_monitoring_mode(mu_server_t *server,
     s = mu_binary_read_int32(r, &count); if (s != MU_STATUS_GOOD) return s;
 
     mu_subscription_t *sub =
-        mu_subscription_find(&server->subs, server->session.session_id, subscription_id);
+        mu_subscription_find(&server->subs, server->active_session->session_id, subscription_id);
     if (sub == NULL) {
         return MU_STATUS_BAD_SUBSCRIPTIONIDINVALID;
     }
@@ -1070,7 +1121,7 @@ static opcua_statuscode_t handle_delete_monitored_items(mu_server_t *server,
     s = mu_binary_read_int32(r, &count); if (s != MU_STATUS_GOOD) return s;
 
     mu_subscription_t *sub =
-        mu_subscription_find(&server->subs, server->session.session_id, subscription_id);
+        mu_subscription_find(&server->subs, server->active_session->session_id, subscription_id);
     if (sub == NULL) {
         return MU_STATUS_BAD_SUBSCRIPTIONIDINVALID;
     }
@@ -1134,7 +1185,7 @@ static opcua_statuscode_t handle_delete_subscriptions(mu_server_t *server,
         if (s != MU_STATUS_GOOD) return s;
 
         opcua_statuscode_t result =
-            mu_subscription_delete(&server->subs, server->session.session_id, subscription_id);
+            mu_subscription_delete(&server->subs, server->active_session->session_id, subscription_id);
         s = mu_binary_write_statuscode(w, result);
         if (s != MU_STATUS_GOOD) return s;
     }
@@ -1175,7 +1226,7 @@ static opcua_statuscode_t handle_publish(mu_server_t *server,
         s = mu_binary_read_uint32(r, &sequence_number); if (s != MU_STATUS_GOOD) return s;
         opcua_statuscode_t ack_result =
             mu_subscription_acknowledge(&server->subs,
-                                        server->session.session_id,
+                                        server->active_session->session_id,
                                         subscription_id,
                                         sequence_number);
         if (stored_ack_count < MU_MAX_PUBLISH_ACKS) {
@@ -1188,7 +1239,7 @@ static opcua_statuscode_t handle_publish(mu_server_t *server,
         server->config.time_adapter.get_tick_ms(server->config.time_adapter.context);
     mu_publish_request_t *parked = NULL;
     s = mu_publish_request_enqueue(&server->subs,
-                                   server->session.session_id,
+                                   server->active_session->session_id,
                                    server->current_request_id,
                                    req.request_handle,
                                    now_ms,
@@ -1226,7 +1277,7 @@ static opcua_statuscode_t handle_republish(mu_server_t *server,
     const opcua_byte_t *message = NULL;
     size_t message_len = 0u;
     s = mu_subscription_republish(&server->subs,
-                                  server->session.session_id,
+                                  server->active_session->session_id,
                                   subscription_id,
                                   sequence_number,
                                   &message,
@@ -1617,6 +1668,8 @@ opcua_statuscode_t mu_service_dispatch(
 {
     if (!server || !request_body || !response_body || !response_length) return MU_STATUS_BAD_INTERNALERROR;
 
+    server->active_session = NULL;
+
     const mu_service_handler_t *handler = mu_get_service_handler(request_id);
     if (handler == NULL) {
         return MU_STATUS_BAD_SERVICEUNSUPPORTED;
@@ -1631,9 +1684,14 @@ opcua_statuscode_t mu_service_dispatch(
     }
 
     if (handler->requires_session) {
-        if (server->session.state != MU_SESSION_STATE_ACTIVATED) {
+        opcua_uint32_t auth_token =
+            read_auth_token_from_request(request_body, request_length);
+        mu_session_t *session =
+            mu_session_find_by_token(server->sessions, MU_MAX_SESSIONS, auth_token);
+        if (session == NULL || session->state != MU_SESSION_STATE_ACTIVATED) {
             return MU_STATUS_BAD_SESSIONIDINVALID;
         }
+        server->active_session = session;
     }
 
     mu_binary_reader_t reader;

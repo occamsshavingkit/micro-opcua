@@ -104,7 +104,10 @@ opcua_statuscode_t mu_server_init(void *storage, size_t storage_size, const mu_s
     
     mu_tcp_connection_init(&server->tcp_conn);
     mu_secure_channel_init(&server->secure_channel);
-    mu_session_init(&server->session);
+    for (size_t i = 0; i < MU_MAX_SESSIONS; ++i) {
+        mu_session_init(&server->sessions[i]);
+    }
+    server->active_session = NULL;
 #if MICRO_OPCUA_SUBSCRIPTIONS
     mu_subscriptions_init(&server->subs);
 #endif
@@ -466,7 +469,13 @@ opcua_statuscode_t mu_server_poll(mu_server_t *server)
         if (status == MU_STATUS_GOOD && server->client_handle != NULL) {
             mu_tcp_connection_init(&server->tcp_conn);
             mu_secure_channel_init(&server->secure_channel);
-            mu_session_init(&server->session);
+            for (size_t i = 0; i < MU_MAX_SESSIONS; ++i) {
+                mu_session_init(&server->sessions[i]);
+            }
+            server->active_session = NULL;
+#if MICRO_OPCUA_SUBSCRIPTIONS
+            mu_subscriptions_init(&server->subs);
+#endif
             server->rx_len = 0;
             server->last_activity_ms = server->config.time_adapter.get_tick_ms(server->config.time_adapter.context);
         }

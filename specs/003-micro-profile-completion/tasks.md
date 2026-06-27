@@ -124,21 +124,21 @@ All subscription code is gated by `MICRO_OPCUA_SUBSCRIPTIONS`.
 
 ## US5 — At least two sessions (P1, profile-mandatory)
 
-- [ ] T022 [Claude] Design the multi-connection/multi-session refactor: a
+- [X] T022 [Claude] Design the multi-connection/multi-session refactor: a
   `mu_connection_t` (tcp_connection + secure_channel + rx reassembly + idle clock) and
   `mu_session_t sessions[MU_MAX_SESSIONS]` in `struct mu_server`; document the
   session→connection binding used to route async Publish responses, in
   `src/core/server_internal.h`. (OPC refs: OPC 10000-4 §5.6.2)
-- [ ] T023 [Claude-test] Integration test: two independent connections each complete
+- [X] T023 [Claude-test] Integration test: two independent connections each complete
   Hello/OpenSecureChannel/CreateSession/ActivateSession and hold **simultaneously**
   active sessions with distinct `authenticationToken`s; a Read on each succeeds; the
   `MU_MAX_SESSIONS+1`-th CreateSession → `Bad_TooManySessions`. (OPC refs: OPC 10000-4 §5.6.2)
-- [ ] T024 [Codex-impl] Refactor the connection/session state in
+- [X] T024 [Codex-impl] Refactor the connection/session state in
   `src/core/server.c` + `service_dispatch.c` to fixed-size connection and session
   arrays; accept/poll over all connection slots; CreateSession picks a free slot
   (`Bad_TooManySessions` when full); resolve sessions by `auth_token`; free a
   connection's sessions/subscriptions on close. (OPC refs: OPC 10000-4 §5.6.2, §6.x)
-- [ ] T025 [Claude-test] Integration test: a subscription created on session A is not
+- [X] T025 [Claude-test] Integration test: a subscription created on session A is not
   visible to / operable from session B (`Bad_SubscriptionIdInvalid`), and an async
   Publish response routes back to the correct connection. (OPC refs: OPC 10000-4 §5.14.1.3)
 
