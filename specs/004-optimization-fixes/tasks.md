@@ -29,10 +29,10 @@ Each story is an independently shippable, independently testable slice.
 
 **Purpose**: Add the configuration knobs and traceability scaffold the slices depend on.
 
-- [ ] T001 Add new compile-time knobs with documented defaults to `include/micro_opcua/config.h`: `MU_MAX_ADDRESS_SPACE_NODES`, `MU_CIPHER_CTX_SIZE`, `MU_SECURE_SCRATCH_SIZE`, `MICRO_OPCUA_STATUS_STRINGS` (default OFF) — all `-D`-overridable (data-model.md "Configuration knobs").
-- [ ] T002 [P] Create traceability doc `docs/traceability/004-optimization-fixes.md` mapping each behavioural change to its OPC section — OPC-10000-4 §5.6.2.2, §5.7.3.2, §5.8.2, §7.38.2 (StatusCodes) and OPC-10000-6 §5.2, §5.2.2.9 (NodeId) — with a row per FR (skeleton; filled per task).
-- [ ] T003 [P] Create the feature fixture directory `tests/fixtures/activate_session/` and a README noting fixtures cite OPC-10000-4 §5.7.3.2.
-- [ ] T004 [P] Register a `MICRO_OPCUA_LTO` CMake option stub (default OFF) in `cmake/MicroOpcUaOptions.cmake` (implementation wired in US4/T058).
+- [X] T001 Add new compile-time knobs with documented defaults to `include/micro_opcua/config.h`: `MU_MAX_ADDRESS_SPACE_NODES`, `MU_CIPHER_CTX_SIZE`, `MU_SECURE_SCRATCH_SIZE`, `MICRO_OPCUA_STATUS_STRINGS` (default OFF) — all `-D`-overridable (data-model.md "Configuration knobs").
+- [X] T002 [P] Create traceability doc `docs/traceability/004-optimization-fixes.md` mapping each behavioural change to its OPC section — OPC-10000-4 §5.6.2.2, §5.7.3.2, §5.9.2, §7.38.2 (StatusCodes) and OPC-10000-6 §5.2, §5.2.2.9 (NodeId) — with a row per FR (skeleton; filled per task).
+- [X] T003 [P] Create the feature fixture directory `tests/fixtures/activate_session/` and a README noting fixtures cite OPC-10000-4 §5.7.3.2.
+- [X] T004 [P] Register a `MICRO_OPCUA_LTO` CMake option stub (default OFF) in `cmake/MicroOpcUaOptions.cmake` (implementation wired in US4/T058).
 
 ---
 
@@ -42,11 +42,11 @@ Each story is an independently shippable, independently testable slice.
 
 **CRITICAL**: Complete before the user-story phases begin.
 
-- [ ] T005a Add a worst-case stack-usage measurement + CI check target to the build (e.g. `-fstack-usage` aggregation or `-Wstack-usage=<N>`) for SC-001.
-- [ ] T005b Record the pre-change secured-OPN stack baseline (~12.8 KiB) from T005a into `docs/size/feature-size-ledger.md` for SC-001 comparison. (Not [P]: shares `feature-size-ledger.md` with T007.)
+- [X] T005a Add a worst-case stack-usage measurement + CI check target to the build (e.g. `-fstack-usage` aggregation or `-Wstack-usage=<N>`) for SC-001.
+- [X] T005b Record the pre-change secured-OPN stack baseline (~12.8 KiB) from T005a into `docs/size/feature-size-ledger.md` for SC-001 comparison. (Not [P]: shares `feature-size-ledger.md` with T007.)
 - [ ] T006 [P] Add a byte-identical response-capture harness in `tests/integration/test_response_regression.c` that records encoded Read/Browse/subscription responses for fixed inputs (golden vectors) — the SC-003 backstop reused by US3 and US4.
 - [ ] T007 Snapshot current per-profile `size` figures into `docs/size/feature-size-ledger.md` as the "pre-remediation" baseline row for SC-005. (Not [P]: shares `feature-size-ledger.md` with T005b.)
-- [ ] T008 Confirm the existing no-heap check (`tests/unit/test_no_heap_lifecycle.c`) runs for the micro/embedded profiles so FR-019 is enforced throughout.
+- [X] T008 Confirm the existing no-heap check (`tests/unit/test_no_heap_lifecycle.c`) runs for the micro/embedded profiles so FR-019 is enforced throughout.
 
 **Checkpoint**: Foundation ready — user-story work can begin.
 
@@ -60,35 +60,36 @@ Each story is an independently shippable, independently testable slice.
 
 ### Tests for User Story 1 (write first, confirm they fail)
 
-- [ ] T009 [P] [US1] Add binary fixture: ActivateSession with a **non-empty** `clientSoftwareCertificates` array and a populated UserIdentityToken, citing OPC-10000-4 §5.7.3.2, in `tests/fixtures/activate_session/nonempty_certs.bin`.
-- [ ] T010 [P] [US1] Add ActivateSession decode test (correct consumption of cert array + token body + signature, session activates) in `tests/unit/test_service_dispatch.c` (FR-002).
-- [ ] T011 [P] [US1] Add NodeId identifier-type-confusion test (non-numeric/non-ns0 token & request type ids return `Bad_DecodingError`, and an unsupported ActivateSession identity-token type returns `Bad_IdentityTokenInvalid`, no union mis-read), citing OPC-10000-6 §5.2.2.9 + OPC-10000-4 §7.38.2, in `tests/unit/test_service_state_errors.c` (FR-004).
-- [ ] T011b [P] [US1] Add subscription op-cap test: a request exceeding the per-op cap returns `Bad_TooManyOperations` (OPC-10000-4 §7.38.2) before any response array length is emitted, in `tests/unit/test_dispatch_services.c` (FR-006). Confirm it fails before T024.
-- [ ] T012 [P] [US1] Add OpenSecureChannel policy/mode mismatch test (inconsistent `securityPolicyUri`/`securityMode` handled per OPC-10000-4 §5.6.2.2) in `tests/unit/test_secure_channel.c` (FR-005).
-- [ ] T013 [P] [US1] Add overflow-safe bound test (length near `SIZE_MAX` rejected with `Bad_DecodingError`, no wrap), citing OPC-10000-6 §5.2 + OPC-10000-4 §7.38.2, in `tests/unit/test_binary_primitives.c` (FR-003).
-- [ ] T014 [P] [US1] Add fuzz target `tests/fuzz/fuzz_activate_session.c` covering cert-array/identity-token-bearing ActivateSession frames (OPC-10000-4 §5.7.3.2).
-- [ ] T015 [US1] Add a secured-OPN stack-budget assertion wired to the T005a measurement (fails if > 10 KiB) (FR-001/SC-001).
+- [X] T009 [P] [US1] Add binary fixture: ActivateSession with a **non-empty** `clientSoftwareCertificates` array and a populated UserIdentityToken, citing OPC-10000-4 §5.7.3.2, in `tests/fixtures/activate_session/nonempty_certs.bin`.
+- [X] T010 [P] [US1] Add ActivateSession decode test (correct consumption of cert array + token body + signature, session activates) in `tests/unit/test_service_dispatch.c` (FR-002).
+- [X] T011 [P] [US1] Add NodeId identifier-type-confusion test (non-numeric/non-ns0 token & request type ids return `Bad_DecodingError`, and an unsupported ActivateSession identity-token type returns `Bad_IdentityTokenInvalid`, no union mis-read), citing OPC-10000-6 §5.2.2.9 + OPC-10000-4 §7.38.2, in `tests/unit/test_service_state_errors.c` (FR-004).
+- [X] T011b [P] [US1] Add subscription op-cap test: a request exceeding the per-op cap returns `Bad_TooManyOperations` (OPC-10000-4 §7.38.2) before any response array length is emitted, in `tests/unit/test_dispatch_services.c` (FR-006). Confirm it fails before T024.
+- [X] T012 [P] [US1] Add OpenSecureChannel policy/mode mismatch test (inconsistent `securityPolicyUri`/`securityMode` handled per OPC-10000-4 §5.6.2.2) in `tests/unit/test_secure_channel.c` (FR-005).
+- [X] T013 [P] [US1] Add overflow-safe bound test (length near `SIZE_MAX` rejected with `Bad_DecodingError`, no wrap), citing OPC-10000-6 §5.2 + OPC-10000-4 §7.38.2, in `tests/unit/test_binary_primitives.c` (FR-003).
+- [X] T014 [P] [US1] Add fuzz target `tests/fuzz/fuzz_activate_session.c` covering cert-array/identity-token-bearing ActivateSession frames (OPC-10000-4 §5.7.3.2).
+- [X] T015 [US1] Add a secured-OPN stack-budget assertion wired to the T005a measurement (fails if > 10 KiB) (FR-001/SC-001).
 
 ### Implementation for User Story 1
 
-- [ ] T016a [P] [US1] Confirm via the OPC UA reference the exact StatusCode + section for **rejected SecurityPolicy/mode** (candidates `Bad_SecurityPolicyRejected`/`Bad_SecurityModeRejected`, OPC-10000-4 §7.38.2 / §5.6.2.2 — research D5); record in `docs/traceability/004-optimization-fixes.md`.
-- [ ] T016b [US1] Confirm via the OPC UA reference the exact StatusCode + section for **NodeId type confusion** (`Bad_DecodingError` / `Bad_IdentityTokenInvalid`, OPC-10000-6 §5.2.2.9 + OPC-10000-4 §7.38.2 — FR-004); record in `docs/traceability/004-optimization-fixes.md`. (Not [P]: shares the traceability doc with T016a/T016c.)
-- [ ] T016c [US1] Confirm via the OPC UA reference the exact StatusCode + section for **subscription op-cap exceeded** (`Bad_TooManyOperations`, OPC-10000-4 §7.38.2 — FR-006); record in `docs/traceability/004-optimization-fixes.md`. (Not [P]: shares the traceability doc with T016a/T016b.)
-- [ ] T017a [P] [US1] Make `ensure_bytes` bound checks overflow-safe (`count > length - position`) per OPC-10000-6 §5.2, returning `Bad_DecodingError` (OPC-10000-4 §7.38.2), in `src/encoding/binary_reader.c` (FR-003, contract: binary-codec-sticky-status.md).
-- [ ] T017b [P] [US1] Make `ensure_space` bound checks overflow-safe (`count > length - position`) per OPC-10000-6 §5.2 in `src/encoding/binary_writer.c` (FR-003, contract: binary-codec-sticky-status.md).
-- [ ] T018 [US1] In `handle_activate_session` (`src/core/service_dispatch.c`): consume each `SignedSoftwareCertificate` entry, validate+skip the UserIdentityToken `token_body_len`, and consume `UserTokenSignature` so following fields decode from correct offsets; cite OPC-10000-4 §5.7.3.2 in comments (FR-002).
-- [ ] T018b [US1] In `handle_activate_session` (`src/core/service_dispatch.c`): guard `token_type` on `MU_NODEID_NUMERIC`, returning `Bad_IdentityTokenInvalid` on an unsupported type; cite OPC-10000-6 §5.2.2.9 (NodeId) + OPC-10000-4 §7.38.2 (StatusCode) in comments (FR-004).
-- [ ] T019 [US1] Apply the same ns0-numeric NodeId guard (returning `Bad_DecodingError`) to the remaining numeric-assuming reads in `src/core/service_dispatch.c` — specifically the request type-id and the session authentication-token id reads; cite OPC-10000-6 §5.2.2.9 + OPC-10000-4 §7.38.2 in comments (FR-004).
-- [ ] T020a [US1] Change `mu_secure_channel_open` to accept the decoded `securityPolicyUri`/`securityMode` (signature + body) in `src/services/secure_channel.h` and `src/services/secure_channel.c` (FR-005, OPC-10000-4 §5.6.2.2).
-- [ ] T020b [US1] Decode and pass `securityPolicyUri`/`securityMode` into `mu_secure_channel_open` (currently `NULL`) from the OPN handler in `src/core/service_dispatch.c` and `src/core/server.c` (FR-005, OPC-10000-4 §5.6.2.2).
-- [ ] T020c [US1] Reject an inconsistent policy/mode combination with the T016a StatusCode in `src/services/secure_channel.c`, preserving the None-only build path (FR-005, OPC-10000-4 §5.6.2.2).
-- [ ] T021 [US1] Add `secure_scratch[MU_SECURE_SCRATCH_SIZE]` to `struct mu_server` (guarded by `MICRO_OPCUA_SECURITY`) in `src/core/server_internal.h` (data-model.md E4).
-- [ ] T022 [US1] Relocate the OPN-path scratch (`respbody`/`opn_buf`) from the stack to `server->secure_scratch` in `src/core/server.c` (FR-001/D1).
+- [X] T016a [P] [US1] Confirm via the OPC UA reference the exact StatusCode + section for **rejected SecurityPolicy/mode** (candidates `Bad_SecurityPolicyRejected`/`Bad_SecurityModeRejected`, OPC-10000-4 §7.38.2 / §5.6.2.2 — research D5); record in `docs/traceability/004-optimization-fixes.md`.
+- [X] T016b [US1] Confirm via the OPC UA reference the exact StatusCode + section for **NodeId type confusion** (`Bad_DecodingError` / `Bad_IdentityTokenInvalid`, OPC-10000-6 §5.2.2.9 + OPC-10000-4 §7.38.2 — FR-004); record in `docs/traceability/004-optimization-fixes.md`. (Not [P]: shares the traceability doc with T016a/T016c.)
+- [X] T016c [US1] Confirm via the OPC UA reference the exact StatusCode + section for **subscription op-cap exceeded** (`Bad_TooManyOperations`, OPC-10000-4 §7.38.2 — FR-006); record in `docs/traceability/004-optimization-fixes.md`. (Not [P]: shares the traceability doc with T016a/T016b.)
+- [X] T017a [P] [US1] Make `ensure_bytes` bound checks overflow-safe (`count > length - position`) per OPC-10000-6 §5.2, returning `Bad_DecodingError` (OPC-10000-4 §7.38.2), in `src/encoding/binary_reader.c` (FR-003, contract: binary-codec-sticky-status.md).
+- [X] T017b [P] [US1] Make `ensure_space` bound checks overflow-safe (`count > length - position`) per OPC-10000-6 §5.2 in `src/encoding/binary_writer.c` (FR-003, contract: binary-codec-sticky-status.md).
+- [X] T018 [US1] In `handle_activate_session` (`src/core/service_dispatch.c`): consume each `SignedSoftwareCertificate` entry, validate+skip the UserIdentityToken `token_body_len`, and consume `UserTokenSignature` so following fields decode from correct offsets; cite OPC-10000-4 §5.7.3.2 in comments (FR-002).
+- [X] T018b [US1] In `handle_activate_session` (`src/core/service_dispatch.c`): guard `token_type` on `MU_NODEID_NUMERIC`, returning `Bad_IdentityTokenInvalid` on an unsupported type; cite OPC-10000-6 §5.2.2.9 (NodeId) + OPC-10000-4 §7.38.2 (StatusCode) in comments (FR-004).
+- [X] T019a [US1] Guard the request type-id NodeId in `src/core/server.c` (where it is decoded before `mu_service_dispatch`): if not ns0-numeric, reject with `Bad_DecodingError` (OPC-10000-6 §5.2.2.9 + OPC-10000-4 §7.38.2) (FR-004).
+- [X] T019b [US1] Guard the session authentication-token id NodeId in `src/core/service_dispatch.c`: if not ns0-numeric, reject without mis-reading the union (OPC-10000-6 §5.2.2.9 + OPC-10000-4 §7.38.2) (FR-004).
+- [X] T020a [US1] Change `mu_secure_channel_open` to accept the decoded `securityPolicyUri`/`securityMode` (signature + body) in `src/services/secure_channel.h` and `src/services/secure_channel.c` (FR-005, OPC-10000-4 §5.6.2.2).
+- [X] T020b [US1] Decode and pass `securityPolicyUri`/`securityMode` into `mu_secure_channel_open` (currently `NULL`) from the OPN handler in `src/core/service_dispatch.c` and `src/core/server.c` (FR-005, OPC-10000-4 §5.6.2.2).
+- [X] T020c [US1] Reject an inconsistent policy/mode combination with the T016a StatusCode in `src/services/secure_channel.c`, preserving the None-only build path (FR-005, OPC-10000-4 §5.6.2.2).
+- [X] T021 [US1] Add `secure_scratch[MU_SECURE_SCRATCH_SIZE]` to `struct mu_server` (guarded by `MICRO_OPCUA_SECURITY`) in `src/core/server_internal.h` (data-model.md E4).
+- [X] T022 [US1] Relocate the OPN-path scratch (`respbody`/`opn_buf`) from the stack to `server->secure_scratch` in `src/core/server.c` (FR-001/D1).
 - [ ] T023a [US1] Right-size `MU_ASYM_SCRATCH` (4096 → real RSA block, 256 B for 2048-bit) in `src/security/asym_chunk.c` (FR-001/D1).
 - [ ] T023b [US1] Move `plain`/`sign_buf`/`verify_buf` off the deep stack (into server-owned/shared scratch) in `src/security/asym_chunk.c` (FR-001/D1).
-- [ ] T024 [US1] Add explicit op caps to the subscription per-op request loops before emitting array lengths in `src/core/service_dispatch.c`, consistent with `MU_DISPATCH_MAX_*`, returning `Bad_TooManyOperations` (OPC-10000-4 §7.38.2) when exceeded (FR-006).
-- [ ] T025a [US1] Update `docs/traceability/004-optimization-fixes.md` (FR-001/002/003/004/005/006 rows) mapping each change + test to its OPC UA section.
-- [ ] T025b [US1] Record the new secured-OPN stack figure in `docs/size/feature-size-ledger.md`. (Not [P]: shared ledger file.)
+- [X] T024 [US1] Add explicit op caps to the subscription per-op request loops before emitting array lengths in `src/core/service_dispatch.c`, consistent with `MU_DISPATCH_MAX_*`, returning `Bad_TooManyOperations` (OPC-10000-4 §7.38.2) when exceeded (FR-006).
+- [X] T025a [US1] Update `docs/traceability/004-optimization-fixes.md` (FR-001/002/003/004/005/006 rows) mapping each change + test to its OPC UA section.
+- [X] T025b [US1] Record the new secured-OPN stack figure in `docs/size/feature-size-ledger.md`. (Not [P]: shared ledger file.)
 
 **Checkpoint**: US1 independently testable; stack ≤ 10 KiB; parser robust to the new vectors.
 
@@ -128,7 +129,7 @@ Each story is an independently shippable, independently testable slice.
 - [ ] T033 [P] [US3] Add address-space index property test (indexed lookup === linear lookup for all member/non-member NodeIds; comparison count ~log N) in `tests/unit/test_address_space_values.c` (FR-009, contract: address-space-index.md).
 - [ ] T034 [P] [US3] Add a sampling-tick probe test asserting zero `mu_address_space_find_node` calls per tick (resolved-node cached) in `tests/integration/test_subscriptions.c` (FR-010).
 - [ ] T035 [P] [US3] Add a cipher-context probe test (stub adapter counter proves key schedule runs once per channel vs once per message in fallback) in `tests/unit/test_sym_chunk.c` (FR-012, contract: crypto-adapter-cipher-context.md).
-- [ ] T036 [P] [US3] Add Browse single-pass byte-identical test (output equals two-pass output, all-or-nothing-per-node preserved) in `tests/unit/test_browse_service.c` (FR-011/FR-014, OPC-10000-4 §5.8.2).
+- [ ] T036 [P] [US3] Add Browse single-pass byte-identical test (output equals two-pass output, all-or-nothing-per-node preserved) in `tests/unit/test_browse_service.c` (FR-011/FR-014, OPC-10000-4 §5.9.2).
 
 ### Implementation for User Story 3
 
@@ -137,7 +138,7 @@ Each story is an independently shippable, independently testable slice.
 - [ ] T037c [US3] Add the linear-scan fallback path when `node_count > MU_MAX_ADDRESS_SPACE_NODES` in `src/address_space/node_id.c` (FR-009/D3).
 - [ ] T038 [US3] Wire index build into `mu_address_space_validate`/server init without masking existing validation errors in `src/address_space/address_space.c` (contract: address-space-index.md).
 - [ ] T039 [US3] Cache the resolved `const mu_node_t *` in `mu_monitored_item_t` at CreateMonitoredItems time and use it in the sampling timer in `src/services/subscription.c` (FR-010, data-model.md E3).
-- [ ] T040 [US3] Rewrite `mu_browse_process` to a single reference-resolution pass with backpatched count, preserving all-or-nothing-per-node semantics per OPC-10000-4 §5.8.2, in `src/services/browse.c` (FR-011/D7).
+- [ ] T040 [US3] Rewrite `mu_browse_process` to a single reference-resolution pass with backpatched count, preserving all-or-nothing-per-node semantics per OPC-10000-4 §5.9.2, in `src/services/browse.c` (FR-011/D7).
 - [ ] T041 [US3] Add the optional cipher-context members to `mu_crypto_adapter_t` in `include/micro_opcua/platform.h` (additive; contract: crypto-adapter-cipher-context.md).
 - [ ] T042 [US3] Add per-channel cipher-ctx storage (`cipher_ctx_*`) to `mu_secure_channel_t` (guarded) in `src/services/secure_channel.h` with a `MU_CIPHER_CTX_SIZE` compile-time assert (data-model.md E2).
 - [ ] T043 [US3] Initialize the cipher context at OPN (where keys derive) and use the ctx AES path with graceful fallback to stateless `aes256_cbc_*` in `src/security/sym_chunk.c` (FR-012/D2).

@@ -160,7 +160,7 @@ all-or-nothing-per-node rejection. The encoded length is already emitted separat
 **Alternatives rejected**: Cache target pointers between passes — more state than a
 single pass needs.
 
-**Spec fidelity**: OPC-10000-4 §5.8.2; SC-003 byte-identical output.
+**Spec fidelity**: OPC-10000-4 §5.9.2; SC-003 byte-identical output.
 
 ---
 

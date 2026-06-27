@@ -266,7 +266,7 @@ profile permutation (including service-disabled builds that previously risked a
   (OPC-10000-7); this feature is remediation, not new conformance scope.
 - **OPC-002**: Services/encodings touched behaviourally are ActivateSession
   (OPC-10000-4 §5.7.3.2; UserIdentityToken §5.7.3), OpenSecureChannel (OPC-10000-4
-  §5.6.2.2), Browse (OPC-10000-4 §5.8.2), the subscription per-operation limit
+  §5.6.2.2), Browse (OPC-10000-4 §5.9.2), the subscription per-operation limit
   (`Bad_TooManyOperations`, OPC-10000-4 §7.38.2), NodeId binary decoding
   (OPC-10000-6 §5.2.2.9), and the general Binary decoding length/overflow rules
   (OPC-10000-6 §5.2 → `Bad_DecodingError`, OPC-10000-4 §7.38.2). Read,

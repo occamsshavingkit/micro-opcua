@@ -27,7 +27,7 @@ dedup, LTO) keeps responses byte-for-byte identical and the no-heap model intact
 **Performance Goals**: Sub-linear NodeId resolution; zero per-tick node lookup in sampling; one AES key schedule per channel (not per MSG); byte-identical responses
 **Constraints**: No heap on hot path; worst-case secure-path stack ≤ 10 KiB (from ~12.8 KiB); net flash reduction ≥ 8% on Micro core; warnings-as-errors clean for all profile permutations
 **Scale/Scope**: Single TCP connection, ≥2 logical sessions multiplexed; address space integrator-sized (tens→hundreds of nodes); 22 findings across ~12 source files
-**OPC UA Normative References**: OPC-10000-4 §5.6.2.2 (OpenSecureChannel params), §5.7.3.2 (ActivateSession params), §5.8.2 (Browse); OPC-10000-6 §5.2 (Binary encoding rules), §6.7.2 (MessageChunk); OPC-10000-7 (Nano/Micro profile, unchanged)
+**OPC UA Normative References**: OPC-10000-4 §5.6.2.2 (OpenSecureChannel params), §5.7.3.2 (ActivateSession params), §5.9.2 (Browse); OPC-10000-6 §5.2 (Binary encoding rules), §6.7.2 (MessageChunk); OPC-10000-7 (Nano/Micro profile, unchanged)
 **Target OPC UA Profile/Conformance Units**: Unchanged — existing Nano/Micro Embedded Device Server profile targeting
 **Conformance Status Target**: Unchanged (profile-targeting; Basic256Sha256 gated behind the security build option)
 
