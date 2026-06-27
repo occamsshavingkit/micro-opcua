@@ -583,8 +583,9 @@ opcua_statuscode_t mu_server_poll(mu_server_t *server)
 
     /* 3. Process every complete message in the buffer, reassembling the stream:
        a single read() may carry several messages or only part of one. */
-    while (server->client_handle != NULL && server->rx_len >= 8) {
-        const opcua_byte_t *b = server->config.receive_buffer;
+    size_t consumed = 0;
+    while (server->client_handle != NULL && (server->rx_len - consumed) >= 8) {
+        const opcua_byte_t *b = server->config.receive_buffer + consumed;
         /* MessageSize is a UInt32 at byte offset 4 of every TCP/UASC message. */
         size_t msg_size = (size_t)b[4] | ((size_t)b[5] << 8) | ((size_t)b[6] << 16) | ((size_t)b[7] << 24);
 
@@ -594,20 +595,24 @@ opcua_statuscode_t mu_server_poll(mu_server_t *server)
             server->rx_len = 0;
             return MU_STATUS_GOOD;
         }
-        if (msg_size > server->rx_len) {
+        if (msg_size > (server->rx_len - consumed)) {
             break; /* incomplete: wait for more bytes on a later poll */
         }
 
-        process_message(server, server->config.receive_buffer, msg_size);
+        process_message(server, server->config.receive_buffer + consumed, msg_size);
 
         if (server->client_handle == NULL) {
             server->rx_len = 0;
             break;
         }
 
-        size_t remaining = server->rx_len - msg_size;
+        consumed += msg_size;
+    }
+
+    if (server->client_handle != NULL && consumed > 0) {
+        size_t remaining = server->rx_len - consumed;
         if (remaining > 0) {
-            memmove(server->config.receive_buffer, server->config.receive_buffer + msg_size, remaining);
+            memmove(server->config.receive_buffer, server->config.receive_buffer + consumed, remaining);
         }
         server->rx_len = remaining;
     }

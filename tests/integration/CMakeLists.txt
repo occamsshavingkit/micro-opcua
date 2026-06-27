@@ -16,6 +16,10 @@ add_executable(test_server_handshake test_server_handshake.c)
 target_link_libraries(test_server_handshake PRIVATE micro_opcua micro_opcua_test_support unity)
 add_test(NAME test_server_handshake COMMAND test_server_handshake)
 
+add_executable(test_response_regression test_response_regression.c)
+target_link_libraries(test_response_regression PRIVATE micro_opcua micro_opcua_test_support unity)
+add_test(NAME test_response_regression COMMAND test_response_regression)
+
 add_executable(test_server_framing test_server_framing.c)
 target_link_libraries(test_server_framing PRIVATE micro_opcua micro_opcua_test_support unity)
 add_test(NAME test_server_framing COMMAND test_server_framing)

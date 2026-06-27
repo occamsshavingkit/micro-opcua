@@ -12,6 +12,7 @@
 #ifndef MICRO_OPCUA_SERVICES_SUBSCRIPTION_H
 #define MICRO_OPCUA_SERVICES_SUBSCRIPTION_H
 
+#include "micro_opcua/address_space.h"
 #include "micro_opcua/opcua_types.h"
 #include "micro_opcua/types.h"
 #include "micro_opcua/status.h"
@@ -72,6 +73,7 @@ typedef struct {
     opcua_uint32_t subscription_id;         /* owning subscription */
     opcua_uint32_t client_handle;           /* echoed in every notification */
     mu_nodeid_t node_id;                     /* monitored node (numeric, or string into the buffer) */
+    const mu_node_t *resolved_node;          /* cached static address-space resolution */
     opcua_byte_t node_id_string[MU_MAX_MONITORED_STRING]; /* backing store for a string identifier */
     opcua_uint32_t attribute_id;            /* usually Value (13) */
     opcua_uint32_t sampling_interval_ms;    /* revised */

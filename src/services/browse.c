@@ -212,8 +212,11 @@ opcua_statuscode_t mu_browse_process(const mu_address_space_t *address_space,
             continue;
         }
         
-        /* Count matches */
+        size_t node_refs_start = refs_used;
         size_t match_count = 0;
+        opcua_boolean_t too_many_refs = false;
+        size_t refs_remaining = max_total_refs - node_refs_start;
+
         for (size_t j = 0; j < node->reference_count; ++j) {
             const mu_reference_t *r = &node->references[j];
             
@@ -228,40 +231,19 @@ opcua_statuscode_t mu_browse_process(const mu_address_space_t *address_space,
             if (desc->node_class_mask != 0) {
                 if (!((1 << (target->node_class - 1)) & desc->node_class_mask)) continue;
             }
-            
-            match_count++;
-        }
-        
-        if (req->requested_max_references_per_node > 0 && match_count > req->requested_max_references_per_node) {
-            res->status_code = MU_STATUS_BAD_NOCONTINUATIONPOINTS;
-            continue;
-        }
-        
-        if (refs_used + match_count > max_total_refs) {
-            res->status_code = MU_STATUS_BAD_NOCONTINUATIONPOINTS; /* Or Bad_ResponseTooLarge */
-            continue;
-        }
-        
-        res->references = &ref_pool[refs_used];
-        res->num_references = match_count;
-        
-        size_t write_idx = 0;
-        for (size_t j = 0; j < node->reference_count; ++j) {
-            const mu_reference_t *r = &node->references[j];
-            
-            if (desc->browse_direction == MU_BROWSE_DIRECTION_FORWARD && !r->is_forward) continue;
-            if (desc->browse_direction == MU_BROWSE_DIRECTION_INVERSE && r->is_forward) continue;
-            
-            if (!reference_type_matches(desc, r)) continue;
-            
-            const mu_node_t *target = mu_resolve_node(address_space, dynamic, &r->target_id);
-            if (!target) continue;
-            
-            if (desc->node_class_mask != 0) {
-                if (!((1 << (target->node_class - 1)) & desc->node_class_mask)) continue;
+
+            if (req->requested_max_references_per_node > 0 &&
+                match_count >= req->requested_max_references_per_node) {
+                too_many_refs = true;
+                break;
+            }
+
+            if (match_count >= refs_remaining) {
+                too_many_refs = true;
+                break;
             }
             
-            mu_reference_description_t *ref_desc = &res->references[write_idx++];
+            mu_reference_description_t *ref_desc = &ref_pool[node_refs_start + match_count++];
             ref_desc->reference_type_id = r->reference_type_id;
             ref_desc->is_forward = r->is_forward;
             ref_desc->node_id = target->node_id;
@@ -281,8 +263,15 @@ opcua_statuscode_t mu_browse_process(const mu_address_space_t *address_space,
                 }
             }
         }
-        
-        refs_used += match_count;
+
+        if (too_many_refs) {
+            res->status_code = MU_STATUS_BAD_NOCONTINUATIONPOINTS; /* Or Bad_ResponseTooLarge */
+            continue;
+        }
+
+        res->references = &ref_pool[node_refs_start];
+        res->num_references = match_count;
+        refs_used = node_refs_start + match_count;
     }
     
     return MU_STATUS_GOOD;

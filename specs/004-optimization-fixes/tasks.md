@@ -44,7 +44,7 @@ Each story is an independently shippable, independently testable slice.
 
 - [X] T005a Add a worst-case stack-usage measurement + CI check target to the build (e.g. `-fstack-usage` aggregation or `-Wstack-usage=<N>`) for SC-001.
 - [X] T005b Record the pre-change secured-OPN stack baseline (~12.8 KiB) from T005a into `docs/size/feature-size-ledger.md` for SC-001 comparison. (Not [P]: shares `feature-size-ledger.md` with T007.)
-- [ ] T006 [P] Add a byte-identical response-capture harness in `tests/integration/test_response_regression.c` that records encoded Read/Browse/subscription responses for fixed inputs (golden vectors) — the SC-003 backstop reused by US3 and US4.
+- [X] T006 [P] Add a byte-identical response-capture harness in `tests/integration/test_response_regression.c` that records encoded Read/Browse/subscription responses for fixed inputs (golden vectors) — the SC-003 backstop reused by US3 and US4.
 - [ ] T007 Snapshot current per-profile `size` figures into `docs/size/feature-size-ledger.md` as the "pre-remediation" baseline row for SC-005. (Not [P]: shares `feature-size-ledger.md` with T005b.)
 - [X] T008 Confirm the existing no-heap check (`tests/unit/test_no_heap_lifecycle.c`) runs for the micro/embedded profiles so FR-019 is enforced throughout.
 
@@ -129,24 +129,24 @@ Each story is an independently shippable, independently testable slice.
 - [ ] T033 [P] [US3] Add address-space index property test (indexed lookup === linear lookup for all member/non-member NodeIds; comparison count ~log N) in `tests/unit/test_address_space_values.c` (FR-009, contract: address-space-index.md).
 - [ ] T034 [P] [US3] Add a sampling-tick probe test asserting zero `mu_address_space_find_node` calls per tick (resolved-node cached) in `tests/integration/test_subscriptions.c` (FR-010).
 - [ ] T035 [P] [US3] Add a cipher-context probe test (stub adapter counter proves key schedule runs once per channel vs once per message in fallback) in `tests/unit/test_sym_chunk.c` (FR-012, contract: crypto-adapter-cipher-context.md).
-- [ ] T036 [P] [US3] Add Browse single-pass byte-identical test (output equals two-pass output, all-or-nothing-per-node preserved) in `tests/unit/test_browse_service.c` (FR-011/FR-014, OPC-10000-4 §5.9.2).
+- [X] T036 [P] [US3] Add Browse single-pass byte-identical test (output equals two-pass output, all-or-nothing-per-node preserved) in `tests/unit/test_browse_service.c` (FR-011/FR-014, OPC-10000-4 §5.9.2).
 
 ### Implementation for User Story 3
 
-- [ ] T037a [US3] Declare the `mu_address_space_index_t` type (sort-key based, `MU_MAX_ADDRESS_SPACE_NODES`-bounded) in `include/micro_opcua/address_space.h` (FR-009/D3, data-model.md E1).
-- [ ] T037b [US3] Implement binary-search `mu_address_space_find_node` over the index (signature + result identical to the linear version, `mu_nodeid_equal` confirm) in `src/address_space/node_id.c` (FR-009/D3, contract: address-space-index.md).
-- [ ] T037c [US3] Add the linear-scan fallback path when `node_count > MU_MAX_ADDRESS_SPACE_NODES` in `src/address_space/node_id.c` (FR-009/D3).
-- [ ] T038 [US3] Wire index build into `mu_address_space_validate`/server init without masking existing validation errors in `src/address_space/address_space.c` (contract: address-space-index.md).
-- [ ] T039 [US3] Cache the resolved `const mu_node_t *` in `mu_monitored_item_t` at CreateMonitoredItems time and use it in the sampling timer in `src/services/subscription.c` (FR-010, data-model.md E3).
-- [ ] T040 [US3] Rewrite `mu_browse_process` to a single reference-resolution pass with backpatched count, preserving all-or-nothing-per-node semantics per OPC-10000-4 §5.9.2, in `src/services/browse.c` (FR-011/D7).
+- [X] T037a [US3] Declare the `mu_address_space_index_t` type (sort-key based, `MU_MAX_ADDRESS_SPACE_NODES`-bounded) in `include/micro_opcua/address_space.h` (FR-009/D3, data-model.md E1).
+- [X] T037b [US3] Implement binary-search `mu_address_space_find_node` over the index (signature + result identical to the linear version, `mu_nodeid_equal` confirm) in `src/address_space/node_id.c` (FR-009/D3, contract: address-space-index.md).
+- [X] T037c [US3] Add the linear-scan fallback path when `node_count > MU_MAX_ADDRESS_SPACE_NODES` in `src/address_space/node_id.c` (FR-009/D3).
+- [X] T038 [US3] Wire index build into `mu_address_space_validate`/server init without masking existing validation errors in `src/address_space/address_space.c` (contract: address-space-index.md).
+- [X] T039 [US3] Cache the resolved `const mu_node_t *` in `mu_monitored_item_t` at CreateMonitoredItems time and use it in the sampling timer in `src/services/subscription.c` (FR-010, data-model.md E3).
+- [X] T040 [US3] Rewrite `mu_browse_process` to a single reference-resolution pass with backpatched count, preserving all-or-nothing-per-node semantics per OPC-10000-4 §5.9.2, in `src/services/browse.c` (FR-011/D7).
 - [ ] T041 [US3] Add the optional cipher-context members to `mu_crypto_adapter_t` in `include/micro_opcua/platform.h` (additive; contract: crypto-adapter-cipher-context.md).
 - [ ] T042 [US3] Add per-channel cipher-ctx storage (`cipher_ctx_*`) to `mu_secure_channel_t` (guarded) in `src/services/secure_channel.h` with a `MU_CIPHER_CTX_SIZE` compile-time assert (data-model.md E2).
 - [ ] T043 [US3] Initialize the cipher context at OPN (where keys derive) and use the ctx AES path with graceful fallback to stateless `aes256_cbc_*` in `src/security/sym_chunk.c` (FR-012/D2).
 - [ ] T044 [US3] Implement the cipher-ctx functions in the host adapter `src/platform/host_crypto_adapter.c` (reuse the EVP context instead of per-op new/free) (FR-012/audit-T2).
-- [ ] T045 [P] [US3] Add the `advance_sample_timer` divide fast-path (`elapsed < interval` ⇒ single add) in `src/services/subscription.c` — behaviour-preserving, no wire change (FR-013/audit-T11).
-- [ ] T046 [US3] Replace the per-message whole-remainder `memmove` with a read cursor + single compaction in `src/core/server.c` — behaviour-preserving, no wire change (FR-013/audit-T12).
-- [ ] T047a [US3] Run the T006 golden vectors and confirm Read/Browse/subscription responses are byte-identical (FR-014/SC-003).
-- [ ] T047b [US3] Update `docs/traceability/004-optimization-fixes.md` (FR-009/010/011/012/013 rows) and the size/RAM record for US3. (Not [P]: shared traceability/ledger files.)
+- [X] T045 [P] [US3] Add the `advance_sample_timer` divide fast-path (`elapsed < interval` ⇒ single add) in `src/services/subscription.c` — behaviour-preserving, no wire change (FR-013/audit-T11).
+- [X] T046 [US3] Replace the per-message whole-remainder `memmove` with a read cursor + single compaction in `src/core/server.c` — behaviour-preserving, no wire change (FR-013/audit-T12).
+- [X] T047a [US3] Run the T006 golden vectors and confirm Read/Browse/subscription responses are byte-identical (FR-014/SC-003).
+- [X] T047b [US3] Update `docs/traceability/004-optimization-fixes.md` (FR-009/010/011/012/013 rows) and the size/RAM record for US3. (Not [P]: shared traceability/ledger files.)
 
 **Checkpoint**: US1–US3 independently functional; performance improved with identical wire output.
 

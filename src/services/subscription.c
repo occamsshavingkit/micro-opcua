@@ -4,7 +4,6 @@
 
 #if MICRO_OPCUA_SUBSCRIPTIONS
 
-#include "../address_space/base_nodes.h"
 #include "../core/server_internal.h"
 #include "micro_opcua/address_space.h"
 #include "service_header.h"
@@ -52,14 +51,10 @@ static bool variant_scalar_equal(const mu_variant_t *a, const mu_variant_t *b)
     }
 }
 
-static opcua_statuscode_t read_monitored_item_value(const struct mu_server *server,
-                                                    const mu_monitored_item_t *item,
+static opcua_statuscode_t read_monitored_item_value(const mu_monitored_item_t *item,
                                                     mu_variant_t *cur)
 {
-    const mu_node_t *node =
-        mu_resolve_node(server->config.address_space,
-                        &server->runtime_base.space,
-                        &item->node_id);
+    const mu_node_t *node = item->resolved_node;
 
     if (node == NULL || node->value == NULL) {
         return MU_STATUS_BAD_NODEIDUNKNOWN;
@@ -94,6 +89,16 @@ static void advance_sample_timer(mu_monitored_item_t *item, opcua_uint64_t now_m
 
     if (item->next_sample_ms <= now_ms) {
         opcua_uint64_t elapsed = now_ms - item->next_sample_ms;
+        if (elapsed < interval) {
+            /* Hot path: avoid Cortex-M0+ software 64-bit divide unless catching up. */
+            if (item->next_sample_ms > max - interval) {
+                item->next_sample_ms = max;
+            } else {
+                item->next_sample_ms += interval;
+            }
+            return;
+        }
+
         opcua_uint64_t steps = (elapsed / interval) + 1u;
         opcua_uint64_t max_steps = (max - item->next_sample_ms) / interval;
 
@@ -833,7 +838,7 @@ void mu_subscriptions_tick(struct mu_server *server, opcua_uint64_t now_ms)
 
         mu_variant_t cur;
         memset(&cur, 0, sizeof(cur));
-        opcua_statuscode_t status = read_monitored_item_value(server, item, &cur);
+        opcua_statuscode_t status = read_monitored_item_value(item, &cur);
 
         if (!item->has_value) {
             item->last_value = cur;

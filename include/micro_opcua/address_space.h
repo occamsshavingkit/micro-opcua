@@ -2,6 +2,7 @@
 #ifndef MICRO_OPCUA_ADDRESS_SPACE_H
 #define MICRO_OPCUA_ADDRESS_SPACE_H
 
+#include "micro_opcua/config.h"
 #include "micro_opcua/types.h"
 #include "micro_opcua/status.h"
 
@@ -52,6 +53,15 @@ typedef struct {
     /* Optional value source for variables */
     const mu_value_source_t *value;
 } mu_node_t;
+
+/* Bounded NodeId index for sub-linear lookup. Entries are sorted by the
+ * NodeId sort key (namespace, identifier_type, numeric value or string hash);
+ * a binary-search hit is confirmed with mu_nodeid_equal. */
+typedef struct {
+    opcua_uint16_t order[MU_MAX_ADDRESS_SPACE_NODES]; /* node indices sorted by NodeId sort key */
+    size_t count;                                     /* number of indexed nodes */
+    opcua_boolean_t indexed;                         /* false => fall back to linear scan (node_count > cap) */
+} mu_address_space_index_t;
 
 typedef struct {
     const mu_node_t *nodes;

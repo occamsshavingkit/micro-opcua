@@ -14,6 +14,7 @@
 #endif
 #include "../services/service_header.h"
 #ifdef MICRO_OPCUA_SECURITY
+#include "../security/key_derivation.h"
 #include "../security/sym_chunk.h"
 #endif
 #include <stddef.h>
@@ -1027,6 +1028,7 @@ static opcua_statuscode_t handle_create_monitored_items(mu_server_t *server,
         }
 
         copy_monitored_node_id(item, &body.node_id);
+        item->resolved_node = node;
         item->attribute_id = body.attribute_id;
         item->client_handle = body.client_handle;
         item->monitoring_mode = (mu_monitoring_mode_t)body.monitoring_mode;
