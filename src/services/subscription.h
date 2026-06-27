@@ -157,6 +157,15 @@ opcua_statuscode_t mu_subscription_create(mu_subscriptions_t *subs,
                                           opcua_uint64_t now_ms,
                                           mu_subscription_t **out_sub);
 
+/* Apply revised Subscription parameters (OPC 10000-4 §5.14.3). The interval is already
+   converted to integer ms by dispatch; count revision remains integer-only here. */
+void mu_subscription_apply_parameters(mu_subscription_t *sub,
+                                      opcua_uint32_t publishing_interval_ms,
+                                      opcua_uint32_t requested_lifetime_count,
+                                      opcua_uint32_t requested_max_keep_alive_count,
+                                      opcua_uint32_t max_notifications_per_publish,
+                                      opcua_byte_t priority);
+
 /* Delete a Subscription and all its MonitoredItems (OPC 10000-4 §5.14.8). The session_id
    must own the subscription. Returns Bad_SubscriptionIdInvalid for an unknown id. */
 opcua_statuscode_t mu_subscription_delete(mu_subscriptions_t *subs,

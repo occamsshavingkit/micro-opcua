@@ -737,6 +737,199 @@ void test_republish_and_acknowledge(void) {
     TEST_ASSERT_EQUAL_HEX32(STATUS_BAD_MESSAGENOTAVAILABLE, sr);
 }
 
+#define ID_MODIFYSUBSCRIPTIONREQUEST   793
+#define ID_MODIFYSUBSCRIPTIONRESPONSE  796
+#define ID_SETPUBLISHINGMODEREQUEST    799
+#define ID_SETPUBLISHINGMODERESPONSE   802
+#define ID_MODIFYMONITOREDITEMSREQUEST 763
+#define ID_MODIFYMONITOREDITEMSRESPONSE 766
+#define ID_SETMONITORINGMODEREQUEST    767
+#define ID_SETMONITORINGMODERESPONSE   770
+
+/* Create a subscription + one monitored item on samp_space ns=1;i=5000, returning ids. */
+static mu_server_t *setup_sub_with_item(mock_t *mock, opcua_byte_t *storage, size_t ssize,
+                                        mu_server_config_t *config, opcua_double_t interval,
+                                        opcua_uint32_t lifetime, opcua_uint32_t keepalive,
+                                        opcua_double_t sampling, opcua_uint32_t *sub_id_out,
+                                        opcua_uint32_t *item_id_out) {
+    enqueue_connect(mock);
+    enqueue_create_subscription(mock, 4, interval, lifetime, keepalive);
+    mu_server_t *server = make_server(mock, storage, ssize, config, &samp_space);
+    mu_binary_reader_t body; opcua_statuscode_t sr;
+    run_connect(server);
+    mu_server_poll(server);
+    TEST_ASSERT_EQUAL(ID_CREATESUBSCRIPTIONRESPONSE, parse_response(mock->last_write, mock->last_write_len, &body, &sr));
+    mu_binary_read_uint32(&body, sub_id_out);
+
+    opcua_byte_t tmp[1024], chunk[1024]; mu_binary_writer_t w; size_t clen;
+    mu_binary_writer_init(&w, tmp, sizeof(tmp));
+    { mu_nodeid_t t={0,MU_NODEID_NUMERIC,{ID_CREATEMONITOREDITEMSREQUEST}}; mu_binary_write_nodeid(&w,&t); }
+    write_request_header(&w, 12345, 5);
+    mu_binary_write_uint32(&w, *sub_id_out);
+    mu_binary_write_uint32(&w, 3);
+    mu_binary_write_int32(&w, 1);
+    write_moncreate_item(&w, 1, 5000, 7, sampling);
+    clen = build_msg(chunk, sizeof(chunk), 5, 5, tmp, w.position); enqueue(mock, chunk, clen);
+    mu_server_poll(server);
+    TEST_ASSERT_EQUAL(ID_CREATEMONITOREDITEMSRESPONSE, parse_response(mock->last_write, mock->last_write_len, &body, &sr));
+    opcua_int32_t n; mu_binary_read_int32(&body, &n);
+    read_moncreate_result(&body, item_id_out);
+    return server;
+}
+
+/* ModifySubscription (OPC 10000-4 §5.14.3): revised publishing interval reflects the new
+   requested value. */
+void test_modify_subscription(void) {
+    mock_t mock; memset(&mock, 0, sizeof(mock));
+    enqueue_connect(&mock);
+    enqueue_create_subscription(&mock, 4, 1000.0, 100, 10);
+    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES]; mu_server_config_t config;
+    mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config, NULL);
+    mu_binary_reader_t body; opcua_statuscode_t sr;
+    run_connect(server);
+    mu_server_poll(server);
+    TEST_ASSERT_EQUAL(ID_CREATESUBSCRIPTIONRESPONSE, parse_response(mock.last_write, mock.last_write_len, &body, &sr));
+    opcua_uint32_t sub_id; mu_binary_read_uint32(&body, &sub_id);
+
+    opcua_byte_t tmp[512], chunk[512]; mu_binary_writer_t w; size_t clen;
+    mu_binary_writer_init(&w, tmp, sizeof(tmp));
+    { mu_nodeid_t t={0,MU_NODEID_NUMERIC,{ID_MODIFYSUBSCRIPTIONREQUEST}}; mu_binary_write_nodeid(&w,&t); }
+    write_request_header(&w, 12345, 5);
+    mu_binary_write_uint32(&w, sub_id);
+    mu_binary_write_double(&w, 333.0);   /* requestedPublishingInterval */
+    mu_binary_write_uint32(&w, 100);     /* requestedLifetimeCount */
+    mu_binary_write_uint32(&w, 10);      /* requestedMaxKeepAliveCount */
+    mu_binary_write_uint32(&w, 0);       /* maxNotificationsPerPublish */
+    mu_binary_write_byte(&w, 0);         /* priority */
+    clen = build_msg(chunk, sizeof(chunk), 5, 5, tmp, w.position); enqueue(&mock, chunk, clen);
+
+    mu_server_poll(server);
+    TEST_ASSERT_EQUAL(ID_MODIFYSUBSCRIPTIONRESPONSE, parse_response(mock.last_write, mock.last_write_len, &body, &sr));
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, sr);
+    opcua_double_t revised; mu_binary_read_double(&body, &revised);
+    TEST_ASSERT_TRUE(revised >= 332.0 && revised <= 334.0);
+}
+
+/* SetPublishingMode (OPC 10000-4 §5.14.4): disabling publishing suppresses data
+   notifications — only keep-alives are sent even when a value changes. */
+void test_set_publishing_mode(void) {
+    mock_t mock; memset(&mock, 0, sizeof(mock));
+    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES]; mu_server_config_t config;
+    opcua_uint32_t sub_id, item_id;
+    s_mon_val = 10;
+    mu_server_t *server = setup_sub_with_item(&mock, storage, sizeof(storage), &config,
+                                              200.0, 100, 2, 100.0, &sub_id, &item_id);
+    mu_binary_reader_t body; opcua_statuscode_t sr;
+
+    /* SetPublishingMode(false, [sub_id]) (seq 6). */
+    opcua_byte_t tmp[512], chunk[512]; mu_binary_writer_t w; size_t clen;
+    mu_binary_writer_init(&w, tmp, sizeof(tmp));
+    { mu_nodeid_t t={0,MU_NODEID_NUMERIC,{ID_SETPUBLISHINGMODEREQUEST}}; mu_binary_write_nodeid(&w,&t); }
+    write_request_header(&w, 12345, 6);
+    mu_binary_write_boolean(&w, false);
+    mu_binary_write_int32(&w, 1);
+    mu_binary_write_uint32(&w, sub_id);
+    clen = build_msg(chunk, sizeof(chunk), 6, 6, tmp, w.position); enqueue(&mock, chunk, clen);
+    mu_server_poll(server);
+    TEST_ASSERT_EQUAL(ID_SETPUBLISHINGMODERESPONSE, parse_response(mock.last_write, mock.last_write_len, &body, &sr));
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, sr);
+    opcua_int32_t nres; mu_binary_read_int32(&body, &nres); TEST_ASSERT_EQUAL(1, nres);
+    opcua_statuscode_t r0; mu_binary_read_statuscode(&body, &r0); TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, r0);
+
+    /* A value change with publishing disabled yields a keep-alive (no data). */
+    s_mon_val = 20;
+    enqueue_publish(&mock, 7);
+    mu_server_poll(server);
+    for (opcua_uint64_t t = 250; t <= 1050; t += 200) { s_tick = t; mu_server_poll(server); }
+    opcua_uint32_t sid, seqn, ch = 0; mu_datavalue_t dv;
+    TEST_ASSERT_EQUAL(ID_PUBLISHRESPONSE, parse_response(mock.last_write, mock.last_write_len, &body, &sr));
+    TEST_ASSERT_EQUAL(0, parse_publish_response(&body, &sid, &seqn, &ch, &dv)); /* keep-alive, no data */
+}
+
+/* ModifyMonitoredItems (OPC 10000-4 §5.13.3): the revised sampling interval reflects the
+   new requested value. */
+void test_modify_monitored_items(void) {
+    mock_t mock; memset(&mock, 0, sizeof(mock));
+    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES]; mu_server_config_t config;
+    opcua_uint32_t sub_id, item_id;
+    s_mon_val = 10;
+    mu_server_t *server = setup_sub_with_item(&mock, storage, sizeof(storage), &config,
+                                              1000.0, 100, 10, 500.0, &sub_id, &item_id);
+    mu_binary_reader_t body; opcua_statuscode_t sr;
+
+    opcua_byte_t tmp[512], chunk[512]; mu_binary_writer_t w; size_t clen;
+    mu_binary_writer_init(&w, tmp, sizeof(tmp));
+    { mu_nodeid_t t={0,MU_NODEID_NUMERIC,{ID_MODIFYMONITOREDITEMSREQUEST}}; mu_binary_write_nodeid(&w,&t); }
+    write_request_header(&w, 12345, 6);
+    mu_binary_write_uint32(&w, sub_id);
+    mu_binary_write_uint32(&w, 3);       /* timestampsToReturn */
+    mu_binary_write_int32(&w, 1);        /* itemsToModify */
+    mu_binary_write_uint32(&w, item_id); /* monitoredItemId */
+    mu_binary_write_uint32(&w, 7);       /* clientHandle */
+    mu_binary_write_double(&w, 250.0);   /* samplingInterval */
+    { mu_nodeid_t nul = {0,MU_NODEID_NUMERIC,{0}}; mu_binary_write_extension_object_header(&w, &nul, 0); }
+    mu_binary_write_uint32(&w, 1);       /* queueSize */
+    mu_binary_write_boolean(&w, true);   /* discardOldest */
+    clen = build_msg(chunk, sizeof(chunk), 6, 6, tmp, w.position); enqueue(&mock, chunk, clen);
+
+    mu_server_poll(server);
+    TEST_ASSERT_EQUAL(ID_MODIFYMONITOREDITEMSRESPONSE, parse_response(mock.last_write, mock.last_write_len, &body, &sr));
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, sr);
+    opcua_int32_t nres; mu_binary_read_int32(&body, &nres); TEST_ASSERT_EQUAL(1, nres);
+    opcua_statuscode_t st; mu_binary_read_statuscode(&body, &st); TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, st);
+    opcua_double_t revised; mu_binary_read_double(&body, &revised);
+    TEST_ASSERT_TRUE(revised >= 249.0 && revised <= 251.0);
+}
+
+/* SetMonitoringMode (OPC 10000-4 §5.13.4): DISABLED stops change detection; REPORTING
+   resumes it. */
+void test_set_monitoring_mode(void) {
+    mock_t mock; memset(&mock, 0, sizeof(mock));
+    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES]; mu_server_config_t config;
+    opcua_uint32_t sub_id, item_id;
+    s_mon_val = 10;
+    mu_server_t *server = setup_sub_with_item(&mock, storage, sizeof(storage), &config,
+                                              1000.0, 100, 10, 100.0, &sub_id, &item_id);
+    mu_binary_reader_t body; opcua_statuscode_t sr;
+    mu_monitored_item_t *item = &server->subs.monitored_items[0];
+
+    /* SetMonitoringMode(Disabled=0, [item]) (seq 6). */
+    opcua_byte_t tmp[512], chunk[512]; mu_binary_writer_t w; size_t clen;
+    mu_binary_writer_init(&w, tmp, sizeof(tmp));
+    { mu_nodeid_t t={0,MU_NODEID_NUMERIC,{ID_SETMONITORINGMODEREQUEST}}; mu_binary_write_nodeid(&w,&t); }
+    write_request_header(&w, 12345, 6);
+    mu_binary_write_uint32(&w, sub_id);
+    mu_binary_write_uint32(&w, 0);       /* monitoringMode = Disabled */
+    mu_binary_write_int32(&w, 1);
+    mu_binary_write_uint32(&w, item_id);
+    clen = build_msg(chunk, sizeof(chunk), 6, 6, tmp, w.position); enqueue(&mock, chunk, clen);
+    mu_server_poll(server);
+    TEST_ASSERT_EQUAL(ID_SETMONITORINGMODERESPONSE, parse_response(mock.last_write, mock.last_write_len, &body, &sr));
+    opcua_int32_t nres; mu_binary_read_int32(&body, &nres); TEST_ASSERT_EQUAL(1, nres);
+    opcua_statuscode_t r0; mu_binary_read_statuscode(&body, &r0); TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, r0);
+
+    /* Disabled: a value change is NOT detected. */
+    item->pending = false;
+    s_mon_val = 20; s_tick = 300; mu_server_poll(server);
+    TEST_ASSERT_FALSE(item->pending);
+
+    /* SetMonitoringMode(Reporting=2) (seq 7) resumes detection. */
+    mu_binary_writer_init(&w, tmp, sizeof(tmp));
+    { mu_nodeid_t t={0,MU_NODEID_NUMERIC,{ID_SETMONITORINGMODEREQUEST}}; mu_binary_write_nodeid(&w,&t); }
+    write_request_header(&w, 12345, 7);
+    mu_binary_write_uint32(&w, sub_id);
+    mu_binary_write_uint32(&w, 2);       /* Reporting */
+    mu_binary_write_int32(&w, 1);
+    mu_binary_write_uint32(&w, item_id);
+    clen = build_msg(chunk, sizeof(chunk), 7, 7, tmp, w.position); enqueue(&mock, chunk, clen);
+    mu_server_poll(server);
+    TEST_ASSERT_EQUAL(ID_SETMONITORINGMODERESPONSE, parse_response(mock.last_write, mock.last_write_len, &body, &sr));
+
+    s_mon_val = 30; s_tick = 600; mu_server_poll(server);
+    TEST_ASSERT_TRUE(item->pending);
+    TEST_ASSERT_EQUAL_INT32(30, item->last_value.value.i32);
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_create_subscription);
@@ -749,5 +942,9 @@ int main(void) {
     RUN_TEST(test_publish_delivers_data_change);
     RUN_TEST(test_publish_keep_alive);
     RUN_TEST(test_republish_and_acknowledge);
+    RUN_TEST(test_modify_subscription);
+    RUN_TEST(test_set_publishing_mode);
+    RUN_TEST(test_modify_monitored_items);
+    RUN_TEST(test_set_monitoring_mode);
     return UNITY_END();
 }
