@@ -306,6 +306,50 @@ void test_secure_channel_close(void) {
     TEST_ASSERT_FALSE(channel.is_open);
 }
 
+#ifdef MICRO_OPCUA_SECURITY
+static void populate_derived_session_keys(mu_secure_channel_t *channel) {
+    memset(&channel->client_keys, 0xA5, sizeof(channel->client_keys));
+    memset(&channel->server_keys, 0x5A, sizeof(channel->server_keys));
+    channel->keys_valid = true;
+}
+
+static void assert_symmetric_keys_zeroized(const mu_sym_keys_t *keys) {
+    const opcua_byte_t zeros[sizeof(*keys)] = { 0 };
+    TEST_ASSERT_EQUAL_MEMORY(zeros, keys, sizeof(*keys));
+}
+
+static void assert_channel_keys_zeroized(const mu_secure_channel_t *channel) {
+    TEST_ASSERT_FALSE(channel->keys_valid);
+    assert_symmetric_keys_zeroized(&channel->client_keys);
+    assert_symmetric_keys_zeroized(&channel->server_keys);
+}
+
+void test_secure_channel_close_and_init_zeroize_derived_session_keys(void) {
+    static const opcua_byte_t policy_uri[] =
+        "http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256";
+    mu_secure_channel_t channel;
+    mu_string_t policy = { (opcua_int32_t)(sizeof(policy_uri) - 1u), policy_uri };
+    opcua_uint32_t revised_lifetime = 0;
+
+    mu_secure_channel_init(&channel);
+    channel.policy = MU_SECURITY_POLICY_BASIC256SHA256_ID;
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
+        mu_secure_channel_open(&channel,
+                               &policy,
+                               MU_MESSAGE_SECURITY_MODE_SIGN_AND_ENCRYPT,
+                               3600000,
+                               &revised_lifetime));
+    populate_derived_session_keys(&channel);
+
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_secure_channel_close(&channel));
+    assert_channel_keys_zeroized(&channel);
+
+    populate_derived_session_keys(&channel);
+    mu_secure_channel_init(&channel);
+    assert_channel_keys_zeroized(&channel);
+}
+#endif
+
 void test_opn_rejects_unacceptable_security_policy_without_crypto_adapter(void) {
     static const opcua_byte_t policy_uri[] =
         "http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256";
@@ -344,6 +388,9 @@ int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_secure_channel_open_none);
     RUN_TEST(test_secure_channel_close);
+#ifdef MICRO_OPCUA_SECURITY
+    RUN_TEST(test_secure_channel_close_and_init_zeroize_derived_session_keys);
+#endif
     RUN_TEST(test_opn_rejects_unacceptable_security_policy_without_crypto_adapter);
     RUN_TEST(test_opn_rejects_signing_modes_for_security_policy_none);
     return UNITY_END();

@@ -16,11 +16,15 @@ opcua_statuscode_t mu_sym_keys_derive(const mu_crypto_adapter_t *crypto,
     if (!out_keys) return MU_STATUS_BAD_INTERNALERROR;
     opcua_byte_t material[MU_B256S256_DERIVED_KEY_LENGTH];
     opcua_statuscode_t s = mu_p_sha256(crypto, secret, secret_len, seed, seed_len, material, sizeof(material));
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD) {
+        mu_secure_zero(material, sizeof(material));
+        return s;
+    }
     memcpy(out_keys->signing_key, material, MU_B256S256_SIGNATURE_KEY_LENGTH);
     memcpy(out_keys->encrypting_key, material + MU_B256S256_SIGNATURE_KEY_LENGTH, MU_B256S256_ENCRYPTION_KEY_LENGTH);
     memcpy(out_keys->iv, material + MU_B256S256_SIGNATURE_KEY_LENGTH + MU_B256S256_ENCRYPTION_KEY_LENGTH,
            MU_B256S256_ENCRYPTION_BLOCK_SIZE);
+    mu_secure_zero(material, sizeof(material));
     return MU_STATUS_GOOD;
 }
 
@@ -75,8 +79,12 @@ opcua_statuscode_t mu_sym_chunk_wrap(
         opcua_byte_t mac[MU_SYM_SIG_LEN];
         opcua_statuscode_t s = crypto->hmac_sha256(crypto->context, keys->signing_key,
                                                    sizeof(keys->signing_key), out, signed_len, mac);
-        if (s != MU_STATUS_GOOD) return s;
+        if (s != MU_STATUS_GOOD) {
+            mu_secure_zero(mac, sizeof(mac));
+            return s;
+        }
         memcpy(out + signed_len, mac, MU_SYM_SIG_LEN);
+        mu_secure_zero(mac, sizeof(mac));
         *out_len = total;
         return MU_STATUS_GOOD;
     }
@@ -101,8 +109,12 @@ opcua_statuscode_t mu_sym_chunk_wrap(
     opcua_byte_t mac[MU_SYM_SIG_LEN];
     opcua_statuscode_t s = crypto->hmac_sha256(crypto->context, keys->signing_key,
                                                sizeof(keys->signing_key), out, signed_len, mac);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD) {
+        mu_secure_zero(mac, sizeof(mac));
+        return s;
+    }
     memcpy(out + signed_len, mac, MU_SYM_SIG_LEN);   /* signature tails the plaintext */
+    mu_secure_zero(mac, sizeof(mac));
 
     /* Encrypt the SequenceHeader..signature region in place (AES-CBC preserves length). */
     s = crypto->aes256_cbc_encrypt(crypto->context, keys->encrypting_key, keys->iv,
@@ -153,8 +165,15 @@ opcua_statuscode_t mu_sym_chunk_unwrap(
     opcua_byte_t mac[MU_SYM_SIG_LEN];
     opcua_statuscode_t s = crypto->hmac_sha256(crypto->context, keys->signing_key,
                                                sizeof(keys->signing_key), chunk, signed_len, mac);
-    if (s != MU_STATUS_GOOD) return s;
-    if (memcmp(mac, chunk + signed_len, MU_SYM_SIG_LEN) != 0) return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+    if (s != MU_STATUS_GOOD) {
+        mu_secure_zero(mac, sizeof(mac));
+        return s;
+    }
+    if (memcmp(mac, chunk + signed_len, MU_SYM_SIG_LEN) != 0) {
+        mu_secure_zero(mac, sizeof(mac));
+        return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+    }
+    mu_secure_zero(mac, sizeof(mac));
 
     /* Strip padding (SignAndEncrypt only; Sign has none). */
     size_t pad_count = 0;
