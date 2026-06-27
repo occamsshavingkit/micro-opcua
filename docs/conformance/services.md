@@ -2,7 +2,8 @@
 
 Status of each OPC UA Service in micro-opcua. `Implemented` means handled with a
 spec-correct response and covered by tests; `Unsupported` returns
-`Bad_ServiceUnsupported`. Single client / channel / session.
+`Bad_ServiceUnsupported`. Currently a single client / channel / session (concurrent
+≥2-session support is the remaining Micro item).
 
 | Service | OPC 10000-4 § | Status | Notes |
 |---------|---------------|--------|-------|
@@ -19,13 +20,32 @@ spec-correct response and covered by tests; `Unsupported` returns
 | TranslateBrowsePathsToNodeIds | 5.9.4 | Implemented | RelativePath walk over the address space; `Bad_NoMatch` |
 | RegisterNodes | 5.9.5 | Implemented | Identity mapping (NodeIds copied back) |
 | UnregisterNodes | 5.9.6 | Implemented | No-op, returns Good |
-| Write | 5.10.3 | Unsupported | Not in Nano |
-| Call | 5.11.2 | Unsupported | Method Service Set (not in Nano) |
-| CreateSubscription / MonitoredItems / Publish | 5.13 | Unsupported | Subscriptions are the Micro profile, not Nano |
-| HistoryRead / HistoryUpdate | 5.10 | Unsupported | Not in Nano |
+| Write | 5.10.3 | Unsupported | Not in Nano/Micro |
+| Call | 5.11.2 | Unsupported | Method Service Set (not in Nano/Micro) |
+| CreateMonitoredItems | 5.13.2 | Implemented | Data-change monitoring; initial sample; `Bad_NodeIdUnknown` / `Bad_TooManyMonitoredItems` |
+| ModifyMonitoredItems | 5.13.3 | Implemented | Revised sampling interval / clientHandle |
+| SetMonitoringMode | 5.13.4 | Implemented | Disabled / Sampling / Reporting |
+| DeleteMonitoredItems | 5.13.6 | Implemented | `Bad_MonitoredItemIdInvalid` |
+| CreateSubscription | 5.14.2 | Implemented | Revised publishing interval / lifetime / keep-alive; `Bad_TooManySubscriptions` |
+| ModifySubscription | 5.14.3 | Implemented | Revised timing parameters |
+| SetPublishingMode | 5.14.4 | Implemented | Disabled → keep-alives only |
+| Publish | 5.14.5 | Implemented | Parked + answered asynchronously by the publishing timer; keep-alive; ack processing |
+| Republish | 5.14.6 | Implemented | Resends the retained NotificationMessage; `Bad_MessageNotAvailable` |
+| TransferSubscriptions | 5.14.7 | Unsupported | Above the Embedded DataChange facet (Standard tier) |
+| DeleteSubscriptions | 5.14.8 | Implemented | Deletes the subscription and its MonitoredItems |
+| SetTriggering | 5.13.5 | Unsupported | Above the Embedded DataChange facet |
+| HistoryRead / HistoryUpdate | 5.10 | Unsupported | Not in Nano/Micro |
 | AddNodes / DeleteNodes / AddReferences / DeleteReferences | 5.7 | Unsupported | NodeManagement (not in Nano) |
 | QueryFirst / QueryNext | 5.9.x | Unsupported | Query (not in Nano) |
 
 The View Service Set (Browse, BrowseNext, TranslateBrowsePaths, RegisterNodes,
 UnregisterNodes) is the set of Core Server Facet "View" conformance units required
 by Nano; all are now implemented (`tests/integration/test_view_services.c`).
+
+The Subscription Service Set (§5.14) and MonitoredItem Service Set (§5.13) implement
+the **Embedded Data Change Subscription Server Facet** required by the Micro profile —
+data-change monitoring, an asynchronous Publish flow driven by `mu_server_poll`,
+keep-alives, and Republish — all no-heap and behind the `MICRO_OPCUA_SUBSCRIPTIONS`
+build option (`tests/integration/test_subscriptions.c`). The richer Standard/Enhanced
+facet services (TransferSubscriptions, SetTriggering, event/aggregate filters) are
+above this tier and remain unsupported.

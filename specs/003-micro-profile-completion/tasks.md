@@ -144,16 +144,16 @@ All subscription code is gated by `MICRO_OPCUA_SUBSCRIPTIONS`.
 
 ## US6 — Profile wiring, conformance docs, validation (P1)
 
-- [ ] T026 [Codex-impl] Add the `MICRO_OPCUA_SUBSCRIPTIONS` CMake option (default ON)
+- [X] T026 [Codex-impl] Add the `MICRO_OPCUA_SUBSCRIPTIONS` CMake option (default ON)
   and gate `src/services/subscription.c` + the definition in `src/CMakeLists.txt`;
   guard all engine code under `#if MICRO_OPCUA_SUBSCRIPTIONS`. (OPC refs: n/a — build)
-- [ ] T027 [Claude] Update `Makefile` so `make micro` enables
+- [X] T027 [Claude] Update `Makefile` so `make micro` enables
   `-DMICRO_OPCUA_SUBSCRIPTIONS=ON` (distinct from `make nano`), and `make nano`
   explicitly OFF; update target docs. (OPC refs: n/a — build)
-- [ ] T028 [Claude] Update `docs/conformance/{status,services}.md` and add
+- [X] T028 [Claude] Update `docs/conformance/{status,services}.md` and add
   `docs/conformance/profile-micro.md` (subscription/MonitoredItem CUs → Implemented,
   profile-targeting wording per the conformance-doc test rules); add the new sources to
   `docs/traceability/files-to-sections.md`. (OPC refs: OPC 10000-7 Micro profile)
-- [ ] T029 [Claude] Full-surface validation: `-Werror` build, full ctest, ASan+UBSan,
+- [X] T029 [Claude] Full-surface validation: `-Werror` build, full ctest, ASan+UBSan,
   the dotnet-interop job, and a `sizeof(struct mu_server) <= MU_SERVER_STORAGE_BYTES`
   static assert check. (OPC refs: n/a — validation)
