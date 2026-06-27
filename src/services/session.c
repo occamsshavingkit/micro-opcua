@@ -27,6 +27,40 @@ void mu_session_init(mu_session_t *session) {
     }
 }
 
+mu_session_t *mu_session_find_by_token(mu_session_t *sessions,
+                                       size_t count,
+                                       opcua_uint32_t auth_token)
+{
+    if (sessions == NULL) {
+        return NULL;
+    }
+
+    for (size_t i = 0; i < count; ++i) {
+        if (sessions[i].state != MU_SESSION_STATE_CLOSED &&
+            sessions[i].auth_token == auth_token) {
+            return &sessions[i];
+        }
+    }
+
+    return NULL;
+}
+
+mu_session_t *mu_session_find_free(mu_session_t *sessions,
+                                   size_t count)
+{
+    if (sessions == NULL) {
+        return NULL;
+    }
+
+    for (size_t i = 0; i < count; ++i) {
+        if (sessions[i].state == MU_SESSION_STATE_CLOSED) {
+            return &sessions[i];
+        }
+    }
+
+    return NULL;
+}
+
 opcua_statuscode_t mu_session_create(mu_session_t *session,
                                      opcua_uint64_t requested_timeout_bits,
                                      opcua_uint64_t *revised_timeout_bits,

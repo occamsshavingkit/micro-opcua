@@ -930,6 +930,182 @@ void test_set_monitoring_mode(void) {
     TEST_ASSERT_EQUAL_INT32(30, item->last_value.value.i32);
 }
 
+#define ID_READREQUEST                 631
+#define ID_READRESPONSE                634
+#define STATUS_BAD_TOOMANYSESSIONS     0x80560000u
+
+/* Enqueue a CreateSession request (header only; the server bounds the timeout). */
+static void enqueue_create_session(mock_t *m, opcua_uint32_t seq) {
+    opcua_byte_t tmp[256], chunk[256]; mu_binary_writer_t w; size_t clen;
+    mu_binary_writer_init(&w, tmp, sizeof(tmp));
+    { mu_nodeid_t t={0,MU_NODEID_NUMERIC,{MU_ID_CREATESESSIONREQUEST}}; mu_binary_write_nodeid(&w,&t); }
+    write_request_header(&w, 0, seq);
+    clen = build_msg(chunk, sizeof(chunk), seq, seq, tmp, w.position); enqueue(m, chunk, clen);
+}
+
+/* Enqueue an ActivateSession request authenticated by the given token. */
+static void enqueue_activate_session(mock_t *m, opcua_uint32_t seq, opcua_uint32_t token) {
+    opcua_byte_t tmp[256], chunk[256]; mu_binary_writer_t w; size_t clen;
+    mu_binary_writer_init(&w, tmp, sizeof(tmp));
+    { mu_nodeid_t t={0,MU_NODEID_NUMERIC,{MU_ID_ACTIVATESESSIONREQUEST}}; mu_binary_write_nodeid(&w,&t); }
+    write_request_header(&w, token, seq);
+    { mu_string_t ns={-1,NULL}; mu_bytestring_t nb={-1,NULL}; mu_binary_write_string(&w,&ns); mu_binary_write_bytestring(&w,&nb); }
+    mu_binary_write_int32(&w,0); mu_binary_write_int32(&w,0);
+    { mu_nodeid_t anon={0,MU_NODEID_NUMERIC,{321}}; mu_binary_write_extension_object_header(&w,&anon,0); }
+    clen = build_msg(chunk, sizeof(chunk), seq, seq, tmp, w.position); enqueue(m, chunk, clen);
+}
+
+/* Enqueue a Read of ServerStatus.State (i=2259) Value, authenticated by token. */
+static void enqueue_read_state(mock_t *m, opcua_uint32_t seq, opcua_uint32_t token) {
+    opcua_byte_t tmp[256], chunk[256]; mu_binary_writer_t w; size_t clen;
+    mu_binary_writer_init(&w, tmp, sizeof(tmp));
+    { mu_nodeid_t t={0,MU_NODEID_NUMERIC,{ID_READREQUEST}}; mu_binary_write_nodeid(&w,&t); }
+    write_request_header(&w, token, seq);
+    mu_binary_write_double(&w, 0.0);     /* maxAge */
+    mu_binary_write_uint32(&w, 0);       /* timestampsToReturn = Source */
+    mu_binary_write_int32(&w, 1);        /* nodesToRead count */
+    { mu_nodeid_t n={0,MU_NODEID_NUMERIC,{2259}}; mu_binary_write_nodeid(&w,&n); }
+    mu_binary_write_uint32(&w, 13);      /* attributeId = Value */
+    { mu_string_t nul={-1,NULL}; mu_binary_write_string(&w,&nul); }   /* indexRange */
+    mu_binary_write_uint16(&w, 0);       /* dataEncoding.namespaceIndex */
+    { mu_string_t nul={-1,NULL}; mu_binary_write_string(&w,&nul); }   /* dataEncoding.name */
+    clen = build_msg(chunk, sizeof(chunk), seq, seq, tmp, w.position); enqueue(m, chunk, clen);
+}
+
+/* Parse a CreateSessionResponse far enough to read sessionId + authenticationToken. */
+static opcua_uint32_t parse_create_session_token(mu_binary_reader_t *body, opcua_uint32_t *session_id) {
+    mu_nodeid_t sid, tok;
+    mu_binary_read_nodeid(body, &sid);   /* sessionId */
+    mu_binary_read_nodeid(body, &tok);   /* authenticationToken */
+    if (session_id) *session_id = sid.identifier.numeric;
+    return tok.identifier.numeric;
+}
+
+/* Only HEL + OpenSecureChannel (seq 1), leaving sessions to the test. */
+static void enqueue_hel_opn(mock_t *mock) {
+    opcua_byte_t tmp[512], chunk[512]; mu_binary_writer_t w;
+    mu_binary_writer_init(&w, tmp, sizeof(tmp));
+    tmp[0]='H';tmp[1]='E';tmp[2]='L';tmp[3]='F'; w.position=4;
+    mu_binary_write_uint32(&w,0); mu_binary_write_uint32(&w,0); mu_binary_write_uint32(&w,8192);
+    mu_binary_write_uint32(&w,8192); mu_binary_write_uint32(&w,0); mu_binary_write_uint32(&w,0);
+    { mu_string_t u={19,(const opcua_byte_t*)"opc.tcp://host:4840"}; mu_binary_write_string(&w,&u); }
+    { mu_binary_writer_t hs; mu_binary_writer_init(&hs,tmp,sizeof(tmp)); hs.position=4; mu_binary_write_uint32(&hs,(opcua_uint32_t)w.position); }
+    enqueue(mock, tmp, w.position);
+
+    mu_binary_writer_init(&w, chunk, sizeof(chunk));
+    chunk[0]='O';chunk[1]='P';chunk[2]='N';chunk[3]='F'; w.position=4;
+    mu_binary_write_uint32(&w,0); mu_binary_write_uint32(&w,0);
+    { mu_string_t p={47,(const opcua_byte_t*)"http://opcfoundation.org/UA/SecurityPolicy#None"}; mu_binary_write_string(&w,&p); }
+    mu_binary_write_int32(&w,-1); mu_binary_write_int32(&w,-1);
+    mu_binary_write_uint32(&w,1); mu_binary_write_uint32(&w,1);
+    { mu_nodeid_t t={0,MU_NODEID_NUMERIC,{MU_ID_OPENSECURECHANNELREQUEST}}; mu_binary_write_nodeid(&w,&t); }
+    write_request_header(&w,0,1);
+    mu_binary_write_uint32(&w,0); mu_binary_write_uint32(&w,0); mu_binary_write_uint32(&w,1);
+    mu_binary_write_int32(&w,-1); mu_binary_write_uint32(&w,3600000);
+    { mu_binary_writer_t os; mu_binary_writer_init(&os,chunk,sizeof(chunk)); os.position=4; mu_binary_write_uint32(&os,(opcua_uint32_t)w.position); }
+    enqueue(mock, chunk, w.position);
+}
+
+/* Two concurrent sessions on one secure channel (OPC 10000-4 §5.6.2). Each
+   CreateSession yields a distinct authenticationToken; both can be activated and used;
+   the (MU_MAX_SESSIONS default 2)+1-th CreateSession returns Bad_TooManySessions. */
+void test_two_sessions(void) {
+    mock_t mock; memset(&mock, 0, sizeof(mock));
+    enqueue_hel_opn(&mock);
+    enqueue_create_session(&mock, 2);
+    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES]; mu_server_config_t config;
+    mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config, NULL);
+    mu_binary_reader_t body; opcua_statuscode_t sr;
+
+    mu_server_poll(server); /* accept */
+    mu_server_poll(server); /* HEL */
+    mu_server_poll(server); /* OPN */
+    mu_server_poll(server); /* CreateSession #1 */
+    TEST_ASSERT_EQUAL(MU_ID_CREATESESSIONRESPONSE, parse_response(mock.last_write, mock.last_write_len, &body, &sr));
+    opcua_uint32_t sid1, tok1 = parse_create_session_token(&body, &sid1);
+    TEST_ASSERT_NOT_EQUAL(0, tok1);
+
+    enqueue_activate_session(&mock, 3, tok1);
+    enqueue_create_session(&mock, 4);
+    mu_server_poll(server); /* ActivateSession #1 */
+    TEST_ASSERT_EQUAL(MU_ID_ACTIVATESESSIONRESPONSE, parse_response(mock.last_write, mock.last_write_len, &body, &sr));
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, sr);
+
+    mu_server_poll(server); /* CreateSession #2 */
+    TEST_ASSERT_EQUAL(MU_ID_CREATESESSIONRESPONSE, parse_response(mock.last_write, mock.last_write_len, &body, &sr));
+    opcua_uint32_t sid2, tok2 = parse_create_session_token(&body, &sid2);
+    TEST_ASSERT_NOT_EQUAL(0, tok2);
+    TEST_ASSERT_NOT_EQUAL(tok1, tok2);   /* distinct tokens */
+
+    enqueue_activate_session(&mock, 5, tok2);
+    enqueue_read_state(&mock, 6, tok1);
+    enqueue_read_state(&mock, 7, tok2);
+    enqueue_create_session(&mock, 8);
+    mu_server_poll(server); /* ActivateSession #2 */
+    TEST_ASSERT_EQUAL(MU_ID_ACTIVATESESSIONRESPONSE, parse_response(mock.last_write, mock.last_write_len, &body, &sr));
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, sr);
+
+    mu_server_poll(server); /* Read via session 1 */
+    TEST_ASSERT_EQUAL(ID_READRESPONSE, parse_response(mock.last_write, mock.last_write_len, &body, &sr));
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, sr);
+    mu_server_poll(server); /* Read via session 2 */
+    TEST_ASSERT_EQUAL(ID_READRESPONSE, parse_response(mock.last_write, mock.last_write_len, &body, &sr));
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, sr);
+
+    mu_server_poll(server); /* CreateSession #3 -> Bad_TooManySessions */
+    TEST_ASSERT_EQUAL(ID_SERVICEFAULT, parse_response(mock.last_write, mock.last_write_len, &body, &sr));
+    TEST_ASSERT_EQUAL_HEX32(STATUS_BAD_TOOMANYSESSIONS, sr);
+}
+
+/* A subscription created on session 1 is not operable from session 2 (OPC 10000-4
+   §5.14.1.3: subscriptions are owned by the session that created them). */
+void test_subscription_session_isolation(void) {
+    mock_t mock; memset(&mock, 0, sizeof(mock));
+    enqueue_hel_opn(&mock);
+    enqueue_create_session(&mock, 2);
+    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES]; mu_server_config_t config;
+    mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config, NULL);
+    mu_binary_reader_t body; opcua_statuscode_t sr;
+
+    mu_server_poll(server); mu_server_poll(server); mu_server_poll(server); /* accept,HEL,OPN */
+    mu_server_poll(server); /* CreateSession #1 */
+    TEST_ASSERT_EQUAL(MU_ID_CREATESESSIONRESPONSE, parse_response(mock.last_write, mock.last_write_len, &body, &sr));
+    opcua_uint32_t tok1 = parse_create_session_token(&body, NULL);
+    enqueue_activate_session(&mock, 3, tok1);
+    enqueue_create_session(&mock, 4);
+    mu_server_poll(server); /* ActivateSession #1 */
+    mu_server_poll(server); /* CreateSession #2 */
+    TEST_ASSERT_EQUAL(MU_ID_CREATESESSIONRESPONSE, parse_response(mock.last_write, mock.last_write_len, &body, &sr));
+    opcua_uint32_t tok2 = parse_create_session_token(&body, NULL);
+    enqueue_activate_session(&mock, 5, tok2);
+    mu_server_poll(server); /* ActivateSession #2 */
+
+    /* CreateSubscription on session 1 (seq 6, token 1). */
+    opcua_byte_t tmp[512], chunk[512]; mu_binary_writer_t w; size_t clen;
+    mu_binary_writer_init(&w, tmp, sizeof(tmp));
+    { mu_nodeid_t t={0,MU_NODEID_NUMERIC,{ID_CREATESUBSCRIPTIONREQUEST}}; mu_binary_write_nodeid(&w,&t); }
+    write_request_header(&w, tok1, 6);
+    mu_binary_write_double(&w, 1000.0); mu_binary_write_uint32(&w, 100); mu_binary_write_uint32(&w, 10);
+    mu_binary_write_uint32(&w, 0); mu_binary_write_boolean(&w, true); mu_binary_write_byte(&w, 0);
+    clen = build_msg(chunk, sizeof(chunk), 6, 6, tmp, w.position); enqueue(&mock, chunk, clen);
+    mu_server_poll(server);
+    TEST_ASSERT_EQUAL(ID_CREATESUBSCRIPTIONRESPONSE, parse_response(mock.last_write, mock.last_write_len, &body, &sr));
+    opcua_uint32_t sub_id; mu_binary_read_uint32(&body, &sub_id);
+
+    /* DeleteSubscriptions from session 2 (seq 7, token 2): per-op Bad_SubscriptionIdInvalid. */
+    mu_binary_writer_init(&w, tmp, sizeof(tmp));
+    { mu_nodeid_t t={0,MU_NODEID_NUMERIC,{ID_DELETESUBSCRIPTIONSREQUEST}}; mu_binary_write_nodeid(&w,&t); }
+    write_request_header(&w, tok2, 7);
+    mu_binary_write_int32(&w, 1);
+    mu_binary_write_uint32(&w, sub_id);
+    clen = build_msg(chunk, sizeof(chunk), 7, 7, tmp, w.position); enqueue(&mock, chunk, clen);
+    mu_server_poll(server);
+    TEST_ASSERT_EQUAL(ID_DELETESUBSCRIPTIONSRESPONSE, parse_response(mock.last_write, mock.last_write_len, &body, &sr));
+    opcua_int32_t nres; mu_binary_read_int32(&body, &nres); TEST_ASSERT_EQUAL(1, nres);
+    opcua_statuscode_t r0; mu_binary_read_statuscode(&body, &r0);
+    TEST_ASSERT_EQUAL_HEX32(STATUS_BAD_SUBSCRIPTIONIDINVALID, r0);
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_create_subscription);
@@ -946,5 +1122,7 @@ int main(void) {
     RUN_TEST(test_set_publishing_mode);
     RUN_TEST(test_modify_monitored_items);
     RUN_TEST(test_set_monitoring_mode);
+    RUN_TEST(test_two_sessions);
+    RUN_TEST(test_subscription_session_isolation);
     return UNITY_END();
 }

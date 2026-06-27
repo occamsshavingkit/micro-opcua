@@ -24,6 +24,7 @@ const char* mu_status_name(opcua_statuscode_t status)
         case MU_STATUS_BAD_RESPONSETOOLARGE: return "Bad_ResponseTooLarge";
         case MU_STATUS_BAD_SESSIONIDINVALID: return "Bad_SessionIdInvalid";
         case MU_STATUS_BAD_IDENTITYTOKENINVALID: return "Bad_IdentityTokenInvalid";
+        case MU_STATUS_BAD_TOOMANYSESSIONS: return "Bad_TooManySessions";
         case MU_STATUS_BAD_NODEIDUNKNOWN: return "Bad_NodeIdUnknown";
         case MU_STATUS_BAD_MONITOREDITEMIDINVALID: return "Bad_MonitoredItemIdInvalid";
         case MU_STATUS_BAD_ATTRIBUTEIDINVALID: return "Bad_AttributeIdInvalid";

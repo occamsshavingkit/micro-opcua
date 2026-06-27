@@ -10,7 +10,7 @@
 #define MU_DEFAULT_MAX_MESSAGE_SIZE 8192
 
 /* Maximum number of sessions/channels for Nano profile */
-#define MU_MAX_SESSIONS 1
+#define MU_MAX_SESSIONS 2
 #define MU_MAX_SECURE_CHANNELS 1
 
 /* String length limits.

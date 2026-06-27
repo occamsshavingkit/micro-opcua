@@ -21,8 +21,12 @@ static opcua_statuscode_t fake_entropy(void *c, opcua_byte_t *buf, size_t len) {
 /* Write a RequestHeader (OPC 10000-4 7.32) with the given requestHandle. */
 static void write_request_header(mu_binary_writer_t *w, opcua_uint32_t handle) {
     mu_nodeid_t null_id = { 0, MU_NODEID_NUMERIC, { 0 } };
+    /* authenticationToken = the first session slot's token (12345). Session-requiring
+       services (Read/Browse) are routed by this token to the activated session;
+       non-session services ignore it. */
+    mu_nodeid_t auth_id = { 0, MU_NODEID_NUMERIC, { 12345 } };
     mu_string_t null_str = { -1, NULL };
-    mu_binary_write_nodeid(w, &null_id);                    /* authenticationToken */
+    mu_binary_write_nodeid(w, &auth_id);                    /* authenticationToken */
     mu_binary_write_int64(w, 0);                            /* timestamp */
     mu_binary_write_uint32(w, handle);                      /* requestHandle */
     mu_binary_write_uint32(w, 0);                           /* returnDiagnostics */
@@ -125,7 +129,7 @@ void test_dispatch_create_session_honors_timeout(void) {
     mu_server_t server;
     memset(&server, 0, sizeof(server));
     server.secure_channel.is_open = true;
-    mu_session_init(&server.session);
+    mu_session_init(&server.sessions[0]);
     server.config.time_adapter.get_time = fake_time;
     server.config.entropy_adapter.generate_random = fake_entropy;
 
@@ -151,7 +155,7 @@ void test_dispatch_create_session(void) {
     mu_server_t server;
     memset(&server, 0, sizeof(server));
     server.secure_channel.is_open = true;
-    mu_session_init(&server.session);
+    mu_session_init(&server.sessions[0]);
     server.config.time_adapter.get_time = fake_time;
     server.config.entropy_adapter.generate_random = fake_entropy;
 
@@ -166,7 +170,7 @@ void test_dispatch_create_session(void) {
     size_t resp_len = sizeof(resp);
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
         mu_service_dispatch(&server, MU_ID_CREATESESSIONREQUEST, req, req_len, resp, &resp_len));
-    TEST_ASSERT_EQUAL(MU_SESSION_STATE_CREATED, server.session.state);
+    TEST_ASSERT_EQUAL(MU_SESSION_STATE_CREATED, server.sessions[0].state);
 
     mu_binary_reader_t r;
     mu_binary_reader_init(&r, resp, resp_len);
@@ -229,9 +233,9 @@ void test_dispatch_activate_session(void) {
     memset(&server, 0, sizeof(server));
     server.secure_channel.is_open = true;
     server.config.time_adapter.get_time = fake_time;
-    mu_session_init(&server.session);
+    mu_session_init(&server.sessions[0]);
     opcua_uint64_t revised; opcua_uint32_t sid, tok;
-    mu_session_create(&server.session, 0, &revised, &sid, &tok); /* -> CREATED, auth=12345 */
+    mu_session_create(&server.sessions[0], 0, &revised, &sid, &tok); /* -> CREATED, auth=12345 */
 
     opcua_byte_t req[256];
     size_t req_len = build_activate_body(req, sizeof(req), tok);
@@ -240,7 +244,7 @@ void test_dispatch_activate_session(void) {
     size_t resp_len = sizeof(resp);
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
         mu_service_dispatch(&server, MU_ID_ACTIVATESESSIONREQUEST, req, req_len, resp, &resp_len));
-    TEST_ASSERT_EQUAL(MU_SESSION_STATE_ACTIVATED, server.session.state);
+    TEST_ASSERT_EQUAL(MU_SESSION_STATE_ACTIVATED, server.sessions[0].state);
 
     mu_binary_reader_t r;
     mu_binary_reader_init(&r, resp, resp_len);
@@ -256,10 +260,10 @@ void test_dispatch_close_session(void) {
     mu_server_t server;
     memset(&server, 0, sizeof(server));
     server.secure_channel.is_open = true;
-    mu_session_init(&server.session);
+    mu_session_init(&server.sessions[0]);
     opcua_uint64_t revised; opcua_uint32_t sid, tok;
-    mu_session_create(&server.session, 0, &revised, &sid, &tok);
-    mu_session_activate(&server.session, tok, 321); /* -> ACTIVATED */
+    mu_session_create(&server.sessions[0], 0, &revised, &sid, &tok);
+    mu_session_activate(&server.sessions[0], tok, 321); /* -> ACTIVATED */
 
     /* CloseSessionRequest: RequestHeader (authToken=tok) + DeleteSubscriptions(Boolean) */
     opcua_byte_t req[256];
@@ -282,7 +286,7 @@ void test_dispatch_close_session(void) {
     size_t resp_len = sizeof(resp);
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
         mu_service_dispatch(&server, MU_ID_CLOSESESSIONREQUEST, req, req_len, resp, &resp_len));
-    TEST_ASSERT_EQUAL(MU_SESSION_STATE_CLOSED, server.session.state);
+    TEST_ASSERT_EQUAL(MU_SESSION_STATE_CLOSED, server.sessions[0].state);
 
     mu_binary_reader_t r;
     mu_binary_reader_init(&r, resp, resp_len);
@@ -317,10 +321,10 @@ static void activated_server(mu_server_t *server) {
     server->secure_channel.is_open = true;
     server->config.time_adapter.get_time = fake_time;
     server->config.address_space = &s_address_space;
-    mu_session_init(&server->session);
+    mu_session_init(&server->sessions[0]);
     opcua_uint64_t rev; opcua_uint32_t sid, tok;
-    mu_session_create(&server->session, 0, &rev, &sid, &tok);
-    mu_session_activate(&server->session, tok, 321);
+    mu_session_create(&server->sessions[0], 0, &rev, &sid, &tok);
+    mu_session_activate(&server->sessions[0], tok, 321);
 }
 
 void test_dispatch_read_value(void) {
