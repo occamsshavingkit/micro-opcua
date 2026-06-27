@@ -34,3 +34,8 @@ add_executable(test_view_services test_view_services.c)
 target_link_libraries(test_view_services PRIVATE micro_opcua micro_opcua_test_support unity)
 target_include_directories(test_view_services PRIVATE ${CMAKE_SOURCE_DIR}/src)
 add_test(NAME test_view_services COMMAND test_view_services)
+
+add_executable(test_subscriptions test_subscriptions.c)
+target_link_libraries(test_subscriptions PRIVATE micro_opcua micro_opcua_test_support unity)
+target_include_directories(test_subscriptions PRIVATE ${CMAKE_SOURCE_DIR}/src)
+add_test(NAME test_subscriptions COMMAND test_subscriptions)

@@ -6,6 +6,7 @@
 #include "tcp_connection.h"
 #include "../services/secure_channel.h"
 #include "../services/session.h"
+#include "../services/subscription.h"
 #include "../address_space/base_nodes.h"
 #include "service_dispatch.h"
 
@@ -20,6 +21,9 @@ struct mu_server {
     mu_tcp_connection_t tcp_conn;
     mu_secure_channel_t secure_channel;
     mu_session_t session;
+#if MICRO_OPCUA_SUBSCRIPTIONS
+    mu_subscriptions_t subs;
+#endif
 };
 
 #endif /* MICRO_OPCUA_SERVER_INTERNAL_H */

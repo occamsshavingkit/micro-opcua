@@ -23,7 +23,14 @@
 #define MU_MAX_ENCODED_STRING_LENGTH 4096
 #define MU_MAX_STRING_VALUE_LENGTH 64
 
-/* Fixed storage allocation size for the server */
+/* Fixed storage allocation size for the server.
+ * The subscription engine (MICRO_OPCUA_SUBSCRIPTIONS, the Micro profile) adds the
+ * fixed-size subscription / MonitoredItem / parked-Publish arrays to struct mu_server,
+ * so the no-heap storage block is larger when it is compiled in. */
+#ifdef MICRO_OPCUA_SUBSCRIPTIONS
+#define MU_SERVER_STORAGE_BYTES 3072
+#else
 #define MU_SERVER_STORAGE_BYTES 1024
+#endif
 
 #endif /* MICRO_OPCUA_CONFIG_H */

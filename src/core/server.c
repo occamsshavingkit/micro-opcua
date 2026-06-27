@@ -6,6 +6,9 @@
 #include "service_message.h"
 #include "uasc.h"
 #include "../services/secure_channel.h"
+#if MICRO_OPCUA_SUBSCRIPTIONS
+#include "../services/subscription.c"
+#endif
 #ifdef MICRO_OPCUA_SECURITY
 #include "../security/asym_chunk.h"
 #include "../security/sym_chunk.h"
@@ -105,6 +108,9 @@ opcua_statuscode_t mu_server_init(void *storage, size_t storage_size, const mu_s
     mu_tcp_connection_init(&server->tcp_conn);
     mu_secure_channel_init(&server->secure_channel);
     mu_session_init(&server->session);
+#if MICRO_OPCUA_SUBSCRIPTIONS
+    mu_subscriptions_init(&server->subs);
+#endif
 
     /* Initialize platform TCP adapter */
     status = server->config.tcp_adapter.listen(server->config.tcp_adapter.context, server->config.endpoint_url);
@@ -480,6 +486,10 @@ opcua_statuscode_t mu_server_poll(mu_server_t *server)
         }
         server->rx_len = remaining;
     }
+
+#if MICRO_OPCUA_SUBSCRIPTIONS
+    mu_subscriptions_tick(server, server->config.time_adapter.get_tick_ms(server->config.time_adapter.context));
+#endif
 
     return MU_STATUS_GOOD;
 }

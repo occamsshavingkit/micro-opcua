@@ -51,7 +51,11 @@ static const mu_service_handler_t g_supported_services[] = {
     { MU_ID_BROWSENEXTREQUEST,         MU_ID_BROWSENEXTRESPONSE,         true  },
 #endif
 #ifdef MICRO_OPCUA_SERVICE_READ
-    { MU_ID_READREQUEST,               MU_ID_READRESPONSE,               true  }
+    { MU_ID_READREQUEST,               MU_ID_READRESPONSE,               true  },
+#endif
+#if MICRO_OPCUA_SUBSCRIPTIONS
+    { MU_ID_CREATESUBSCRIPTIONREQUEST, MU_ID_CREATESUBSCRIPTIONRESPONSE, true  },
+    { MU_ID_DELETESUBSCRIPTIONSREQUEST, MU_ID_DELETESUBSCRIPTIONSRESPONSE, true }
 #endif
 };
 
@@ -477,6 +481,143 @@ static opcua_statuscode_t handle_find_servers(mu_server_t *server,
 #define MU_DISPATCH_MAX_TRANSLATE_BROWSE_PATHS 16
 #define MU_DISPATCH_MAX_TRANSLATE_ELEMENTS 8
 
+#if MICRO_OPCUA_SUBSCRIPTIONS
+#define MU_DOUBLE_SIGN_BIT 0x8000000000000000ULL
+#define MU_PUBLISHING_INTERVAL_MIN_BITS 0x4049000000000000ULL  /* 50.0 */
+#define MU_PUBLISHING_INTERVAL_MAX_BITS 0x40ed4c0000000000ULL  /* 60000.0 */
+
+static opcua_uint32_t publishing_interval_bits_to_ms(opcua_uint64_t bits)
+{
+    if ((bits & MU_DOUBLE_SIGN_BIT) != 0u || bits < MU_PUBLISHING_INTERVAL_MIN_BITS) {
+        return MU_MIN_PUBLISHING_INTERVAL_MS;
+    }
+    if (bits > MU_PUBLISHING_INTERVAL_MAX_BITS) {
+        return MU_MAX_PUBLISHING_INTERVAL_MS;
+    }
+
+    opcua_uint32_t exponent = (opcua_uint32_t)((bits >> 52) & 0x7FFu);
+    opcua_uint64_t fraction = bits & 0x000FFFFFFFFFFFFFULL;
+    opcua_uint64_t mantissa = (1ULL << 52) | fraction;
+    opcua_uint32_t unbiased = exponent - 1023u;
+
+    if (unbiased >= 52u) {
+        return (opcua_uint32_t)(mantissa << (unbiased - 52u));
+    }
+    return (opcua_uint32_t)(mantissa >> (52u - unbiased));
+}
+
+static opcua_uint64_t publishing_interval_ms_to_bits(opcua_uint32_t interval_ms)
+{
+    opcua_uint32_t value = interval_ms;
+    opcua_uint32_t exponent = 0u;
+    while ((value >> 1u) != 0u) {
+        value >>= 1u;
+        ++exponent;
+    }
+
+    opcua_uint64_t leading = (opcua_uint64_t)1u << exponent;
+    opcua_uint64_t fraction = ((opcua_uint64_t)interval_ms - leading) << (52u - exponent);
+    return ((opcua_uint64_t)(exponent + 1023u) << 52) | fraction;
+}
+
+/* CreateSubscription (OPC 10000-4 5.14.2): decode the request parameters, let the
+   fixed-size engine revise counts, and echo the revised values. */
+static opcua_statuscode_t handle_create_subscription(mu_server_t *server,
+                                                     mu_binary_reader_t *r,
+                                                     mu_binary_writer_t *w,
+                                                     size_t *response_length)
+{
+    mu_request_header_t req;
+    opcua_statuscode_t s = mu_request_header_decode(r, &req);
+    if (s != MU_STATUS_GOOD) return s;
+
+    opcua_uint64_t requested_interval_bits;
+    opcua_uint32_t requested_lifetime_count;
+    opcua_uint32_t requested_max_keep_alive_count;
+    opcua_uint32_t max_notifications_per_publish;
+    opcua_boolean_t publishing_enabled;
+    opcua_byte_t priority;
+
+    s = mu_binary_read_uint64(r, &requested_interval_bits);       if (s != MU_STATUS_GOOD) return s;
+    s = mu_binary_read_uint32(r, &requested_lifetime_count);      if (s != MU_STATUS_GOOD) return s;
+    s = mu_binary_read_uint32(r, &requested_max_keep_alive_count); if (s != MU_STATUS_GOOD) return s;
+    s = mu_binary_read_uint32(r, &max_notifications_per_publish); if (s != MU_STATUS_GOOD) return s;
+    s = mu_binary_read_boolean(r, &publishing_enabled);           if (s != MU_STATUS_GOOD) return s;
+    s = mu_binary_read_byte(r, &priority);                        if (s != MU_STATUS_GOOD) return s;
+
+    opcua_uint32_t publishing_interval_ms =
+        publishing_interval_bits_to_ms(requested_interval_bits);
+    opcua_uint64_t now_ms = server->config.time_adapter.get_tick_ms(server->config.time_adapter.context);
+
+    mu_subscription_t *sub = NULL;
+    s = mu_subscription_create(&server->subs,
+                               server->session.session_id,
+                               publishing_interval_ms,
+                               requested_lifetime_count,
+                               requested_max_keep_alive_count,
+                               max_notifications_per_publish,
+                               priority,
+                               publishing_enabled,
+                               now_ms,
+                               &sub);
+    if (s != MU_STATUS_GOOD) return s;
+
+    s = write_response_prefix(w, MU_ID_CREATESUBSCRIPTIONRESPONSE,
+                              req.request_handle, MU_STATUS_GOOD);
+    if (s != MU_STATUS_GOOD) return s;
+    s = mu_binary_write_uint32(w, sub->subscription_id); if (s != MU_STATUS_GOOD) return s;
+    s = mu_binary_write_uint64(w, publishing_interval_ms_to_bits(sub->publishing_interval_ms));
+    if (s != MU_STATUS_GOOD) return s;
+    s = mu_binary_write_uint32(w, sub->lifetime_count); if (s != MU_STATUS_GOOD) return s;
+    s = mu_binary_write_uint32(w, sub->max_keep_alive_count); if (s != MU_STATUS_GOOD) return s;
+
+    *response_length = w->position;
+    return MU_STATUS_GOOD;
+}
+
+/* DeleteSubscriptions (OPC 10000-4 5.14.8): service-level Good with per-id
+   StatusCode results. DiagnosticInfos is empty, matching other array handlers. */
+static opcua_statuscode_t handle_delete_subscriptions(mu_server_t *server,
+                                                      mu_binary_reader_t *r,
+                                                      mu_binary_writer_t *w,
+                                                      size_t *response_length)
+{
+    mu_request_header_t req;
+    opcua_statuscode_t s = mu_request_header_decode(r, &req);
+    if (s != MU_STATUS_GOOD) return s;
+
+    opcua_int32_t count;
+    s = mu_binary_read_int32(r, &count);
+    if (s != MU_STATUS_GOOD) return s;
+    if (count <= 0) {
+        return MU_STATUS_BAD_NOTHINGTODO;
+    }
+
+    s = write_response_prefix(w, MU_ID_DELETESUBSCRIPTIONSRESPONSE,
+                              req.request_handle, MU_STATUS_GOOD);
+    if (s != MU_STATUS_GOOD) return s;
+    s = mu_binary_write_int32(w, count);
+    if (s != MU_STATUS_GOOD) return s;
+
+    for (opcua_int32_t i = 0; i < count; ++i) {
+        opcua_uint32_t subscription_id;
+        s = mu_binary_read_uint32(r, &subscription_id);
+        if (s != MU_STATUS_GOOD) return s;
+
+        opcua_statuscode_t result =
+            mu_subscription_delete(&server->subs, server->session.session_id, subscription_id);
+        s = mu_binary_write_statuscode(w, result);
+        if (s != MU_STATUS_GOOD) return s;
+    }
+
+    s = mu_binary_write_int32(w, 0);
+    if (s != MU_STATUS_GOOD) return s;
+
+    *response_length = w->position;
+    return MU_STATUS_GOOD;
+}
+#endif /* MICRO_OPCUA_SUBSCRIPTIONS */
+
 #ifdef MICRO_OPCUA_SERVICE_REGISTER_NODES
 /* RegisterNodes (OPC 10000-4 5.9.5): this server has no alternate optimized
    handles, so registeredNodeIds is the identity mapping of nodesToRegister. */
@@ -892,6 +1033,12 @@ opcua_statuscode_t mu_service_dispatch(
 #ifdef MICRO_OPCUA_SERVICE_READ
         case MU_ID_READREQUEST:
             return handle_read(server, &reader, &writer, response_length);
+#endif
+#if MICRO_OPCUA_SUBSCRIPTIONS
+        case MU_ID_CREATESUBSCRIPTIONREQUEST:
+            return handle_create_subscription(server, &reader, &writer, response_length);
+        case MU_ID_DELETESUBSCRIPTIONSREQUEST:
+            return handle_delete_subscriptions(server, &reader, &writer, response_length);
 #endif
 #ifdef MICRO_OPCUA_SERVICE_BROWSE
         case MU_ID_BROWSEREQUEST:

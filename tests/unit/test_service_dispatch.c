@@ -35,8 +35,7 @@ void test_service_dispatch_unsupported_services(void) {
 
     opcua_uint32_t unsupported[] = {
         673, /* WriteRequest (not in Nano) */
-        787, /* CreateSubscriptionRequest (Micro) */
-        826, /* PublishRequest (Micro) */
+        826, /* PublishRequest (Micro US3 — not yet implemented) */
         711, /* CallRequest (Method) */
         643  /* HistoryReadRequest */
     };

@@ -24,6 +24,9 @@ const char* mu_status_name(opcua_statuscode_t status)
         case MU_STATUS_BAD_ATTRIBUTEIDINVALID: return "Bad_AttributeIdInvalid";
         case MU_STATUS_BAD_TOOMANYOPERATIONS: return "Bad_TooManyOperations";
         case MU_STATUS_BAD_NOCONTINUATIONPOINTS: return "Bad_NoContinuationPoints";
+        case MU_STATUS_BAD_TOOMANYSUBSCRIPTIONS: return "Bad_TooManySubscriptions";
+        case MU_STATUS_BAD_SUBSCRIPTIONIDINVALID: return "Bad_SubscriptionIdInvalid";
+        case MU_STATUS_BAD_NOTHINGTODO: return "Bad_NothingToDo";
 
         /* TCP Specific StatusCodes */
         case MU_STATUS_BAD_TCPSERVERTOOBUSY: return "Bad_TcpServerTooBusy";
@@ -43,7 +46,6 @@ static const opcua_uint32_t g_unsupported_services[] = {
     673,  /* WriteRequest */
     711,  /* CallRequest */
     643,  /* HistoryReadRequest */
-    787,  /* CreateSubscriptionRequest */
     826,  /* PublishRequest */
     533,  /* BrowseNextRequest */
     554,  /* TranslateBrowsePathsToNodeIdsRequest */

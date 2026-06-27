@@ -48,6 +48,13 @@ if(MICRO_OPCUA_BASE_NODES)
     target_compile_definitions(micro_opcua PUBLIC MICRO_OPCUA_BASE_NODES=1)
 endif()
 
+# The data-change subscription engine (Micro profile). Source + dispatch handlers are
+# gated under MICRO_OPCUA_SUBSCRIPTIONS so a Nano build drops them at the source level.
+if(MICRO_OPCUA_SUBSCRIPTIONS)
+    target_sources(micro_opcua PRIVATE services/subscription.c)
+    target_compile_definitions(micro_opcua PUBLIC MICRO_OPCUA_SUBSCRIPTIONS=1)
+endif()
+
 # SecurityPolicy Basic256Sha256: the asym/sym chunk crypto and key derivation.
 # Excluded entirely from a None-only build to keep the embedded footprint minimal.
 # (security_policy.c stays in the core: it only provides shared policy/mode enums.)
