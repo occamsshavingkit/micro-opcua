@@ -30,9 +30,27 @@ Conformance-unit status (Core 2017 Server Facet groups; see [services.md](servic
 
 All in-scope Nano conformance units are implemented and covered by tests/CI.
 
-## Remaining for Nano
-1. **CTT verification** — run the OPC Foundation Compliance Test Tool against the
-   server and record results; only then may a profile-compliance claim be made.
-   (External step; the implementation surface is complete.)
+## Micro profile progress (Embedded Data Change Subscription Server Facet + ≥2 sessions)
 
-See `specs/002-nano-profile-completion/` for the task breakdown.
+The Micro Embedded Device 2017 Server Profile builds on Nano (see
+[profile-micro.md](profile-micro.md)). The subscription facet is implemented; the
+≥2-session requirement is the remaining implementation item.
+
+| Conformance group / unit | Status | Evidence |
+|---|---|---|
+| Subscription — Create/Modify/SetPublishingMode/Delete | Implemented | `test_subscriptions` (§5.14.2/.3/.4/.8) |
+| Subscription — Publish (async) + keep-alive | Implemented | `test_subscriptions` (§5.14.5, §5.14.1) |
+| Subscription — Republish + acknowledgements | Implemented | `test_subscriptions` (§5.14.6, §5.14.5) |
+| MonitoredItem — Create/Modify/SetMode/Delete (data change) | Implemented | `test_subscriptions` (§5.13.2/.3/.4/.6) |
+| Data-change sampling (DataChangeFilter trigger) | Implemented | `test_subscriptions` (§5.12.1.6, §7.17.2) |
+| ≥2 concurrent sessions | Not yet implemented | single connection/session today (multi-connection refactor pending) |
+
+## Remaining
+1. **≥2 sessions (Micro)** — the multi-connection refactor of the core
+   connection/session state.
+2. **CTT verification** — run the OPC Foundation Compliance Test Tool against the
+   server and record results; only then may a profile-compliance claim be made.
+   (External step.)
+
+See `specs/002-nano-profile-completion/` and `specs/003-micro-profile-completion/` for
+the task breakdowns.
