@@ -103,16 +103,16 @@ Each story is an independently shippable, independently testable slice.
 
 ### Tests for User Story 2
 
-- [ ] T026 [P] [US2] Add a channel-reuse zeroization test (OPN → MSG → close, assert `client_keys`/`server_keys` and cipher-ctx storage read all-zero) in `tests/unit/test_secure_channel.c` (FR-007, contract: secure-zero.md).
+- [X] T026 [P] [US2] Add a channel-reuse zeroization test (OPN → MSG → close, assert `client_keys`/`server_keys` and cipher-ctx storage read all-zero) in `tests/unit/test_secure_channel.c` (FR-007, contract: secure-zero.md).
 
 ### Implementation for User Story 2
 
-- [ ] T027 [US2] Add a non-elidable `mu_secure_zero(void*, size_t)` (volatile byte-store loop) in new files `src/security/secure_zero.c` + `src/security/secure_zero.h` (FR-008, contract: secure-zero.md).
-- [ ] T028 [US2] Zeroize `client_keys`/`server_keys` (and cipher-ctx storage if present) in `mu_secure_channel_init` and `mu_secure_channel_close` in `src/services/secure_channel.c` (FR-007).
-- [ ] T029 [P] [US2] Scrub secret stack intermediates before every return in `src/security/sym_chunk.c` (FR-008).
-- [ ] T030 [P] [US2] Scrub secret stack intermediates before every return in `src/security/key_derivation.c` (FR-008).
-- [ ] T031 [P] [US2] Scrub decrypted plaintext / signature / verify buffers before every return in `src/security/asym_chunk.c` (FR-008).
-- [ ] T032 [US2] Update `docs/traceability/004-optimization-fixes.md` (FR-007/008 rows).
+- [X] T027 [US2] Add a non-elidable `mu_secure_zero(void*, size_t)` (volatile byte-store loop) in new files `src/security/secure_zero.c` + `src/security/secure_zero.h` (FR-008, contract: secure-zero.md).
+- [X] T028 [US2] Zeroize `client_keys`/`server_keys` (and cipher-ctx storage if present) in `mu_secure_channel_init` and `mu_secure_channel_close` in `src/services/secure_channel.c` (FR-007).
+- [X] T029 [P] [US2] Scrub secret stack intermediates before every return in `src/security/sym_chunk.c` (FR-008).
+- [X] T030 [P] [US2] Scrub secret stack intermediates before every return in `src/security/key_derivation.c` (FR-008).
+- [X] T031 [P] [US2] Scrub decrypted plaintext / signature / verify buffers before every return in `src/security/asym_chunk.c` (FR-008).
+- [X] T032 [US2] Update `docs/traceability/004-optimization-fixes.md` (FR-007/008 rows).
 
 **Checkpoint**: US1 + US2 both work independently; secrets provably cleared.
 

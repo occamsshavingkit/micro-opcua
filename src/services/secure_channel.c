@@ -1,5 +1,8 @@
 /* src/services/secure_channel.c */
 #include "secure_channel.h"
+#ifdef MICRO_OPCUA_SECURITY
+#include "../security/key_derivation.h"
+#endif
 #include <stddef.h>
 
 static mu_security_policy_id_t requested_policy_id(const mu_string_t *security_policy) {
@@ -29,6 +32,8 @@ void mu_secure_channel_init(mu_secure_channel_t *channel) {
         channel->policy = MU_SECURITY_POLICY_NONE_ID;
         channel->mode = MU_MESSAGE_SECURITY_MODE_NONE;
 #ifdef MICRO_OPCUA_SECURITY
+        mu_secure_zero(&channel->client_keys, sizeof(channel->client_keys));
+        mu_secure_zero(&channel->server_keys, sizeof(channel->server_keys));
         channel->keys_valid = false;
 #endif
         mu_sequence_validator_init(&channel->sequence);
@@ -105,6 +110,11 @@ opcua_statuscode_t mu_secure_channel_close(mu_secure_channel_t *channel) {
     if (!channel) return MU_STATUS_BAD_INTERNALERROR;
     if (!channel->is_open) return MU_STATUS_BAD_TCPSECURECHANNELUNKNOWN;
 
+#ifdef MICRO_OPCUA_SECURITY
+    mu_secure_zero(&channel->client_keys, sizeof(channel->client_keys));
+    mu_secure_zero(&channel->server_keys, sizeof(channel->server_keys));
+    channel->keys_valid = false;
+#endif
     mu_secure_channel_init(channel); /* Reset */
     return MU_STATUS_GOOD;
 }

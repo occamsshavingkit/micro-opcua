@@ -6,6 +6,18 @@
    32 bytes for Basic256Sha256; 64 is generous headroom. */
 #define MU_KDF_MAX_SEED 64
 
+void mu_secure_zero(void *v, size_t n)
+{
+    volatile unsigned char *p = (volatile unsigned char *)v;
+
+    /* Volatile byte stores keep the wipe observable so compilers cannot elide
+       clearing soon-dead key material. */
+    while (n != 0u) {
+        *p++ = 0u;
+        --n;
+    }
+}
+
 /* P_SHA256(secret, seed) per RFC 5246:
      A(0) = seed
      A(i) = HMAC(secret, A(i-1))
@@ -29,7 +41,12 @@ opcua_statuscode_t mu_p_sha256(const mu_crypto_adapter_t *crypto,
 
     /* A(1) = HMAC(secret, seed) */
     status = crypto->hmac_sha256(crypto->context, secret, secret_length, seed, seed_length, a);
-    if (status != MU_STATUS_GOOD) return status;
+    if (status != MU_STATUS_GOOD) {
+        mu_secure_zero(a, sizeof(a));
+        mu_secure_zero(hmac_input, sizeof(hmac_input));
+        mu_secure_zero(block, sizeof(block));
+        return status;
+    }
 
     size_t produced = 0;
     while (produced < output_length) {
@@ -38,7 +55,12 @@ opcua_statuscode_t mu_p_sha256(const mu_crypto_adapter_t *crypto,
         memcpy(hmac_input + MU_SHA256_LENGTH, seed, seed_length);
         status = crypto->hmac_sha256(crypto->context, secret, secret_length,
                                      hmac_input, MU_SHA256_LENGTH + seed_length, block);
-        if (status != MU_STATUS_GOOD) return status;
+        if (status != MU_STATUS_GOOD) {
+            mu_secure_zero(a, sizeof(a));
+            mu_secure_zero(hmac_input, sizeof(hmac_input));
+            mu_secure_zero(block, sizeof(block));
+            return status;
+        }
 
         size_t take = output_length - produced;
         if (take > MU_SHA256_LENGTH) take = MU_SHA256_LENGTH;
@@ -47,8 +69,16 @@ opcua_statuscode_t mu_p_sha256(const mu_crypto_adapter_t *crypto,
 
         /* A(i+1) = HMAC(secret, A(i)) */
         status = crypto->hmac_sha256(crypto->context, secret, secret_length, a, MU_SHA256_LENGTH, a);
-        if (status != MU_STATUS_GOOD) return status;
+        if (status != MU_STATUS_GOOD) {
+            mu_secure_zero(a, sizeof(a));
+            mu_secure_zero(hmac_input, sizeof(hmac_input));
+            mu_secure_zero(block, sizeof(block));
+            return status;
+        }
     }
 
+    mu_secure_zero(a, sizeof(a));
+    mu_secure_zero(hmac_input, sizeof(hmac_input));
+    mu_secure_zero(block, sizeof(block));
     return MU_STATUS_GOOD;
 }

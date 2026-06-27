@@ -8,6 +8,8 @@
 #include "micro_opcua/status.h"
 #include <stddef.h>
 
+void mu_secure_zero(void *v, size_t n);
+
 /* P_SHA256(secret, seed) expanded to `output_length` bytes, using the crypto
    adapter's HMAC-SHA256. Returns Bad_* on adapter failure or if seed is too long. */
 opcua_statuscode_t mu_p_sha256(const mu_crypto_adapter_t *crypto,

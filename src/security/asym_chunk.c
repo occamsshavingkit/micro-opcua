@@ -2,6 +2,7 @@
  * Asymmetric (OPN) chunk protection for Basic256Sha256 (OPC 10000-6 §6.7.2). */
 #include "asym_chunk.h"
 #include "certificate.h"
+#include "key_derivation.h"
 #include "micro_opcua/encoding.h"
 #include <string.h>
 
@@ -136,8 +137,16 @@ opcua_statuscode_t mu_asym_chunk_wrap(
     opcua_byte_t plain[MU_ASYM_MAX_PLAINTEXT];
     mu_binary_writer_t pw;
     mu_binary_writer_init(&pw, plain, sizeof(plain));
-    s = mu_binary_write_uint32(&pw, sequence_number); if (s != MU_STATUS_GOOD) return s;
-    s = mu_binary_write_uint32(&pw, request_id);      if (s != MU_STATUS_GOOD) return s;
+    s = mu_binary_write_uint32(&pw, sequence_number);
+    if (s != MU_STATUS_GOOD) {
+        mu_secure_zero(plain, sizeof(plain));
+        return s;
+    }
+    s = mu_binary_write_uint32(&pw, request_id);
+    if (s != MU_STATUS_GOOD) {
+        mu_secure_zero(plain, sizeof(plain));
+        return s;
+    }
     memcpy(plain + 8, body, body_len);
     plain[seqbody_len] = (opcua_byte_t)pad_count;                 /* PaddingSize */
     memset(plain + seqbody_len + 1, (int)pad_count, pad_count);   /* Padding bytes */
@@ -145,16 +154,35 @@ opcua_statuscode_t mu_asym_chunk_wrap(
     /* Sign over [cleartext header | SequenceHeader | body | paddingSize | padding].
        Bound the scratch copy (defense in depth; mirrors the verify path's check). */
     opcua_byte_t sign_buf[MU_ASYM_SCRATCH];
-    if (hdr_len + presig_len > MU_ASYM_SCRATCH) return MU_STATUS_BAD_INTERNALERROR;
+    if (hdr_len + presig_len > MU_ASYM_SCRATCH) {
+        mu_secure_zero(plain, sizeof(plain));
+        return MU_STATUS_BAD_INTERNALERROR;
+    }
     memcpy(sign_buf, out, hdr_len);
     memcpy(sign_buf + hdr_len, plain, presig_len);
     opcua_byte_t sig[512];
-    if (sig_len > sizeof(sig)) return MU_STATUS_BAD_INTERNALERROR;
+    if (sig_len > sizeof(sig)) {
+        mu_secure_zero(sign_buf, sizeof(sign_buf));
+        mu_secure_zero(plain, sizeof(plain));
+        return MU_STATUS_BAD_INTERNALERROR;
+    }
     size_t produced_sig = sizeof(sig);
     s = crypto->rsa_sha256_sign(crypto->context, sign_buf, hdr_len + presig_len, sig, &produced_sig);
-    if (s != MU_STATUS_GOOD) return s;
-    if (produced_sig != sig_len) return MU_STATUS_BAD_INTERNALERROR;
+    if (s != MU_STATUS_GOOD) {
+        mu_secure_zero(sig, sizeof(sig));
+        mu_secure_zero(sign_buf, sizeof(sign_buf));
+        mu_secure_zero(plain, sizeof(plain));
+        return s;
+    }
+    if (produced_sig != sig_len) {
+        mu_secure_zero(sig, sizeof(sig));
+        mu_secure_zero(sign_buf, sizeof(sign_buf));
+        mu_secure_zero(plain, sizeof(plain));
+        return MU_STATUS_BAD_INTERNALERROR;
+    }
     memcpy(plain + presig_len, sig, sig_len);   /* signature is the tail of the plaintext */
+    mu_secure_zero(sig, sizeof(sig));
+    mu_secure_zero(sign_buf, sizeof(sign_buf));
 
     /* Encrypt the plaintext block-by-block to the receiver's public key. */
     size_t blocks = enc_len / plain_block;
@@ -163,11 +191,18 @@ opcua_statuscode_t mu_asym_chunk_wrap(
         s = crypto->rsa_oaep_encrypt(crypto->context, receiver_cert, receiver_cert_len,
                                      plain + i * plain_block, plain_block,
                                      out + hdr_len + i * cipher_block, &out_block);
-        if (s != MU_STATUS_GOOD) return s;
-        if (out_block != cipher_block) return MU_STATUS_BAD_INTERNALERROR;
+        if (s != MU_STATUS_GOOD) {
+            mu_secure_zero(plain, sizeof(plain));
+            return s;
+        }
+        if (out_block != cipher_block) {
+            mu_secure_zero(plain, sizeof(plain));
+            return MU_STATUS_BAD_INTERNALERROR;
+        }
     }
 
     *out_len = total;
+    mu_secure_zero(plain, sizeof(plain));
     return MU_STATUS_GOOD;
 }
 
@@ -247,26 +282,43 @@ opcua_statuscode_t mu_asym_chunk_unwrap(
         size_t out_block = sizeof(plain) - plain_len;
         s = crypto->rsa_oaep_decrypt(crypto->context, chunk + hdr_len + i * own_key_bytes, own_key_bytes,
                                      plain + plain_len, &out_block);
-        if (s != MU_STATUS_GOOD) return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+        if (s != MU_STATUS_GOOD) {
+            mu_secure_zero(plain, sizeof(plain));
+            return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+        }
         plain_len += out_block;
     }
 
-    if (plain_len < sig_len + 1 + 8) return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+    if (plain_len < sig_len + 1 + 8) {
+        mu_secure_zero(plain, sizeof(plain));
+        return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+    }
     size_t signed_len = plain_len - sig_len;  /* SequenceHeader+body+paddingSize+padding */
     const opcua_byte_t *signature = plain + signed_len;
 
     /* Verify the sender signature over [cleartext header | signed plaintext]. */
-    if (hdr_len + signed_len > MU_ASYM_SCRATCH) return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+    if (hdr_len + signed_len > MU_ASYM_SCRATCH) {
+        mu_secure_zero(plain, sizeof(plain));
+        return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+    }
     opcua_byte_t verify_buf[MU_ASYM_SCRATCH];
     memcpy(verify_buf, chunk, hdr_len);
     memcpy(verify_buf + hdr_len, plain, signed_len);
     s = crypto->rsa_sha256_verify(crypto->context, info->sender_cert, info->sender_cert_len,
                                   verify_buf, hdr_len + signed_len, signature, sig_len);
-    if (s != MU_STATUS_GOOD) return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+    if (s != MU_STATUS_GOOD) {
+        mu_secure_zero(verify_buf, sizeof(verify_buf));
+        mu_secure_zero(plain, sizeof(plain));
+        return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+    }
+    mu_secure_zero(verify_buf, sizeof(verify_buf));
 
     /* Strip padding. */
     size_t pad_count = plain[signed_len - 1];
-    if (signed_len < pad_count + 1 + 8) return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+    if (signed_len < pad_count + 1 + 8) {
+        mu_secure_zero(plain, sizeof(plain));
+        return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+    }
     size_t seqbody_len = signed_len - 1 - pad_count;
 
     info->sequence_number = (opcua_uint32_t)plain[0] | ((opcua_uint32_t)plain[1] << 8) |
@@ -275,8 +327,12 @@ opcua_statuscode_t mu_asym_chunk_unwrap(
                        ((opcua_uint32_t)plain[6] << 16) | ((opcua_uint32_t)plain[7] << 24);
 
     size_t body_len = seqbody_len - 8;
-    if (body_len > out_cap) return MU_STATUS_BAD_RESPONSETOOLARGE;
+    if (body_len > out_cap) {
+        mu_secure_zero(plain, sizeof(plain));
+        return MU_STATUS_BAD_RESPONSETOOLARGE;
+    }
     memcpy(out_body, plain + 8, body_len);
     *out_body_len = body_len;
+    mu_secure_zero(plain, sizeof(plain));
     return MU_STATUS_GOOD;
 }
