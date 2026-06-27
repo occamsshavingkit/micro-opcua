@@ -20,10 +20,17 @@ static opcua_statuscode_t host_listen(void *context, const char *endpoint_url) {
     
     uint16_t port = 4840;
     
-    /* Naive extraction of port from "opc.tcp://host:port" */
+    /* Extract the port from "opc.tcp://host:port". Validate with strtoul + a range
+       check so a malformed/out-of-range port falls back to the default rather than
+       silently truncating (atoi has no error or overflow handling). */
     const char *port_str = strrchr(endpoint_url, ':');
     if (port_str && port_str != endpoint_url + 4) { /* Skip 'opc.tcp://' */
-        port = (uint16_t)atoi(port_str + 1);
+        char *end = NULL;
+        unsigned long parsed = strtoul(port_str + 1, &end, 10);
+        if (end != port_str + 1 && parsed >= 1 && parsed <= 65535) {
+            port = (uint16_t)parsed;
+        }
+        /* else: keep the default 4840 */
     }
     
     ctx->server_fd = socket(AF_INET, SOCK_STREAM, 0);
