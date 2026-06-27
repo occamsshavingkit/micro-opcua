@@ -142,8 +142,10 @@ opcua_statuscode_t mu_asym_chunk_wrap(
     plain[seqbody_len] = (opcua_byte_t)pad_count;                 /* PaddingSize */
     memset(plain + seqbody_len + 1, (int)pad_count, pad_count);   /* Padding bytes */
 
-    /* Sign over [cleartext header | SequenceHeader | body | paddingSize | padding]. */
+    /* Sign over [cleartext header | SequenceHeader | body | paddingSize | padding].
+       Bound the scratch copy (defense in depth; mirrors the verify path's check). */
     opcua_byte_t sign_buf[MU_ASYM_SCRATCH];
+    if (hdr_len + presig_len > MU_ASYM_SCRATCH) return MU_STATUS_BAD_INTERNALERROR;
     memcpy(sign_buf, out, hdr_len);
     memcpy(sign_buf + hdr_len, plain, presig_len);
     opcua_byte_t sig[512];
