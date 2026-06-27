@@ -19,7 +19,7 @@
 #   make test           configure with tests and run the full ctest suite
 #   make clean          remove the profile build directories
 #
-# Example binary lands at build/<profile>/examples/minimal_server/minimal_server.
+# Example binary lands at build/<profile>/examples/minimal_server.
 
 CMAKE ?= cmake
 BUILD  ?= build
