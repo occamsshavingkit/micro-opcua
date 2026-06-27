@@ -18,6 +18,10 @@ option(MICRO_OPCUA_SERVICE_REGISTER_NODES "Build RegisterNodes/UnregisterNodes" 
 # ServerStatus, ServerCapabilities). Turn OFF if the integrator supplies a complete
 # address space and does not want the default nodes.
 option(MICRO_OPCUA_BASE_NODES "Build the standard Base Information node set" ON)
+# Data-change subscriptions (the Micro profile: Subscription + MonitoredItem service
+# sets, the Embedded Data Change Subscription Server Facet). Turn OFF for a Nano-only
+# build to drop the subscription engine and its fixed-size state entirely.
+option(MICRO_OPCUA_SUBSCRIPTIONS "Build the data-change subscription engine (Micro profile)" ON)
 set(MICRO_OPCUA_SANITIZERS "" CACHE STRING "Comma-separated list of sanitizers (e.g. address,undefined)")
 set(MICRO_OPCUA_PLATFORM "host" CACHE STRING "Target platform (host, pico, arduino-skeleton)")
 

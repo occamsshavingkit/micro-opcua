@@ -120,3 +120,5 @@ This document maps implementation and test files back to OPC UA normative sectio
 | `address_space.h` | TBD | TBD | TBD | TBD |
 | `opcua_ids.h` | TBD | TBD | TBD | TBD |
 | `encoding.h` | TBD | TBD | TBD | TBD |
+| `subscription.c` | Subscription + MonitoredItem service sets (Micro) | Part 4 | 5.13, 5.14 | No-heap data-change subscription engine |
+| `subscription.h` | Subscription + MonitoredItem service sets (Micro) | Part 4 | 5.13, 5.14, 7.17, 7.21 | Subscription engine data model + contract |

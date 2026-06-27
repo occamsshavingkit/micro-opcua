@@ -31,6 +31,9 @@
 #define MU_STATUS_BAD_NOMATCH                 ((opcua_statuscode_t)0x806F0000)
 #define MU_STATUS_BAD_CERTIFICATEINVALID      ((opcua_statuscode_t)0x80120000)
 #define MU_STATUS_BAD_SECURITYMODEREJECTED    ((opcua_statuscode_t)0x80540000)
+#define MU_STATUS_BAD_TOOMANYSUBSCRIPTIONS    ((opcua_statuscode_t)0x80DD0000)
+#define MU_STATUS_BAD_SUBSCRIPTIONIDINVALID   ((opcua_statuscode_t)0x80280000)
+#define MU_STATUS_BAD_NOTHINGTODO             ((opcua_statuscode_t)0x800F0000)
 
 /* TCP Specific StatusCodes */
 #define MU_STATUS_BAD_TCPSERVERTOOBUSY          0x807D0000
