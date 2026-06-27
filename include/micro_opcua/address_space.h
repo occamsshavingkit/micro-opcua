@@ -54,6 +54,8 @@ typedef struct {
     const mu_value_source_t *value;
 } mu_node_t;
 
+typedef struct mu_address_space mu_address_space_t;
+
 /* Bounded NodeId index for sub-linear lookup. Entries are sorted by the
  * NodeId sort key (namespace, identifier_type, numeric value or string hash);
  * a binary-search hit is confirmed with mu_nodeid_equal. */
@@ -61,12 +63,14 @@ typedef struct {
     opcua_uint16_t order[MU_MAX_ADDRESS_SPACE_NODES]; /* node indices sorted by NodeId sort key */
     size_t count;                                     /* number of indexed nodes */
     opcua_boolean_t indexed;                         /* false => fall back to linear scan (node_count > cap) */
+    const mu_address_space_t *built_for;              /* address space currently represented by order[] */
+    size_t built_count;                               /* node count used when order[] was built */
 } mu_address_space_index_t;
 
-typedef struct {
+struct mu_address_space {
     const mu_node_t *nodes;
     size_t node_count;
-} mu_address_space_t;
+};
 
 /* Address space validation */
 opcua_statuscode_t mu_address_space_validate(const mu_address_space_t *address_space);
@@ -74,7 +78,19 @@ opcua_statuscode_t mu_address_space_validate(const mu_address_space_t *address_s
 /* NodeId helpers */
 opcua_boolean_t mu_nodeid_equal(const mu_nodeid_t *n1, const mu_nodeid_t *n2);
 opcua_boolean_t mu_nodeid_in_namespace(const mu_nodeid_t *node_id, opcua_uint16_t namespace_index);
-const mu_node_t *mu_address_space_find_node(const mu_address_space_t *address_space, const mu_nodeid_t *node_id);
+const mu_node_t *mu_address_space_find_node(const mu_address_space_t *address_space,
+                                            mu_address_space_index_t *index,
+                                            const mu_nodeid_t *node_id);
+/* Source compatibility: two-argument calls use the explicit NULL-index path. */
+#define MU_ADDRESS_SPACE_FIND_NODE_2(address_space, node_id) \
+    mu_address_space_find_node((address_space), ((mu_address_space_index_t *)0), (node_id))
+#define MU_ADDRESS_SPACE_FIND_NODE_3(address_space, index, node_id) \
+    mu_address_space_find_node((address_space), (index), (node_id))
+#define MU_ADDRESS_SPACE_FIND_NODE_SELECT(_1, _2, _3, NAME, ...) NAME
+#define mu_address_space_find_node(...) \
+    MU_ADDRESS_SPACE_FIND_NODE_SELECT(__VA_ARGS__, \
+                                      MU_ADDRESS_SPACE_FIND_NODE_3, \
+                                      MU_ADDRESS_SPACE_FIND_NODE_2)(__VA_ARGS__)
 
 /* Value source operations */
 opcua_statuscode_t mu_value_source_read(const mu_value_source_t *source, const mu_nodeid_t *node_id, mu_variant_t *value);

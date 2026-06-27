@@ -298,15 +298,16 @@ void mu_base_runtime_init(mu_base_runtime_nodes_t *s,
 }
 
 const mu_node_t *mu_resolve_node(const mu_address_space_t *user,
+                                 mu_address_space_index_t *user_index,
                                  const mu_address_space_t *dynamic,
                                  const mu_nodeid_t *node_id) {
     if (user) {
-        const mu_node_t *n = mu_address_space_find_node(user, node_id);
+        const mu_node_t *n = mu_address_space_find_node(user, user_index, node_id);
         if (n) return n;
     }
     if (dynamic) {
-        const mu_node_t *n = mu_address_space_find_node(dynamic, node_id);
+        const mu_node_t *n = mu_address_space_find_node(dynamic, NULL, node_id);
         if (n) return n;
     }
-    return mu_address_space_find_node(mu_base_address_space(), node_id);
+    return mu_address_space_find_node(mu_base_address_space(), NULL, node_id);
 }

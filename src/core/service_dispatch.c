@@ -22,6 +22,27 @@
 
 #define MU_SERVER_NONCE_LENGTH 32
 
+#ifdef MICRO_OPCUA_SERVICE_READ
+opcua_statuscode_t mu_read_process_with_user_index(const mu_address_space_t *address_space,
+                                                   mu_address_space_index_t *user_index,
+                                                   const mu_address_space_t *dynamic,
+                                                   const mu_read_request_t *req,
+                                                   mu_read_response_t *resp,
+                                                   mu_datavalue_t *results_array,
+                                                   size_t max_results);
+#endif
+
+#ifdef MICRO_OPCUA_SERVICE_BROWSE
+opcua_statuscode_t mu_browse_process_with_user_index(const mu_address_space_t *address_space,
+                                                     mu_address_space_index_t *user_index,
+                                                     const mu_address_space_t *dynamic,
+                                                     const mu_browse_request_t *req,
+                                                     mu_browse_result_t *results,
+                                                     size_t max_results,
+                                                     mu_reference_description_t *ref_pool,
+                                                     size_t max_total_refs);
+#endif
+
 typedef opcua_statuscode_t (*mu_service_dispatch_handler_fn)(
     mu_server_t *server,
     mu_binary_reader_t *r,
@@ -190,40 +211,35 @@ static const mu_service_descriptor_t *find_service_descriptor(opcua_uint32_t req
     return NULL;
 }
 
-typedef struct {
-    const mu_server_t *server;
-    mu_string_t security_policy;
-} mu_opn_security_policy_context_t;
-
 /* OPN SecurityPolicyUri is carried in the asymmetric chunk header, while normal
-   service dispatch receives only the service body. server.c sets this descriptor
+   service dispatch receives only the service body. server.c sets this field
    immediately around OPN dispatch so the handler can validate the requested
    policy without changing the public dispatch signature. */
-static mu_opn_security_policy_context_t g_opn_security_policy_context;
-
 void mu_service_dispatch_set_opn_security_policy(mu_server_t *server,
                                                  const mu_string_t *security_policy);
 
 void mu_service_dispatch_set_opn_security_policy(mu_server_t *server,
                                                  const mu_string_t *security_policy)
 {
-    if (server == NULL || security_policy == NULL) {
-        g_opn_security_policy_context.server = NULL;
-        g_opn_security_policy_context.security_policy.length = -1;
-        g_opn_security_policy_context.security_policy.data = NULL;
+    if (server == NULL) {
         return;
     }
 
-    g_opn_security_policy_context.server = server;
-    g_opn_security_policy_context.security_policy = *security_policy;
+    if (security_policy == NULL) {
+        server->opn_pending_security_policy.length = -1;
+        server->opn_pending_security_policy.data = NULL;
+        return;
+    }
+
+    server->opn_pending_security_policy = *security_policy;
 }
 
 static const mu_string_t *current_opn_security_policy(const mu_server_t *server)
 {
-    if (g_opn_security_policy_context.server != server) {
+    if (server == NULL) {
         return NULL;
     }
-    return &g_opn_security_policy_context.security_policy;
+    return &server->opn_pending_security_policy;
 }
 
 const mu_service_handler_t* mu_get_service_handler(opcua_uint32_t request_id) {
@@ -1229,7 +1245,8 @@ static opcua_statuscode_t handle_create_monitored_items(mu_server_t *server,
         if (s != MU_STATUS_GOOD) return s;
 
         const mu_node_t *node =
-            mu_resolve_node(server->config.address_space, &server->runtime_base.space, &body.node_id);
+            mu_resolve_node(server->config.address_space, &server->user_address_space_index,
+                            &server->runtime_base.space, &body.node_id);
         if (node == NULL) {
             s = write_monitored_item_create_result(w, MU_STATUS_BAD_NODEIDUNKNOWN, 0u, 0u, 0u);
             if (s != MU_STATUS_GOOD) return s;
@@ -1719,7 +1736,9 @@ static opcua_statuscode_t handle_translate_browse_paths(mu_server_t *server,
 
         const mu_node_t *current = NULL;
         if (address_space != NULL) {
-            current = mu_address_space_find_node(address_space, &starting_node);
+            current = mu_address_space_find_node(address_space,
+                                                 &server->user_address_space_index,
+                                                 &starting_node);
         }
 
         size_t element_total = (size_t)element_count;
@@ -1760,7 +1779,10 @@ static opcua_statuscode_t handle_translate_browse_paths(mu_server_t *server,
                         continue;
                     }
 
-                    const mu_node_t *target = mu_address_space_find_node(address_space, &ref->target_id);
+                    const mu_node_t *target =
+                        mu_address_space_find_node(address_space,
+                                                   &server->user_address_space_index,
+                                                   &ref->target_id);
                     if (target == NULL) {
                         continue;
                     }
@@ -1817,8 +1839,9 @@ static opcua_statuscode_t handle_read(mu_server_t *server,
 
     mu_read_response_t rresp;
     mu_datavalue_t results[MU_DISPATCH_MAX_READ_NODES];
-    s = mu_read_process(server->config.address_space, &server->runtime_base.space,
-                        &rreq, &rresp, results, MU_DISPATCH_MAX_READ_NODES);
+    s = mu_read_process_with_user_index(server->config.address_space, &server->user_address_space_index,
+                                        &server->runtime_base.space, &rreq, &rresp,
+                                        results, MU_DISPATCH_MAX_READ_NODES);
     if (s != MU_STATUS_GOOD) return s;
 
     s = write_response_prefix(w, MU_ID_READRESPONSE, req.request_handle, MU_STATUS_GOOD);
@@ -1850,9 +1873,10 @@ static opcua_statuscode_t handle_browse(mu_server_t *server,
 
     mu_browse_result_t results[MU_DISPATCH_MAX_BROWSE_NODES];
     mu_reference_description_t ref_pool[MU_DISPATCH_MAX_BROWSE_REFS];
-    s = mu_browse_process(server->config.address_space, &server->runtime_base.space, &breq,
-                          results, MU_DISPATCH_MAX_BROWSE_NODES,
-                          ref_pool, MU_DISPATCH_MAX_BROWSE_REFS);
+    s = mu_browse_process_with_user_index(server->config.address_space, &server->user_address_space_index,
+                                          &server->runtime_base.space, &breq,
+                                          results, MU_DISPATCH_MAX_BROWSE_NODES,
+                                          ref_pool, MU_DISPATCH_MAX_BROWSE_REFS);
     if (s != MU_STATUS_GOOD) return s;
 
     s = write_response_prefix(w, MU_ID_BROWSERESPONSE, req.request_handle, MU_STATUS_GOOD);

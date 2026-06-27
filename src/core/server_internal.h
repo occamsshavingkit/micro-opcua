@@ -13,6 +13,7 @@
 struct mu_server {
     mu_server_config_t config;
     mu_base_runtime_nodes_t runtime_base;
+    mu_address_space_index_t user_address_space_index;
     opcua_boolean_t is_running;
     
     void *client_handle;
@@ -20,6 +21,7 @@ struct mu_server {
     opcua_uint64_t last_activity_ms; /* monotonic tick of last inbound traffic (idle timeout) */
     mu_tcp_connection_t tcp_conn;
     mu_secure_channel_t secure_channel;
+    mu_string_t opn_pending_security_policy;
 #ifdef MICRO_OPCUA_SECURITY
     opcua_byte_t secure_scratch[MU_SECURE_SCRATCH_SIZE];
 #endif

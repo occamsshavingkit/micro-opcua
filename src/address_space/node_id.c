@@ -2,15 +2,13 @@
 #include "micro_opcua/address_space.h"
 #include <string.h>
 
+#undef mu_address_space_find_node
+
 typedef struct {
     opcua_uint16_t namespace_index;
     mu_nodeid_type_t identifier_type;
     opcua_uint32_t identifier_key;
 } mu_nodeid_sort_key_t;
-
-static mu_address_space_index_t s_address_space_index;
-static const mu_address_space_t *s_indexed_address_space;
-static size_t s_indexed_node_count;
 
 static opcua_uint32_t mu_nodeid_hash_mix(opcua_uint32_t hash, opcua_uint32_t value) {
     hash ^= value;
@@ -108,37 +106,38 @@ static int mu_nodeid_compare_to_key(const mu_nodeid_t *node_id, const mu_nodeid_
     return mu_nodeid_sort_key_compare(&node_key, key);
 }
 
-static void mu_address_space_rebuild_index(const mu_address_space_t *address_space) {
+static void mu_address_space_rebuild_index(const mu_address_space_t *address_space,
+                                           mu_address_space_index_t *index) {
     size_t i;
 
-    s_indexed_address_space = address_space;
-    s_indexed_node_count = address_space->node_count;
-    s_address_space_index.count = 0;
-    s_address_space_index.indexed = false;
+    index->built_for = address_space;
+    index->built_count = address_space->node_count;
+    index->count = 0;
+    index->indexed = false;
 
     if (address_space->node_count > MU_MAX_ADDRESS_SPACE_NODES || address_space->node_count > 0xffffu) {
         return;
     }
 
-    s_address_space_index.indexed = true;
+    index->indexed = true;
 
     for (i = 0; i < address_space->node_count; i++) {
-        size_t position = s_address_space_index.count;
+        size_t position = index->count;
 
         while (position > 0) {
-            const mu_node_t *previous = &address_space->nodes[s_address_space_index.order[position - 1u]];
+            const mu_node_t *previous = &address_space->nodes[index->order[position - 1u]];
             const mu_node_t *current = &address_space->nodes[i];
 
             if (mu_nodeid_compare_for_index(&previous->node_id, &current->node_id) <= 0) {
                 break;
             }
 
-            s_address_space_index.order[position] = s_address_space_index.order[position - 1u];
+            index->order[position] = index->order[position - 1u];
             position--;
         }
 
-        s_address_space_index.order[position] = (opcua_uint16_t)i;
-        s_address_space_index.count++;
+        index->order[position] = (opcua_uint16_t)i;
+        index->count++;
     }
 }
 
@@ -156,14 +155,15 @@ static const mu_node_t *mu_address_space_find_node_linear(const mu_address_space
 }
 
 static const mu_node_t *mu_address_space_find_node_indexed(const mu_address_space_t *address_space,
+                                                           const mu_address_space_index_t *index,
                                                            const mu_nodeid_t *node_id) {
     mu_nodeid_sort_key_t target_key = mu_nodeid_sort_key(node_id);
     size_t left = 0;
-    size_t right = s_address_space_index.count;
+    size_t right = index->count;
 
     while (left < right) {
         size_t mid = left + ((right - left) / 2u);
-        opcua_uint16_t node_index = s_address_space_index.order[mid];
+        opcua_uint16_t node_index = index->order[mid];
         const mu_node_t *node = &address_space->nodes[node_index];
         int comparison = mu_nodeid_compare_to_key(&node->node_id, &target_key);
 
@@ -175,7 +175,7 @@ static const mu_node_t *mu_address_space_find_node_indexed(const mu_address_spac
             size_t position = mid;
 
             while (position > 0) {
-                opcua_uint16_t previous_index = s_address_space_index.order[position - 1u];
+                opcua_uint16_t previous_index = index->order[position - 1u];
                 const mu_node_t *previous = &address_space->nodes[previous_index];
 
                 if (mu_nodeid_compare_to_key(&previous->node_id, &target_key) != 0) {
@@ -184,8 +184,8 @@ static const mu_node_t *mu_address_space_find_node_indexed(const mu_address_spac
                 position--;
             }
 
-            while (position < s_address_space_index.count) {
-                opcua_uint16_t candidate_index = s_address_space_index.order[position];
+            while (position < index->count) {
+                opcua_uint16_t candidate_index = index->order[position];
                 const mu_node_t *candidate = &address_space->nodes[candidate_index];
 
                 if (mu_nodeid_compare_to_key(&candidate->node_id, &target_key) != 0) {
@@ -248,18 +248,24 @@ opcua_boolean_t mu_nodeid_in_namespace(const mu_nodeid_t *node_id, opcua_uint16_
     return node_id->namespace_index == namespace_index;
 }
 
-const mu_node_t *mu_address_space_find_node(const mu_address_space_t *address_space, const mu_nodeid_t *node_id) {
+const mu_node_t *mu_address_space_find_node(const mu_address_space_t *address_space,
+                                            mu_address_space_index_t *index,
+                                            const mu_nodeid_t *node_id) {
     if (!address_space || !address_space->nodes || !node_id) {
         return NULL;
     }
 
-    if (s_indexed_address_space != address_space || s_indexed_node_count != address_space->node_count) {
-        mu_address_space_rebuild_index(address_space);
-    }
-
-    if (!s_address_space_index.indexed) {
+    if (index == NULL) {
         return mu_address_space_find_node_linear(address_space, node_id);
     }
 
-    return mu_address_space_find_node_indexed(address_space, node_id);
+    if (index->built_for != address_space || index->built_count != address_space->node_count) {
+        mu_address_space_rebuild_index(address_space, index);
+    }
+
+    if (!index->indexed) {
+        return mu_address_space_find_node_linear(address_space, node_id);
+    }
+
+    return mu_address_space_find_node_indexed(address_space, index, node_id);
 }
