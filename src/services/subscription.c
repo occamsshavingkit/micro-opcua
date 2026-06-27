@@ -171,6 +171,29 @@ static opcua_uint32_t allocate_monitored_item_id(mu_subscriptions_t *subs)
     return 0u;
 }
 
+static void revise_subscription_counts(opcua_uint32_t requested_lifetime_count,
+                                       opcua_uint32_t requested_max_keep_alive_count,
+                                       opcua_uint32_t *revised_lifetime_count,
+                                       opcua_uint32_t *revised_max_keep_alive_count)
+{
+    opcua_uint32_t revised_keep_alive = requested_max_keep_alive_count;
+    if (revised_keep_alive == 0u) {
+        revised_keep_alive = 1u;
+    }
+    if (revised_keep_alive > (0xFFFFFFFFu / 3u)) {
+        revised_keep_alive = 0xFFFFFFFFu / 3u;
+    }
+
+    opcua_uint32_t min_lifetime = revised_keep_alive * 3u;
+    opcua_uint32_t revised_lifetime = requested_lifetime_count;
+    if (revised_lifetime < min_lifetime) {
+        revised_lifetime = min_lifetime;
+    }
+
+    *revised_lifetime_count = revised_lifetime;
+    *revised_max_keep_alive_count = revised_keep_alive;
+}
+
 static bool publish_request_dequeue(mu_subscriptions_t *subs,
                                     opcua_uint32_t session_id,
                                     mu_publish_request_t *out_request)
@@ -595,29 +618,16 @@ opcua_statuscode_t mu_subscription_create(mu_subscriptions_t *subs,
         return MU_STATUS_BAD_TOOMANYSUBSCRIPTIONS;
     }
 
-    opcua_uint32_t revised_keep_alive = requested_max_keep_alive_count;
-    if (revised_keep_alive == 0u) {
-        revised_keep_alive = 1u;
-    }
-    if (revised_keep_alive > (0xFFFFFFFFu / 3u)) {
-        revised_keep_alive = 0xFFFFFFFFu / 3u;
-    }
-
-    opcua_uint32_t min_lifetime = revised_keep_alive * 3u;
-    opcua_uint32_t revised_lifetime = requested_lifetime_count;
-    if (revised_lifetime < min_lifetime) {
-        revised_lifetime = min_lifetime;
-    }
-
     memset(slot, 0, sizeof(*slot));
     slot->in_use = true;
     slot->subscription_id = subscription_id;
     slot->session_id = session_id;
-    slot->publishing_interval_ms = publishing_interval_ms;
-    slot->max_keep_alive_count = revised_keep_alive;
-    slot->lifetime_count = revised_lifetime;
-    slot->max_notifications_per_publish = max_notifications_per_publish;
-    slot->priority = priority;
+    mu_subscription_apply_parameters(slot,
+                                     publishing_interval_ms,
+                                     requested_lifetime_count,
+                                     requested_max_keep_alive_count,
+                                     max_notifications_per_publish,
+                                     priority);
     slot->publishing_enabled = publishing_enabled;
     slot->sequence_number = 1u;
     slot->keep_alive_counter = 0u;
@@ -628,6 +638,31 @@ opcua_statuscode_t mu_subscription_create(mu_subscriptions_t *subs,
 
     *out_sub = slot;
     return MU_STATUS_GOOD;
+}
+
+void mu_subscription_apply_parameters(mu_subscription_t *sub,
+                                      opcua_uint32_t publishing_interval_ms,
+                                      opcua_uint32_t requested_lifetime_count,
+                                      opcua_uint32_t requested_max_keep_alive_count,
+                                      opcua_uint32_t max_notifications_per_publish,
+                                      opcua_byte_t priority)
+{
+    if (sub == NULL) {
+        return;
+    }
+
+    opcua_uint32_t revised_lifetime = 0u;
+    opcua_uint32_t revised_keep_alive = 0u;
+    revise_subscription_counts(requested_lifetime_count,
+                               requested_max_keep_alive_count,
+                               &revised_lifetime,
+                               &revised_keep_alive);
+
+    sub->publishing_interval_ms = publishing_interval_ms;
+    sub->max_keep_alive_count = revised_keep_alive;
+    sub->lifetime_count = revised_lifetime;
+    sub->max_notifications_per_publish = max_notifications_per_publish;
+    sub->priority = priority;
 }
 
 mu_subscription_t *mu_subscription_find(mu_subscriptions_t *subs,

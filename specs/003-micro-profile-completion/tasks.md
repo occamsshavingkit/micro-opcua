@@ -111,15 +111,15 @@ All subscription code is gated by `MICRO_OPCUA_SUBSCRIPTIONS`.
 
 ## US4 — Subscription / MonitoredItem management (P2)
 
-- [ ] T018 [Claude-test] Integration tests for ModifySubscription (revised values echoed)
+- [X] T018 [Claude-test] Integration tests for ModifySubscription (revised values echoed)
   and SetPublishingMode (publishing disabled → only keep-alives, no data notifications).
   (OPC refs: OPC 10000-4 §5.14.3, §5.14.4)
-- [ ] T019 [Codex-impl] Implement `ModifySubscription` + `SetPublishingMode` + wiring +
+- [X] T019 [Codex-impl] Implement `ModifySubscription` + `SetPublishingMode` + wiring +
   IDs. (OPC refs: OPC 10000-4 §5.14.3, §5.14.4)
-- [ ] T020 [Claude-test] Integration tests for ModifyMonitoredItems (revised sampling
+- [X] T020 [Claude-test] Integration tests for ModifyMonitoredItems (revised sampling
   interval) and SetMonitoringMode (DISABLED stops sampling/notifications; REPORTING
   resumes). (OPC refs: OPC 10000-4 §5.13.3, §5.13.4)
-- [ ] T021 [Codex-impl] Implement `ModifyMonitoredItems` + `SetMonitoringMode` + wiring +
+- [X] T021 [Codex-impl] Implement `ModifyMonitoredItems` + `SetMonitoringMode` + wiring +
   IDs. (OPC refs: OPC 10000-4 §5.13.3, §5.13.4)
 
 ## US5 — At least two sessions (P1, profile-mandatory)
