@@ -31,7 +31,7 @@ opcua_statuscode_t mu_address_space_validate(const mu_address_space_t *address_s
         
         for (r = 0; r < node->reference_count; r++) {
             const mu_reference_t *ref = &node->references[r];
-            if (!mu_address_space_find_node(address_space, &ref->target_id)) {
+            if (!mu_address_space_find_node(address_space, NULL, &ref->target_id)) {
                 return MU_STATUS_BAD_INTERNALERROR;
             }
         }

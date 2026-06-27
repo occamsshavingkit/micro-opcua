@@ -1,11 +1,10 @@
 # Feature Size Ledger
 
-Measured footprint of the micro-opcua server across the three build profiles. `.data`
-is zero and **heap is zero everywhere** (no `malloc` in the protocol path), so RAM is
-caller-provided — **except** for ~156 B of core `.bss` introduced by feature 004 (the
-address-space index cache + OPN policy hand-off; see the flash-summary note). Relocating
-that state back into caller storage to restore the zero-mutable-globals property is a
-tracked follow-up.
+Measured footprint of the micro-opcua server across the three build profiles. The core
+has **no mutable global state** (`.data`, `.bss`, and heap are all zero — no `malloc` in
+the protocol path), so all RAM is caller-provided. (Feature 004 briefly introduced ~156 B
+of file-static state; issue #197 relocated it into the caller-provided server storage,
+restoring `.bss = 0`.)
 
 - **Measured**: 2026-06-27 (Micro profile complete: subscriptions + ≥2 sessions)
 - **Toolchain**: `arm-none-eabi-gcc` 13.2.1 (RP2040, Cortex-M0+), `gcc` (host)
@@ -20,24 +19,25 @@ Refreshed 2026-06-27 after feature `004-optimization-fixes` (US1–US4 + followu
 
 | Profile | Services | Core `.text` | vs nano | `.data` | `.bss` | Heap |
 |---|---|---|---|---|---|---|
-| **nano** | Core + View + Read, None | **16.2 KiB** (16,549 B) | — | 0 | 156 B | 0 |
-| **micro** | nano + Data-Change Subscriptions | **22.2 KiB** (22,739 B) | +6.0 KiB | 0 | 156 B | 0 |
-| **embedded** | micro + Basic256Sha256 | **27.0 KiB** (27,629 B) | +10.8 KiB | 0 | 156 B | 0 |
+| **nano** | Core + View + Read, None | **16.3 KiB** (16,717 B) | — | 0 | 0 | 0 |
+| **micro** | nano + Data-Change Subscriptions | **22.4 KiB** (22,923 B) | +6.1 KiB | 0 | 0 | 0 |
+| **embedded** | micro + Basic256Sha256 | **27.1 KiB** (27,801 B) | +10.8 KiB | 0 | 0 | 0 |
 
 - **Subscriptions (Micro)** cost **~6.0 KiB** of flash (engine `subscription.c` plus the
   Subscription/MonitoredItem dispatch handlers + DataChangeNotification encoding).
 - **Basic256Sha256** adds a further **~4.8 KiB** of portable crypto (key derivation,
   asym/sym chunk, certificate, per-channel cipher-context plumbing). The host build
   additionally links an OpenSSL adapter; an MCU replaces it with mbedTLS/PSA.
-- **NOTE — `.bss` is no longer zero.** Feature 004 introduced **~156 B of file-static
-  mutable state** in the core: the address-space lookup index cache
-  (`s_address_space_index` + cached pointer/count, ~144 B, from FR-009) and
-  `g_opn_security_policy_context` (12 B, from the FR-005 OPN policy hand-off). This is a
-  deviation from the library's prior "no mutable global state / `.bss = 0`" property
-  (Constitution II); it is single-connection-safe but should be relocated into the
-  server/caller-provided storage in a follow-up. Net core flash is flat-to-down vs the
-  pre-feature baseline (nano 16.9 → 16.2 KiB) despite the added parser-robustness,
-  address-space index, OPN validation, and per-channel cipher context.
+- **`.bss` = 0 (no mutable global state).** Feature 004 briefly introduced ~156 B of
+  file-static state (the address-space lookup index cache + the OPN policy hand-off);
+  **issue #197 relocated it into the caller-provided server storage**, restoring the
+  zero-mutable-globals property (verified: `nm` shows no `.bss` symbols in the core).
+  The relocation moved the index into `struct mu_server`, so
+  `MU_SERVER_STORAGE_BYTES` now also includes `MU_ADDRESS_SPACE_INDEX_STORAGE_BYTES`.
+  The trade cost ~170 B of `.text` per profile (the index cache is now threaded rather
+  than file-static). Net core flash is still flat-to-down vs the pre-feature baseline
+  (nano 16.9 → 16.3 KiB) despite the added parser-robustness, address-space index, OPN
+  validation, and per-channel cipher context.
 
 ## RAM (all caller-provided; the library adds 0 static RAM)
 
@@ -62,7 +62,8 @@ the integrator must provide (and is the value `mu_server_init` checks against).
   (`2 × MU_CIPHER_CTX_SIZE` = 1,024 B). This is a deliberate **stack→static trade** — it
   cut worst-case secured-OPN **stack** from 13,664 B to 7,024 B.
 - **Static RAM for the protocol ≈ 16.7 KiB (nano) / 18.8 KiB (micro) / ~26 KiB (embedded)**
-  (context + the two 8 KiB transport buffers), plus the ~156 B core `.bss` noted above.
+  (the caller-provided server context + the two 8 KiB transport buffers). The core
+  library itself contributes 0 static RAM (`.data`/`.bss` = 0).
 - Peak stack: **~5.5 KiB** plaintext (Read/Browse with the 32-deep dispatch arrays);
   **~12 KiB** on the secured path (response buffer + dispatch arrays). A secure build
   should provision ≥ 16 KiB of stack.

@@ -26,6 +26,14 @@
 #define MU_SECURE_SCRATCH_SIZE 6144
 #endif
 
+/* Issue #197: the address-space lookup index now lives in struct mu_server
+ * (mu_address_space_index_t user_address_space_index) instead of a file-static.
+ * Reserve room for it in the caller storage block: the order[] array
+ * (2 bytes/node) plus bookkeeping/padding headroom. */
+#ifndef MU_ADDRESS_SPACE_INDEX_STORAGE_BYTES
+#define MU_ADDRESS_SPACE_INDEX_STORAGE_BYTES (MU_MAX_ADDRESS_SPACE_NODES * 2 + 128)
+#endif
+
 /* D9: mu_status_name() strings are OFF for embedded builds by default; this
  * macro is intentionally left undefined unless supplied with -D. */
 
@@ -62,9 +70,9 @@
 #endif
 
 #ifdef MICRO_OPCUA_SUBSCRIPTIONS
-#define MU_SERVER_STORAGE_BYTES (3072 + MU_SERVER_SECURITY_STORAGE_BYTES)
+#define MU_SERVER_STORAGE_BYTES (3072 + MU_SERVER_SECURITY_STORAGE_BYTES + MU_ADDRESS_SPACE_INDEX_STORAGE_BYTES)
 #else
-#define MU_SERVER_STORAGE_BYTES (1024 + MU_SERVER_SECURITY_STORAGE_BYTES)
+#define MU_SERVER_STORAGE_BYTES (1024 + MU_SERVER_SECURITY_STORAGE_BYTES + MU_ADDRESS_SPACE_INDEX_STORAGE_BYTES)
 #endif
 
 #endif /* MICRO_OPCUA_CONFIG_H */

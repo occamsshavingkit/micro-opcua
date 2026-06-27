@@ -56,6 +56,7 @@ void mu_base_runtime_init(mu_base_runtime_nodes_t *storage,
    runtime-bound dynamic space `dynamic` (if any), then the const base set. `dynamic`
    may be NULL. Returns NULL if found in none. Use this in the read/browse paths. */
 const mu_node_t *mu_resolve_node(const mu_address_space_t *user,
+                                 mu_address_space_index_t *user_index,
                                  const mu_address_space_t *dynamic,
                                  const mu_nodeid_t *node_id);
 

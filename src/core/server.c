@@ -97,6 +97,9 @@ opcua_statuscode_t mu_server_init(void *storage, size_t storage_size, const mu_s
     server = (mu_server_t *)storage;
     memset(server, 0, sizeof(struct mu_server));
     server->config = *config;
+    server->user_address_space_index = (mu_address_space_index_t){0};
+    server->opn_pending_security_policy.length = -1;
+    server->opn_pending_security_policy.data = NULL;
     {
         opcua_datetime_t start = server->config.time_adapter.get_time
             ? server->config.time_adapter.get_time(server->config.time_adapter.context) : 0;
@@ -306,7 +309,7 @@ static void handle_data_chunk_plaintext(mu_server_t *server, const opcua_byte_t 
         }
         status = mu_service_dispatch(server, request_type.identifier.numeric, req_body, req_body_len, resp_body, &payload_len);
         if (is_opn) {
-            mu_service_dispatch_set_opn_security_policy(NULL, NULL);
+            mu_service_dispatch_set_opn_security_policy(server, NULL);
         }
     }
 
@@ -428,7 +431,7 @@ static void handle_data_chunk_secure(mu_server_t *server, opcua_byte_t *msg, siz
         status = mu_service_dispatch(server, request_type.identifier.numeric,
                                      req_body, req_body_len, respbody, &resp_len);
         if (is_opn) {
-            mu_service_dispatch_set_opn_security_policy(NULL, NULL);
+            mu_service_dispatch_set_opn_security_policy(server, NULL);
         }
     }
     if (status != MU_STATUS_GOOD) {
