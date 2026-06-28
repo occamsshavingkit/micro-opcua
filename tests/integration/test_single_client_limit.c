@@ -124,7 +124,7 @@ void test_single_client_limit_second_connection(void) {
     config.tcp_adapter.close_connection = mock_close;
     config.tcp_adapter.shutdown = mock_shutdown;
 
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_t *server = NULL;
     mu_server_init(storage, sizeof(storage), &config, &server);
 

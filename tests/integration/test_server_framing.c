@@ -165,7 +165,7 @@ void test_coalesced_messages_both_processed(void) {
     mu_server_config_t config;
     opcua_byte_t rx[8192], tx[8192];
     configure(&config, &mock, rx, tx);
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_t *server = NULL;
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_server_init(storage, sizeof(storage), &config, &server));
 
@@ -188,7 +188,7 @@ void test_split_message_reassembled(void) {
     mu_server_config_t config;
     opcua_byte_t rx[8192], tx[8192];
     configure(&config, &mock, rx, tx);
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_t *server = NULL;
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_server_init(storage, sizeof(storage), &config, &server));
 

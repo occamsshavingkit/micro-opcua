@@ -464,7 +464,7 @@ void test_read_browse_and_publish_response_bytes_are_stable(void) {
     enqueue_publish(&mock, 7);
 #endif
 
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config);
 

@@ -330,7 +330,7 @@ void test_request_type_non_numeric_nodeid_rejected_with_bad_decodingerror(void) 
     opcua_byte_t tx[8192];
     configure_transport_server(&config, &transport, rx, tx);
     union {
-        opcua_byte_t bytes[MU_SERVER_STORAGE_BYTES];
+        _Alignas(8) opcua_byte_t bytes[MU_SERVER_STORAGE_BYTES];
         struct mu_server align;
     } storage;
     mu_server_t *server = NULL;

@@ -353,7 +353,7 @@ void test_alarm_event_generation_and_publishing(void) {
     enqueue_connect(&mock);
     enqueue_create_subscription(&mock, 4, 200.0);
 
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     memset(&config, 0, sizeof(config));
     config.endpoint_url = "opc.tcp://host:4840";

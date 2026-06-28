@@ -34,11 +34,9 @@ opcua_statuscode_t mu_server_config_validate(const mu_server_config_t *config) {
 
     /* Validate limits */
     if (config->max_sessions == 0 || config->max_secure_channels == 0) {
-        printf("DEBUG: Validate limits failed (sessions)\n");
         return MU_STATUS_BAD_INTERNALERROR;
     }
     if (config->max_chunk_count == 0 || config->max_message_size < MU_MIN_CHUNK_SIZE) {
-        printf("DEBUG: Validate limits failed (chunks)\n");
         return MU_STATUS_BAD_INTERNALERROR;
     }
 
@@ -46,17 +44,14 @@ opcua_statuscode_t mu_server_config_validate(const mu_server_config_t *config) {
     if (config->tcp_adapter.listen == NULL || config->tcp_adapter.accept == NULL || config->tcp_adapter.read == NULL ||
         config->tcp_adapter.write == NULL || config->tcp_adapter.close_connection == NULL ||
         config->tcp_adapter.shutdown == NULL) {
-        printf("DEBUG: Validate tcp failed\n");
         return MU_STATUS_BAD_INTERNALERROR;
     }
 
     if (config->time_adapter.get_time == NULL || config->time_adapter.get_tick_ms == NULL) {
-        printf("DEBUG: Validate time failed\n");
         return MU_STATUS_BAD_INTERNALERROR;
     }
 
     if (config->entropy_adapter.generate_random == NULL) {
-        printf("DEBUG: Validate entropy failed\n");
         return MU_STATUS_BAD_INTERNALERROR;
     }
 
@@ -64,7 +59,6 @@ opcua_statuscode_t mu_server_config_validate(const mu_server_config_t *config) {
     if (config->address_space != NULL) {
         opcua_statuscode_t status = mu_address_space_validate(config->address_space);
         if (status != MU_STATUS_GOOD) {
-            printf("DEBUG: Validate address space failed\n");
             return status;
         }
     }
@@ -78,7 +72,6 @@ opcua_statuscode_t mu_server_init(void *storage, size_t storage_size, const mu_s
     opcua_statuscode_t status;
 
     if (storage == NULL || out_server == NULL || config == NULL) {
-        printf("DEBUG: storage/out_server/config is NULL\n");
         return MU_STATUS_BAD_INTERNALERROR;
     }
 
@@ -86,19 +79,15 @@ opcua_statuscode_t mu_server_init(void *storage, size_t storage_size, const mu_s
        and size_t, so the buffer must be suitably aligned (word access to a
        misaligned struct faults on Cortex-M0+). */
     if (((uintptr_t)storage % _Alignof(struct mu_server)) != 0) {
-        printf("DEBUG: alignment failed. uintptr_t=%lu, alignof=%lu\n", (unsigned long)(uintptr_t)storage,
-               (unsigned long)_Alignof(struct mu_server));
         return MU_STATUS_BAD_INTERNALERROR;
     }
 
     if (storage_size < sizeof(struct mu_server)) {
-        printf("DEBUG: size failed\n");
         return MU_STATUS_BAD_OUTOFMEMORY;
     }
 
     status = mu_server_config_validate(config);
     if (status != MU_STATUS_GOOD) {
-        printf("DEBUG: config validate failed with %08X\n", status);
         return status;
     }
 
