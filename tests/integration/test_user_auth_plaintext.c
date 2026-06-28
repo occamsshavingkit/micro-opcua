@@ -281,7 +281,7 @@ void test_plaintext_user_auth_flow(void) {
     /* Attach user auth handler */
     config.user_auth_handler = test_auth_handler;
 
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_t *server = NULL;
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_server_init(storage, sizeof(storage), &config, &server));
 

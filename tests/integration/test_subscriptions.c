@@ -370,7 +370,7 @@ void test_create_subscription(void) {
     enqueue_create_subscription(&mock, 4, 1000.0, 100, 10);
     enqueue_create_subscription(&mock, 5, 500.0, 60, 5);
 
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config, NULL);
     mu_binary_reader_t body;
@@ -412,7 +412,7 @@ void test_create_subscription_too_many(void) {
     enqueue_create_subscription(&mock, 5, 1000.0, 100, 10);
     enqueue_create_subscription(&mock, 6, 1000.0, 100, 10); /* one past the cap */
 
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config, NULL);
     mu_binary_reader_t body;
@@ -435,7 +435,7 @@ void test_delete_subscriptions(void) {
     enqueue_connect(&mock);
     enqueue_create_subscription(&mock, 4, 1000.0, 100, 10);
 
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config, NULL);
     mu_binary_reader_t body;
@@ -485,7 +485,7 @@ void test_create_monitored_items(void) {
     enqueue_connect(&mock);
     enqueue_create_subscription(&mock, 4, 1000.0, 100, 10);
 
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config, NULL);
     mu_binary_reader_t body;
@@ -541,7 +541,7 @@ void test_create_monitored_items_too_many(void) {
     enqueue_connect(&mock);
     enqueue_create_subscription(&mock, 4, 1000.0, 100, 10);
 
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config, NULL);
     mu_binary_reader_t body;
@@ -591,7 +591,7 @@ void test_delete_monitored_items(void) {
     enqueue_connect(&mock);
     enqueue_create_subscription(&mock, 4, 1000.0, 100, 10);
 
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config, NULL);
     mu_binary_reader_t body;
@@ -687,7 +687,7 @@ void test_sampling_detects_change(void) {
     enqueue_connect(&mock);
     enqueue_create_subscription(&mock, 4, 1000.0, 100, 10);
 
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     s_mon_val = 10;
     mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config, &samp_space);
@@ -811,7 +811,7 @@ void test_publish_delivers_data_change(void) {
     enqueue_connect(&mock);
     enqueue_create_subscription(&mock, 4, 200.0, 1000, 1000); /* large keep-alive: no keep-alives here */
 
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     s_mon_val = 10;
     mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config, &samp_space);
@@ -876,7 +876,7 @@ void test_publish_keep_alive(void) {
     enqueue_connect(&mock);
     enqueue_create_subscription(&mock, 4, 200.0, 100, 3); /* keep-alive count 3 */
 
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     s_mon_val = 10;
     mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config, &samp_space);
@@ -954,7 +954,7 @@ void test_republish_and_acknowledge(void) {
     enqueue_connect(&mock);
     enqueue_create_subscription(&mock, 4, 200.0, 1000, 1000);
 
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     s_mon_val = 10;
     mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config, &samp_space);
@@ -1083,7 +1083,7 @@ void test_modify_subscription(void) {
     memset(&mock, 0, sizeof(mock));
     enqueue_connect(&mock);
     enqueue_create_subscription(&mock, 4, 1000.0, 100, 10);
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config, NULL);
     mu_binary_reader_t body;
@@ -1125,7 +1125,7 @@ void test_modify_subscription(void) {
 void test_set_publishing_mode(void) {
     mock_t mock;
     memset(&mock, 0, sizeof(mock));
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     opcua_uint32_t sub_id, item_id;
     s_mon_val = 10;
@@ -1178,7 +1178,7 @@ void test_set_publishing_mode(void) {
 void test_modify_monitored_items(void) {
     mock_t mock;
     memset(&mock, 0, sizeof(mock));
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     opcua_uint32_t sub_id, item_id;
     s_mon_val = 10;
@@ -1231,7 +1231,7 @@ void test_modify_monitored_items(void) {
 void test_set_monitoring_mode(void) {
     mock_t mock;
     memset(&mock, 0, sizeof(mock));
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     opcua_uint32_t sub_id, item_id;
     s_mon_val = 10;
@@ -1456,7 +1456,7 @@ void test_two_sessions(void) {
     memset(&mock, 0, sizeof(mock));
     enqueue_hel_opn(&mock);
     enqueue_create_session(&mock, 2);
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config, NULL);
     mu_binary_reader_t body;
@@ -1509,7 +1509,7 @@ void test_subscription_session_isolation(void) {
     memset(&mock, 0, sizeof(mock));
     enqueue_hel_opn(&mock);
     enqueue_create_session(&mock, 2);
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config, NULL);
     mu_binary_reader_t body;
@@ -1628,7 +1628,7 @@ void test_monitored_item_absolute_deadband(void) {
     enqueue_connect(&mock);
     enqueue_create_subscription(&mock, 4, 200.0, 100, 3); /* keepalive 3 → keep-alives fire */
 
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     s_mon_val = 10;
     mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config, &samp_space);
@@ -1760,7 +1760,7 @@ void test_monitored_item_queue_overflow(void) {
     enqueue_connect(&mock);
     enqueue_create_subscription(&mock, 4, 1000.0, 1000, 1000); /* publishing 1000 ms */
 
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     s_mon_val = 10;
     mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config, &samp_space);
@@ -1874,7 +1874,7 @@ void test_set_triggering(void) {
     enqueue_connect(&mock);
     enqueue_create_subscription(&mock, 4, 200.0, 1000, 1000);
 
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     s_mon_val = 10;
     mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config, &samp_space);
@@ -1971,7 +1971,7 @@ void test_set_triggering(void) {
 void test_standard_facet_errors(void) {
     mock_t mock;
     memset(&mock, 0, sizeof(mock));
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     opcua_uint32_t sub_id, item_id;
     s_mon_val = 10;

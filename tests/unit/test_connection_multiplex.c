@@ -111,7 +111,7 @@ void test_connection_limits(void) {
     config.tcp_adapter.shutdown = mock_shutdown;
 
     union {
-        opcua_byte_t bytes[MU_SERVER_STORAGE_BYTES + 2048];
+        _Alignas(8) opcua_byte_t bytes[MU_SERVER_STORAGE_BYTES + 2048];
     } storage;
     mu_server_t *server = NULL;
     opcua_statuscode_t status = mu_server_init(storage.bytes, sizeof(storage), &config, &server);

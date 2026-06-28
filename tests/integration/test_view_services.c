@@ -295,7 +295,7 @@ void test_register_and_unregister_nodes(void) {
     clen = build_msg(chunk, sizeof(chunk), 5, 5, tmp, w.position);
     enqueue(&mock, chunk, clen);
 
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config, NULL);
     mu_binary_reader_t body;
@@ -353,7 +353,7 @@ void test_browse_next_invalid_continuation_point(void) {
     clen = build_msg(chunk, sizeof(chunk), 4, 4, tmp, w.position);
     enqueue(&mock, chunk, clen);
 
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config, NULL);
     mu_binary_reader_t body;
@@ -444,7 +444,7 @@ void test_translate_browse_paths(void) {
     clen = build_msg(chunk, sizeof(chunk), 4, 4, tmp, w.position);
     enqueue(&mock, chunk, clen);
 
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config, &tbp_space);
     mu_binary_reader_t body;
@@ -544,7 +544,7 @@ void test_base_information_default_nodes(void) {
     clen = build_msg(chunk, sizeof(chunk), 5, 5, tmp, w.position);
     enqueue(&mock, chunk, clen);
 
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config, NULL); /* no integrator space */
     mu_binary_reader_t body;
@@ -621,7 +621,7 @@ void test_server_status_current_time_is_live(void) {
     clen = build_msg(chunk, sizeof(chunk), 4, 4, tmp, w.position);
     enqueue(&mock, chunk, clen);
 
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_config_t config;
     mu_server_t *server = make_server(&mock, storage, sizeof(storage), &config, NULL);
     /* Point the (live) time adapter at a known clock; CurrentTime must read it. */

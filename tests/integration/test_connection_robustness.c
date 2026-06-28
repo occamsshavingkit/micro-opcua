@@ -164,7 +164,7 @@ void test_idle_connection_times_out(void) {
     static opcua_byte_t rx[8192], tx[8192];
     make_config(&config, &mock, rx, sizeof(rx), tx, sizeof(tx));
 
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_t *server = NULL;
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_server_init(storage, sizeof(storage), &config, &server));
 
@@ -192,7 +192,7 @@ void test_activity_resets_idle_timer(void) {
     mu_server_config_t config;
     static opcua_byte_t rx[8192], tx[8192];
     make_config(&config, &mock, rx, sizeof(rx), tx, sizeof(tx));
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_t *server = NULL;
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_server_init(storage, sizeof(storage), &config, &server));
 
@@ -222,7 +222,7 @@ void test_write_failure_closes_connection(void) {
     mu_server_config_t config;
     static opcua_byte_t rx[8192], tx[8192];
     make_config(&config, &mock, rx, sizeof(rx), tx, sizeof(tx));
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_t *server = NULL;
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_server_init(storage, sizeof(storage), &config, &server));
 
@@ -246,7 +246,7 @@ void test_short_write_closes_connection(void) {
     mu_server_config_t config;
     static opcua_byte_t rx[8192], tx[8192];
     make_config(&config, &mock, rx, sizeof(rx), tx, sizeof(tx));
-    opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
+    _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_t *server = NULL;
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_server_init(storage, sizeof(storage), &config, &server));
 

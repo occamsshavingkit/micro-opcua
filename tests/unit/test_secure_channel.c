@@ -226,7 +226,7 @@ static void assert_opn_rejected(const opcua_byte_t *policy_uri, opcua_int32_t po
     opcua_byte_t rx[8192];
     opcua_byte_t tx[8192];
     union {
-        opcua_byte_t bytes[MU_SERVER_STORAGE_BYTES];
+        _Alignas(8) opcua_byte_t bytes[MU_SERVER_STORAGE_BYTES];
         struct mu_server align;
     } storage;
     mu_server_t *server = NULL;

@@ -45,7 +45,7 @@ void tearDown(void) {}
 
 void test_pubsub_poll_timing(void) {
     union {
-        opcua_byte_t bytes[MU_SERVER_STORAGE_BYTES + 2048];
+        _Alignas(8) opcua_byte_t bytes[MU_SERVER_STORAGE_BYTES + 2048];
         struct mu_server align_server;
     } storage;
     mu_server_config_t config = {0};
