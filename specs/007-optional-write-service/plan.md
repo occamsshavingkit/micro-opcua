@@ -22,9 +22,12 @@
 
 ## Embedded Size Budget
 
-**Flash Impact**: Under 1.5 KB of ARM Thumb code  
-**RAM Impact**: 0 bytes static BSS; transient stack usage under 512 bytes  
-**Heap Use**: None  
+**Flash Impact**: 
+- Nano profile with Write enabled: 16,909 bytes (Delta: +408 bytes vs baseline 16,501 bytes)
+- Embedded profile with Write enabled: 36,018 bytes (Delta: +400 bytes vs baseline 35,618 bytes)
+- Overall flash impact is well within the 1.5 KB budget.
+**RAM Impact**: 0 bytes static BSS; transient stack usage under 256 bytes.
+**Heap Use**: None (zero dynamic heap allocations).
 **Static Tables Added**: N/A  
 **Transport Buffers**: N/A  
 **Crypto Dependency Impact**: N/A  
