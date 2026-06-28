@@ -763,8 +763,34 @@ static opcua_statuscode_t handle_activate_session(mu_server_t *server, mu_binary
                                 server->config.crypto_adapter->context, user_token.password.data,
                                 (size_t)user_token.password.length, decrypt_buf, &out_len);
                             if (ds == MU_STATUS_GOOD) {
-                                decrypted_password.length = (opcua_int32_t)out_len;
-                                decrypted_password.data = decrypt_buf;
+                                if (out_len < 4) {
+                                    activate_result = MU_STATUS_BAD_IDENTITYTOKENREJECTED;
+                                    goto activate_done;
+                                }
+                                opcua_int32_t pw_len =
+                                    (opcua_int32_t)decrypt_buf[0] | ((opcua_int32_t)decrypt_buf[1] << 8) |
+                                    ((opcua_int32_t)decrypt_buf[2] << 16) | ((opcua_int32_t)decrypt_buf[3] << 24);
+                                if (pw_len < -1 || (pw_len > 0 && (size_t)pw_len > out_len - 4)) {
+                                    activate_result = MU_STATUS_BAD_IDENTITYTOKENREJECTED;
+                                    goto activate_done;
+                                }
+                                if (pw_len == -1) {
+                                    decrypted_password.length = -1;
+                                    decrypted_password.data = NULL;
+                                } else {
+                                    decrypted_password.length = pw_len;
+                                    decrypted_password.data = decrypt_buf + 4;
+                                }
+
+                                /* Verify server nonce (prevent replay attacks, OPC-10000-4 §5.6.3.2) */
+                                size_t actual_pw_len = (pw_len > 0) ? (size_t)pw_len : 0;
+                                size_t nonce_offset = 4 + actual_pw_len;
+                                size_t nonce_len = out_len - nonce_offset;
+                                if (nonce_len != 32 ||
+                                    memcmp(decrypt_buf + nonce_offset, slot->server_nonce, 32) != 0) {
+                                    activate_result = MU_STATUS_BAD_IDENTITYTOKENREJECTED;
+                                    goto activate_done;
+                                }
                             } else {
                                 activate_result = MU_STATUS_BAD_IDENTITYTOKENREJECTED;
                                 goto activate_done;

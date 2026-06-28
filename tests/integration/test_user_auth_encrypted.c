@@ -224,8 +224,8 @@ void test_encrypted_user_auth_flow(void) {
     // UserNameIdentityToken
     {
         mu_nodeid_t token_type = {0, MU_NODEID_NUMERIC, {324}};
-        /* Estimating: policy(19), username(9), password(9), alg(45) */
-        mu_binary_write_extension_object_header(&w, &token_type, 19 + 9 + 9 + 45);
+        /* Exact body size: policy(19), username(9), password(45), alg(45) = 118 */
+        mu_binary_write_extension_object_header(&w, &token_type, 118);
 
         mu_string_t policy = {15, (const opcua_byte_t *)"username_policy"};
         mu_binary_write_string(&w, &policy);
@@ -233,9 +233,25 @@ void test_encrypted_user_auth_flow(void) {
         mu_string_t username = {5, (const opcua_byte_t *)"admin"};
         mu_binary_write_string(&w, &username);
 
-        /* encrypted "admin" XOR 0x5A */
-        opcua_byte_t encrypted_pwd[] = {0x3B, 0x3E, 0x37, 0x33, 0x34};
-        mu_bytestring_t password = {5, encrypted_pwd};
+        /* UA password block plaintext:
+           [4 bytes] length (5)
+           [5 bytes] "admin"
+           [32 bytes] server nonce (0x42, matching fake_generate_random)
+        */
+        opcua_byte_t plain_block[41];
+        plain_block[0] = 5;
+        plain_block[1] = 0;
+        plain_block[2] = 0;
+        plain_block[3] = 0;
+        memcpy(plain_block + 4, "admin", 5);
+        memset(plain_block + 9, 0x42, 32);
+
+        /* encrypt by XORing with 0x5A to simulate mock rsa OAEP decryption */
+        opcua_byte_t encrypted_pwd[41];
+        for (size_t i = 0; i < 41; ++i) {
+            encrypted_pwd[i] = plain_block[i] ^ 0x5A;
+        }
+        mu_bytestring_t password = {41, encrypted_pwd};
         mu_binary_write_bytestring(&w, &password);
 
         mu_string_t alg = {41, (const opcua_byte_t *)"http://www.w3.org/2001/04/xmlenc#rsa-oaep"};
