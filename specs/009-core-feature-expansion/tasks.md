@@ -66,13 +66,13 @@
 
 ### Tests for User Story 2
 
-- [ ] T015 [P] [US2] Add unit test for connection list multiplexing (citing OPC-10000-4 §5.13) in `tests/unit/test_connection_multiplex.c`
-- [ ] T016 [P] [US2] Add integration test validating concurrent connection limits and clean timeouts (citing OPC-10000-4 §5.13) in `tests/integration/test_multiple_connections.c`
+- [x] T015 [P] [US2] Add unit test for connection list multiplexing (citing OPC-10000-4 §5.13) in `tests/unit/test_connection_multiplex.c`
+- [x] T016 [P] [US2] Add integration test validating concurrent connection limits and clean timeouts (citing OPC-10000-4 §5.13) in `tests/integration/test_multiple_connections.c`
 
 ### Implementation for User Story 2
 
-- [ ] T017 [US2] Implement active connections array management and multiplexing (citing OPC-10000-4 §5.13) in `src/core/server.c`
-- [ ] T018 [US2] Measure size impact of concurrent connection multiplexer in `specs/009-core-feature-expansion/plan.md`
+- [x] T017 [US2] Implement active connections array management and multiplexing (citing OPC-10000-4 §5.13) in `src/core/server.c`
+- [x] T018 [US2] Measure size impact of concurrent connection multiplexer in `specs/009-core-feature-expansion/plan.md`
 
 **Checkpoint**: User Story 2 works independently.
 
