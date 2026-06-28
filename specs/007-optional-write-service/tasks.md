@@ -32,9 +32,9 @@
 
 **Purpose**: Project configuration and build options.
 
-- [ ] T001 Configure CMake option `MICRO_OPCUA_SERVICE_WRITE` in `cmake/MicroOpcUaOptions.cmake`
-- [ ] T002 Configure compiler flags and source file gating for Write service in `CMakeLists.txt`
-- [ ] T003 Add build configuration check unit test in `tests/unit/test_build_config.c`
+- [x] T001 Configure CMake option `MICRO_OPCUA_SERVICE_WRITE` in `cmake/MicroOpcUaOptions.cmake`
+- [x] T002 Configure compiler flags and source file gating for Write service in `CMakeLists.txt`
+- [x] T003 Add build configuration check unit test in `tests/unit/test_build_config.c`
 
 ---
 
@@ -44,10 +44,10 @@
 
 **CRITICAL**: No user story implementation can begin until this phase is complete.
 
-- [ ] T004 Document target OPC UA profile/conformance-unit set (Write Value Server Facet) and cited sections in `docs/traceability/007-optional-write-service.md`
-- [ ] T005 Define `mu_write_handler_t` and `write_handler` / `write_handler_handle` fields in `include/micro_opcua/server.h`
-- [ ] T006 Declare `handle_write` dispatch function in `src/core/service_dispatch.h`
-- [ ] T007 Add service unit test stub in `tests/unit/test_write_service.c`
+- [x] T004 Document target OPC UA profile/conformance-unit set (Write Value Server Facet) and cited sections in `docs/traceability/007-optional-write-service.md`
+- [x] T005 Define `mu_write_handler_t` and `write_handler` / `write_handler_handle` fields in `include/micro_opcua/server.h`
+- [x] T006 Declare `handle_write` dispatch function in `src/core/service_dispatch.h`
+- [x] T007 Add service unit test stub in `tests/unit/test_write_service.c`
 
 **Checkpoint**: Foundation ready - user story implementation can begin.
 
@@ -63,16 +63,16 @@
 
 > Write these tests first and confirm they fail before implementation.
 
-- [ ] T008 [P] [US1] Add binary packet fixture for single Int32 WriteRequest (citing OPC-10000-4 §5.11.4 and OPC-10000-6 §7.36) under `tests/fixtures/write_int32_req.bin`
-- [ ] T009 [P] [US1] Add decoder unit tests for scalar types (Int32, Float, String, Boolean) citing OPC-10000-6 §5.2 and OPC-10000-4 §5.11.4.2 in `tests/unit/test_write_decoder.c`
-- [ ] T010 [US1] Add integration test for single-item Write using mock callback (citing OPC-10000-4 §5.11.4) in `tests/integration/test_write_scalar.c`
+- [x] T008 [P] [US1] Add binary packet fixture for single Int32 WriteRequest (citing OPC-10000-4 §5.11.4 and OPC-10000-6 §7.36) under `tests/fixtures/write_int32_req.bin`
+- [x] T009 [P] [US1] Add decoder unit tests for scalar types (Int32, Float, String, Boolean) citing OPC-10000-6 §5.2 and OPC-10000-4 §5.11.4.2 in `tests/unit/test_write_decoder.c`
+- [x] T010 [US1] Add integration test for single-item Write using mock callback (citing OPC-10000-4 §5.11.4) in `tests/integration/test_write_scalar.c`
 
 ### Implementation for User Story 1
 
-- [ ] T011 [P] [US1] Implement WriteValue decoder `mu_write_value_decode` (citing OPC-10000-4 §5.11.4.2 and OPC-10000-6 §7.36) in `src/encoding/binary_reader.c` and `src/encoding/binary_reader.h`
-- [ ] T012 [US1] Implement `handle_write` dispatch function (citing OPC-10000-4 §5.11.4) in `src/core/service_dispatch.c` and route request through `src/core/service_dispatch.c` table.
-- [ ] T013 [US1] Integrate application callback invocation in `handle_write` (citing OPC-10000-4 §5.11.4) in `src/core/service_dispatch.c`
-- [ ] T014 [US1] Measure and record flash/RAM size impact of User Story 1 in `specs/007-optional-write-service/plan.md`
+- [x] T011 [P] [US1] Implement WriteValue decoder `mu_write_value_decode` (citing OPC-10000-4 §5.11.4.2 and OPC-10000-6 §7.36) in `src/encoding/binary_reader.c` and `src/encoding/binary_reader.h`
+- [x] T012 [US1] Implement `handle_write` dispatch function (citing OPC-10000-4 §5.11.4) in `src/core/service_dispatch.c` and route request through `src/core/service_dispatch.c` table.
+- [x] T013 [US1] Integrate application callback invocation in `handle_write` (citing OPC-10000-4 §5.11.4) in `src/core/service_dispatch.c`
+- [x] T014 [US1] Measure and record flash/RAM size impact of User Story 1 in `specs/007-optional-write-service/plan.md`
 
 **Checkpoint**: User Story 1 is independently testable and size impact is known.
 
@@ -86,14 +86,14 @@
 
 ### Tests for User Story 2
 
-- [ ] T015 [P] [US2] Add binary packet fixture for batch WriteRequest (citing OPC-10000-4 §5.11.4.2 and OPC-10000-6 §7.36) in `tests/fixtures/write_batch_req.bin`
-- [ ] T016 [P] [US2] Add unit test for batch write loop and response status array length (citing OPC-10000-4 §5.11.4.2) in `tests/unit/test_write_service.c`
-- [ ] T017 [US2] Add integration test for batch writes with mix of success/failure (citing OPC-10000-4 §5.11.4.2) in `tests/integration/test_write_batch.c`
+- [x] T015 [P] [US2] Add binary packet fixture for batch WriteRequest (citing OPC-10000-4 §5.11.4.2 and OPC-10000-6 §7.36) in `tests/fixtures/write_batch_req.bin`
+- [x] T016 [P] [US2] Add unit test for batch write loop and response status array length (citing OPC-10000-4 §5.11.4.2) in `tests/unit/test_write_service.c`
+- [x] T017 [US2] Add integration test for batch writes with mix of success/failure (citing OPC-10000-4 §5.11.4.2) in `tests/integration/test_write_batch.c`
 
 ### Implementation for User Story 2
 
-- [ ] T018 [US2] Implement loop processing in `handle_write` (citing OPC-10000-4 §5.11.4.2) to decode and dispatch multiple `WriteValue` items in `src/core/service_dispatch.c`
-- [ ] T019 [US2] Measure and record flash/RAM size impact of User Story 2 in `specs/007-optional-write-service/plan.md`
+- [x] T018 [US2] Implement loop processing in `handle_write` (citing OPC-10000-4 §5.11.4.2) to decode and dispatch multiple `WriteValue` items in `src/core/service_dispatch.c`
+- [x] T019 [US2] Measure and record flash/RAM size impact of User Story 2 in `specs/007-optional-write-service/plan.md`
 
 **Checkpoint**: User Stories 1 and 2 both work independently.
 
@@ -107,15 +107,15 @@
 
 ### Tests for User Story 3
 
-- [ ] T020 [P] [US3] Add unit test for empty `nodesToWrite` array returning `Bad_NothingToDo` (citing OPC-10000-4 §5.11.4.3) in `tests/unit/test_write_errors.c`
-- [ ] T021 [P] [US3] Add unit test for non-Value attribute write returning `Bad_AttributeIdInvalid` (citing OPC-10000-4 §5.11.4.2) in `tests/unit/test_write_errors.c`
-- [ ] T022 [P] [US3] Add unit test for indexRange write returning `Bad_WriteNotSupported` (citing OPC-10000-4 §5.11.4.2) in `tests/unit/test_write_errors.c`
-- [ ] T023 [US3] Add integration test validating full error behavior (citing OPC-10000-4 §5.11.4.2 and §5.11.4.3) under `tests/integration/test_write_validation.c`
+- [x] T020 [P] [US3] Add unit test for empty `nodesToWrite` array returning `Bad_NothingToDo` (citing OPC-10000-4 §5.11.4.3) in `tests/unit/test_write_errors.c`
+- [x] T021 [P] [US3] Add unit test for non-Value attribute write returning `Bad_AttributeIdInvalid` (citing OPC-10000-4 §5.11.4.2) in `tests/unit/test_write_errors.c`
+- [x] T022 [P] [US3] Add unit test for indexRange write returning `Bad_WriteNotSupported` (citing OPC-10000-4 §5.11.4.2) in `tests/unit/test_write_errors.c`
+- [x] T023 [US3] Add integration test validating full error behavior (citing OPC-10000-4 §5.11.4.2 and §5.11.4.3) under `tests/integration/test_write_validation.c`
 
 ### Implementation for User Story 3
 
-- [ ] T024 [US3] Implement validation checks (attribute ID check, indexRange length check, empty array check, citing OPC-10000-4 §5.11.4.2) in `handle_write` inside `src/core/service_dispatch.c`
-- [ ] T025 [US3] Measure and record final size impact in `specs/007-optional-write-service/plan.md`
+- [x] T024 [US3] Implement validation checks (attribute ID check, indexRange length check, empty array check, citing OPC-10000-4 §5.11.4.2) in `handle_write` inside `src/core/service_dispatch.c`
+- [x] T025 [US3] Measure and record final size impact in `specs/007-optional-write-service/plan.md`
 
 **Checkpoint**: Selected user stories are independently functional.
 
@@ -125,11 +125,11 @@
 
 **Purpose**: Cross-cutting validation required before completion.
 
-- [ ] T026 Run all unit and integration tests in `Makefile`
-- [ ] T027 Run AddressSanitizer and UndefinedBehaviorSanitizer builds in `Makefile`
-- [ ] T028 Run formatting in `Makefile` and `clang-format`
-- [ ] T029 Run embedded size measurement in `scripts/measure_size.sh`
-- [ ] T030 Complete documentation of traceability mappings in `docs/traceability/007-optional-write-service.md`
+- [x] T026 Run all unit and integration tests in `Makefile`
+- [x] T027 Run AddressSanitizer and UndefinedBehaviorSanitizer builds in `Makefile`
+- [x] T028 Run formatting in `Makefile` and `clang-format`
+- [x] T029 Run embedded size measurement in `scripts/measure_size.sh`
+- [x] T030 Complete documentation of traceability mappings in `docs/traceability/007-optional-write-service.md`
 
 ---
 

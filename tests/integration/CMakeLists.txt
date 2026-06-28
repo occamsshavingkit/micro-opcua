@@ -43,3 +43,21 @@ add_executable(test_subscriptions test_subscriptions.c)
 target_link_libraries(test_subscriptions PRIVATE micro_opcua micro_opcua_test_support unity)
 target_include_directories(test_subscriptions PRIVATE ${CMAKE_SOURCE_DIR}/src)
 add_test(NAME test_subscriptions COMMAND test_subscriptions)
+
+add_executable(test_write_scalar test_write_scalar.c)
+target_link_libraries(test_write_scalar PRIVATE micro_opcua micro_opcua_test_support unity)
+target_include_directories(test_write_scalar PRIVATE ${CMAKE_SOURCE_DIR}/src)
+add_test(NAME test_write_scalar COMMAND test_write_scalar)
+
+add_executable(test_write_batch test_write_batch.c)
+target_link_libraries(test_write_batch PRIVATE micro_opcua micro_opcua_test_support unity)
+target_include_directories(test_write_batch PRIVATE ${CMAKE_SOURCE_DIR}/src)
+add_test(NAME test_write_batch COMMAND test_write_batch)
+
+add_executable(test_write_validation test_write_validation.c)
+target_link_libraries(test_write_validation PRIVATE micro_opcua micro_opcua_test_support unity)
+target_include_directories(test_write_validation PRIVATE ${CMAKE_SOURCE_DIR}/src)
+add_test(NAME test_write_validation COMMAND test_write_validation)
+
+
+
