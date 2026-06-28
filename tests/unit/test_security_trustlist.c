@@ -33,7 +33,7 @@ void test_trust_list_match_failure_unknown_cert(void) {
 }
 
 void test_trust_list_match_failure_empty_list(void) {
-    mu_trust_list_t empty_list = {0, NULL, NULL};
+    mu_trust_list_t empty_list = {NULL, NULL, 0};
     opcua_statuscode_t status = mu_trust_list_match(&empty_list, cert1, sizeof(cert1));
     TEST_ASSERT_NOT_EQUAL(MU_STATUS_GOOD, status);
 }
