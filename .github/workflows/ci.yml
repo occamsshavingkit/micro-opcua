@@ -12,9 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y cmake build-essential cppcheck clang-tidy clang-format libssl-dev
+        run: sudo apt-get update && sudo apt-get install -y cmake build-essential cppcheck clang-tidy clang-format libssl-dev libmbedtls-dev libwolfssl-dev
       - name: Configure CMake
-        run: cmake -S . -B build/host -DMICRO_OPCUA_BUILD_TESTS=ON -DMICRO_OPCUA_BUILD_EXAMPLES=ON -DMICRO_OPCUA_PLATFORM=host
+        run: cmake -S . -B build/host -DMICRO_OPCUA_BUILD_TESTS=ON -DMICRO_OPCUA_BUILD_EXAMPLES=ON -DMICRO_OPCUA_PLATFORM=host -DMICRO_OPCUA_HAVE_MBEDTLS=ON -DMICRO_OPCUA_HAVE_WOLFSSL=ON
       - name: Build
         run: cmake --build build/host
       - name: Test
@@ -67,9 +67,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y cmake clang libssl-dev
+        run: sudo apt-get update && sudo apt-get install -y cmake clang libssl-dev libmbedtls-dev libwolfssl-dev
       - name: Configure CMake
-        run: CC=clang CXX=clang++ cmake -S . -B build/asan -DMICRO_OPCUA_BUILD_TESTS=ON -DMICRO_OPCUA_SANITIZERS="address,undefined" -DMICRO_OPCUA_PLATFORM=host
+        run: CC=clang CXX=clang++ cmake -S . -B build/asan -DMICRO_OPCUA_BUILD_TESTS=ON -DMICRO_OPCUA_SANITIZERS="address,undefined" -DMICRO_OPCUA_PLATFORM=host -DMICRO_OPCUA_HAVE_MBEDTLS=ON -DMICRO_OPCUA_HAVE_WOLFSSL=ON
       - name: Build
         run: cmake --build build/asan
       - name: Test
