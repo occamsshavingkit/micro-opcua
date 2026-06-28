@@ -1,9 +1,9 @@
 /* tests/unit/test_traceability_docs.c */
 #include "unity.h"
+#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <dirent.h>
 #include <sys/stat.h>
 
 void setUp(void) {}
@@ -25,11 +25,13 @@ static void read_file_content(const char *path, char *buffer, size_t max_len) {
 
 static void check_file_traceability(const char *dir_path) {
     DIR *dir = opendir(dir_path);
-    if (!dir) return;
+    if (!dir)
+        return;
 
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL) {
-        if (entry->d_name[0] == '.') continue;
+        if (entry->d_name[0] == '.')
+            continue;
 
         char path[1024];
         snprintf(path, sizeof(path), "%s/%s", dir_path, entry->d_name);
@@ -42,7 +44,7 @@ static void check_file_traceability(const char *dir_path) {
                 const char *ext = strrchr(entry->d_name, '.');
                 if (ext && (strcmp(ext, ".c") == 0 || strcmp(ext, ".h") == 0)) {
                     /* Check if path is in files_to_sections.md */
-                    /* Note: The paths in files-to-sections.md might be like `src/core/server.c` 
+                    /* Note: The paths in files-to-sections.md might be like `src/core/server.c`
                        but our dir_path is absolute or relative like `../src/...`
                        Let's just check if the basename is present. */
                     if (strstr(files_to_sections_content, entry->d_name) == NULL) {

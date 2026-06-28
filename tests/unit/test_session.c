@@ -1,6 +1,6 @@
 /* tests/unit/test_session.c */
-#include "unity.h"
 #include "micro_opcua/micro_opcua.h"
+#include "unity.h"
 #include <string.h>
 
 void setUp(void) {}
@@ -9,7 +9,11 @@ void tearDown(void) {}
 #include "../../src/services/session.h"
 
 /* Wire SessionTimeout is a Duration (Double); the API works on its raw bits. */
-static opcua_uint64_t bits(double d) { opcua_uint64_t b; memcpy(&b, &d, sizeof(b)); return b; }
+static opcua_uint64_t bits(double d) {
+    opcua_uint64_t b;
+    memcpy(&b, &d, sizeof(b));
+    return b;
+}
 
 void test_session_create(void) {
     mu_session_t session;
@@ -47,40 +51,38 @@ void test_session_create(void) {
 void test_session_activate_anonymous(void) {
     mu_session_t session;
     mu_session_init(&session);
-    
+
     opcua_uint64_t revised_timeout;
     opcua_uint32_t session_id, auth_token;
     mu_session_create(&session, bits(5000.0), &revised_timeout, &session_id, &auth_token);
-    
+
     /* Unknown identity token */
-    TEST_ASSERT_EQUAL(MU_STATUS_BAD_IDENTITYTOKENINVALID, 
+    TEST_ASSERT_EQUAL(MU_STATUS_BAD_IDENTITYTOKENINVALID,
                       mu_session_activate(&session, auth_token, 325)); /* IssuedIdentityToken */
-                      
+
     /* Wrong auth token */
-    TEST_ASSERT_EQUAL(MU_STATUS_BAD_SESSIONIDINVALID, 
-                      mu_session_activate(&session, 9999, 321));
-                      
+    TEST_ASSERT_EQUAL(MU_STATUS_BAD_SESSIONIDINVALID, mu_session_activate(&session, 9999, 321));
+
     /* Success */
-    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, 
-                      mu_session_activate(&session, auth_token, 321)); /* AnonymousIdentityToken */
-                      
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_session_activate(&session, auth_token, 321)); /* AnonymousIdentityToken */
+
     TEST_ASSERT_EQUAL(MU_SESSION_STATE_ACTIVATED, session.state);
 }
 
 void test_session_close(void) {
     mu_session_t session;
     mu_session_init(&session);
-    
+
     opcua_uint64_t revised_timeout;
     opcua_uint32_t session_id, auth_token;
-    
+
     TEST_ASSERT_EQUAL(MU_STATUS_BAD_SESSIONIDINVALID, mu_session_close(&session, 0, true));
-    
+
     mu_session_create(&session, bits(5000.0), &revised_timeout, &session_id, &auth_token);
-    
+
     /* Wrong auth token */
     TEST_ASSERT_EQUAL(MU_STATUS_BAD_SESSIONIDINVALID, mu_session_close(&session, 9999, true));
-    
+
     /* Success */
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_session_close(&session, auth_token, true));
     TEST_ASSERT_EQUAL(MU_SESSION_STATE_CLOSED, session.state);

@@ -21,7 +21,9 @@ typedef struct {
 opcua_statuscode_t mu_parse_message_header(const opcua_byte_t *buffer, size_t length, mu_message_header_t *header);
 opcua_statuscode_t mu_write_message_header(opcua_byte_t *buffer, size_t length, const mu_message_header_t *header);
 
-opcua_statuscode_t mu_parse_sequence_header(const opcua_byte_t *buffer, size_t length, size_t *offset, mu_sequence_header_t *header);
-opcua_statuscode_t mu_write_sequence_header(opcua_byte_t *buffer, size_t length, size_t *offset, const mu_sequence_header_t *header);
+opcua_statuscode_t mu_parse_sequence_header(const opcua_byte_t *buffer, size_t length, size_t *offset,
+                                            mu_sequence_header_t *header);
+opcua_statuscode_t mu_write_sequence_header(opcua_byte_t *buffer, size_t length, size_t *offset,
+                                            const mu_sequence_header_t *header);
 
 #endif /* MICRO_OPCUA_MESSAGE_CHUNK_H */

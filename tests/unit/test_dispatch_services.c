@@ -3,52 +3,64 @@
  * (positioned after the request-type NodeId, as mu_server_poll delivers it) and
  * assert on the encoded response body (response-type NodeId + ResponseHeader +
  * service response). */
-#include "unity.h"
-#include "micro_opcua/micro_opcua.h"
 #include "../../src/core/server_internal.h"
 #include "../../src/core/service_dispatch.h"
 #include "../../src/services/service_header.h"
 #include "../../src/services/subscription.h"
+#include "micro_opcua/micro_opcua.h"
+#include "unity.h"
 #include <string.h>
 
 void setUp(void) {}
 void tearDown(void) {}
 
-static opcua_datetime_t fake_time(void *c) { (void)c; return 0; }
+static opcua_datetime_t fake_time(void *c) {
+    (void)c;
+    return 0;
+}
 #if MICRO_OPCUA_SUBSCRIPTIONS
-static opcua_uint64_t fake_tick_ms(void *c) { (void)c; return 0; }
+static opcua_uint64_t fake_tick_ms(void *c) {
+    (void)c;
+    return 0;
+}
 #endif
 static opcua_statuscode_t fake_entropy(void *c, opcua_byte_t *buf, size_t len) {
-    (void)c; if (buf) memset(buf, 0x42, len); return MU_STATUS_GOOD;
+    (void)c;
+    if (buf)
+        memset(buf, 0x42, len);
+    return MU_STATUS_GOOD;
 }
 
 /* Write a RequestHeader (OPC 10000-4 7.32) with the given requestHandle. */
 static void write_request_header(mu_binary_writer_t *w, opcua_uint32_t handle) {
-    mu_nodeid_t null_id = { 0, MU_NODEID_NUMERIC, { 0 } };
+    mu_nodeid_t null_id = {0, MU_NODEID_NUMERIC, {0}};
     /* authenticationToken = the first session slot's token (12345). Session-requiring
        services (Read/Browse) are routed by this token to the activated session;
        non-session services ignore it. */
-    mu_nodeid_t auth_id = { 0, MU_NODEID_NUMERIC, { 12345 } };
-    mu_string_t null_str = { -1, NULL };
-    mu_binary_write_nodeid(w, &auth_id);                    /* authenticationToken */
-    mu_binary_write_int64(w, 0);                            /* timestamp */
-    mu_binary_write_uint32(w, handle);                      /* requestHandle */
-    mu_binary_write_uint32(w, 0);                           /* returnDiagnostics */
-    mu_binary_write_string(w, &null_str);                  /* auditEntryId */
-    mu_binary_write_uint32(w, 0);                           /* timeoutHint */
-    mu_binary_write_extension_object_header(w, &null_id, 0);/* additionalHeader */
+    mu_nodeid_t auth_id = {0, MU_NODEID_NUMERIC, {12345}};
+    mu_string_t null_str = {-1, NULL};
+    mu_binary_write_nodeid(w, &auth_id);                     /* authenticationToken */
+    mu_binary_write_int64(w, 0);                             /* timestamp */
+    mu_binary_write_uint32(w, handle);                       /* requestHandle */
+    mu_binary_write_uint32(w, 0);                            /* returnDiagnostics */
+    mu_binary_write_string(w, &null_str);                    /* auditEntryId */
+    mu_binary_write_uint32(w, 0);                            /* timeoutHint */
+    mu_binary_write_extension_object_header(w, &null_id, 0); /* additionalHeader */
 }
 
 /* Skip a ResponseHeader the reader is positioned at. */
 static void skip_response_header(mu_binary_reader_t *r, opcua_uint32_t *handle, opcua_statuscode_t *result) {
-    opcua_int64_t ts; opcua_byte_t diag, enc; opcua_int32_t strtbl; mu_nodeid_t addl;
+    opcua_int64_t ts;
+    opcua_byte_t diag, enc;
+    opcua_int32_t strtbl;
+    mu_nodeid_t addl;
     mu_binary_read_int64(r, &ts);
     mu_binary_read_uint32(r, handle);
     mu_binary_read_statuscode(r, result);
-    mu_binary_read_byte(r, &diag);          /* serviceDiagnostics (empty) */
-    mu_binary_read_int32(r, &strtbl);       /* stringTable (null) */
-    mu_binary_read_nodeid(r, &addl);        /* additionalHeader typeId */
-    mu_binary_read_byte(r, &enc);           /* additionalHeader encoding */
+    mu_binary_read_byte(r, &diag);    /* serviceDiagnostics (empty) */
+    mu_binary_read_int32(r, &strtbl); /* stringTable (null) */
+    mu_binary_read_nodeid(r, &addl);  /* additionalHeader typeId */
+    mu_binary_read_byte(r, &enc);     /* additionalHeader encoding */
 }
 
 void test_dispatch_open_secure_channel(void) {
@@ -62,18 +74,18 @@ void test_dispatch_open_secure_channel(void) {
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, req, sizeof(req));
     write_request_header(&w, 42);
-    mu_binary_write_uint32(&w, 0);          /* ClientProtocolVersion */
-    mu_binary_write_uint32(&w, 0);          /* RequestType = ISSUE */
-    mu_binary_write_uint32(&w, 1);          /* SecurityMode = NONE */
-    mu_bytestring_t client_nonce = { -1, NULL };
+    mu_binary_write_uint32(&w, 0); /* ClientProtocolVersion */
+    mu_binary_write_uint32(&w, 0); /* RequestType = ISSUE */
+    mu_binary_write_uint32(&w, 1); /* SecurityMode = NONE */
+    mu_bytestring_t client_nonce = {-1, NULL};
     mu_binary_write_bytestring(&w, &client_nonce);
-    mu_binary_write_uint32(&w, 3600000);    /* RequestedLifetime */
+    mu_binary_write_uint32(&w, 3600000); /* RequestedLifetime */
     size_t req_len = w.position;
 
     opcua_byte_t resp[256];
     size_t resp_len = sizeof(resp);
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_service_dispatch(&server, MU_ID_OPENSECURECHANNELREQUEST, req, req_len, resp, &resp_len));
+                      mu_service_dispatch(&server, MU_ID_OPENSECURECHANNELREQUEST, req, req_len, resp, &resp_len));
     TEST_ASSERT_TRUE(server.secure_channel.is_open);
 
     /* Parse the response body. */
@@ -83,7 +95,8 @@ void test_dispatch_open_secure_channel(void) {
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_nodeid(&r, &type));
     TEST_ASSERT_EQUAL(MU_ID_OPENSECURECHANNELRESPONSE, type.identifier.numeric);
 
-    opcua_uint32_t handle; opcua_statuscode_t result;
+    opcua_uint32_t handle;
+    opcua_statuscode_t result;
     skip_response_header(&r, &handle, &result);
     TEST_ASSERT_EQUAL(42, handle);
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, result);
@@ -109,23 +122,23 @@ static size_t build_create_session_body(opcua_byte_t *buf, size_t cap, opcua_dou
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, buf, cap);
     write_request_header(&w, 7);
-    mu_string_t ns = { -1, NULL };
-    mu_bytestring_t nb = { -1, NULL };
+    mu_string_t ns = {-1, NULL};
+    mu_bytestring_t nb = {-1, NULL};
     /* ClientDescription (ApplicationDescription) */
-    mu_binary_write_string(&w, &ns);           /* applicationUri */
-    mu_binary_write_string(&w, &ns);           /* productUri */
-    mu_binary_write_byte(&w, 0x00);            /* applicationName LocalizedText (empty) */
-    mu_binary_write_uint32(&w, 1);             /* applicationType = CLIENT */
-    mu_binary_write_string(&w, &ns);           /* gatewayServerUri */
-    mu_binary_write_string(&w, &ns);           /* discoveryProfileUri */
-    mu_binary_write_int32(&w, 0);              /* discoveryUrls[] */
-    mu_binary_write_string(&w, &ns);           /* ServerUri */
-    mu_binary_write_string(&w, &ns);           /* EndpointUrl */
-    mu_binary_write_string(&w, &ns);           /* SessionName */
-    mu_binary_write_bytestring(&w, &nb);       /* ClientNonce */
-    mu_binary_write_bytestring(&w, &nb);       /* ClientCertificate */
+    mu_binary_write_string(&w, &ns);     /* applicationUri */
+    mu_binary_write_string(&w, &ns);     /* productUri */
+    mu_binary_write_byte(&w, 0x00);      /* applicationName LocalizedText (empty) */
+    mu_binary_write_uint32(&w, 1);       /* applicationType = CLIENT */
+    mu_binary_write_string(&w, &ns);     /* gatewayServerUri */
+    mu_binary_write_string(&w, &ns);     /* discoveryProfileUri */
+    mu_binary_write_int32(&w, 0);        /* discoveryUrls[] */
+    mu_binary_write_string(&w, &ns);     /* ServerUri */
+    mu_binary_write_string(&w, &ns);     /* EndpointUrl */
+    mu_binary_write_string(&w, &ns);     /* SessionName */
+    mu_binary_write_bytestring(&w, &nb); /* ClientNonce */
+    mu_binary_write_bytestring(&w, &nb); /* ClientCertificate */
     mu_binary_write_double(&w, requested_timeout);
-    mu_binary_write_uint32(&w, 0);             /* MaxResponseMessageSize */
+    mu_binary_write_uint32(&w, 0); /* MaxResponseMessageSize */
     return w.position;
 }
 
@@ -143,15 +156,20 @@ void test_dispatch_create_session_honors_timeout(void) {
     opcua_byte_t resp[1024];
     size_t resp_len = sizeof(resp);
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_service_dispatch(&server, MU_ID_CREATESESSIONREQUEST, req, req_len, resp, &resp_len));
+                      mu_service_dispatch(&server, MU_ID_CREATESESSIONREQUEST, req, req_len, resp, &resp_len));
 
     mu_binary_reader_t r;
     mu_binary_reader_init(&r, resp, resp_len);
-    mu_nodeid_t type; mu_binary_read_nodeid(&r, &type);
-    opcua_uint32_t handle; opcua_statuscode_t result;
+    mu_nodeid_t type;
+    mu_binary_read_nodeid(&r, &type);
+    opcua_uint32_t handle;
+    opcua_statuscode_t result;
     skip_response_header(&r, &handle, &result);
-    mu_nodeid_t sid, tok; mu_binary_read_nodeid(&r, &sid); mu_binary_read_nodeid(&r, &tok);
-    opcua_double_t revised; mu_binary_read_double(&r, &revised);
+    mu_nodeid_t sid, tok;
+    mu_binary_read_nodeid(&r, &sid);
+    mu_binary_read_nodeid(&r, &tok);
+    opcua_double_t revised;
+    mu_binary_read_double(&r, &revised);
     TEST_ASSERT_EQUAL(1200000, (opcua_int64_t)revised); /* the client's requested timeout, honored */
 }
 
@@ -173,7 +191,7 @@ void test_dispatch_create_session(void) {
     opcua_byte_t resp[1024]; /* CreateSessionResponse now carries ServerEndpoints */
     size_t resp_len = sizeof(resp);
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_service_dispatch(&server, MU_ID_CREATESESSIONREQUEST, req, req_len, resp, &resp_len));
+                      mu_service_dispatch(&server, MU_ID_CREATESESSIONREQUEST, req, req_len, resp, &resp_len));
     TEST_ASSERT_EQUAL(MU_SESSION_STATE_CREATED, server.sessions[0].state);
 
     mu_binary_reader_t r;
@@ -182,7 +200,8 @@ void test_dispatch_create_session(void) {
     mu_binary_read_nodeid(&r, &type);
     TEST_ASSERT_EQUAL(MU_ID_CREATESESSIONRESPONSE, type.identifier.numeric);
 
-    opcua_uint32_t handle; opcua_statuscode_t result;
+    opcua_uint32_t handle;
+    opcua_statuscode_t result;
     skip_response_header(&r, &handle, &result);
     TEST_ASSERT_EQUAL(7, handle);
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, result);
@@ -208,10 +227,10 @@ static size_t build_activate_body(opcua_byte_t *buf, size_t size, opcua_uint32_t
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, buf, size);
     /* RequestHeader with authenticationToken numeric = auth_token_id */
-    mu_nodeid_t auth = { 0, MU_NODEID_NUMERIC, { auth_token_id } };
-    mu_string_t null_str = { -1, NULL };
-    mu_bytestring_t null_bs = { -1, NULL };
-    mu_nodeid_t null_id = { 0, MU_NODEID_NUMERIC, { 0 } };
+    mu_nodeid_t auth = {0, MU_NODEID_NUMERIC, {auth_token_id}};
+    mu_string_t null_str = {-1, NULL};
+    mu_bytestring_t null_bs = {-1, NULL};
+    mu_nodeid_t null_id = {0, MU_NODEID_NUMERIC, {0}};
     mu_binary_write_nodeid(&w, &auth);
     mu_binary_write_int64(&w, 0);
     mu_binary_write_uint32(&w, 0);
@@ -227,7 +246,7 @@ static size_t build_activate_body(opcua_byte_t *buf, size_t size, opcua_uint32_t
     /* LocaleIds: empty array */
     mu_binary_write_int32(&w, 0);
     /* UserIdentityToken: ExtensionObject typeId = 321 (AnonymousIdentityToken DefaultBinary) */
-    mu_nodeid_t anon = { 0, MU_NODEID_NUMERIC, { 321 } };
+    mu_nodeid_t anon = {0, MU_NODEID_NUMERIC, {321}};
     mu_binary_write_extension_object_header(&w, &anon, 0);
     return w.position;
 }
@@ -238,7 +257,8 @@ void test_dispatch_activate_session(void) {
     server.secure_channel.is_open = true;
     server.config.time_adapter.get_time = fake_time;
     mu_session_init(&server.sessions[0]);
-    opcua_uint64_t revised; opcua_uint32_t sid, tok;
+    opcua_uint64_t revised;
+    opcua_uint32_t sid, tok;
     mu_session_create(&server.sessions[0], 0, &revised, &sid, &tok); /* -> CREATED, auth=12345 */
 
     opcua_byte_t req[256];
@@ -247,7 +267,7 @@ void test_dispatch_activate_session(void) {
     opcua_byte_t resp[256];
     size_t resp_len = sizeof(resp);
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_service_dispatch(&server, MU_ID_ACTIVATESESSIONREQUEST, req, req_len, resp, &resp_len));
+                      mu_service_dispatch(&server, MU_ID_ACTIVATESESSIONREQUEST, req, req_len, resp, &resp_len));
     TEST_ASSERT_EQUAL(MU_SESSION_STATE_ACTIVATED, server.sessions[0].state);
 
     mu_binary_reader_t r;
@@ -255,7 +275,8 @@ void test_dispatch_activate_session(void) {
     mu_nodeid_t type;
     mu_binary_read_nodeid(&r, &type);
     TEST_ASSERT_EQUAL(MU_ID_ACTIVATESESSIONRESPONSE, type.identifier.numeric);
-    opcua_uint32_t handle; opcua_statuscode_t result;
+    opcua_uint32_t handle;
+    opcua_statuscode_t result;
     skip_response_header(&r, &handle, &result);
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, result);
 }
@@ -265,7 +286,8 @@ void test_dispatch_close_session(void) {
     memset(&server, 0, sizeof(server));
     server.secure_channel.is_open = true;
     mu_session_init(&server.sessions[0]);
-    opcua_uint64_t revised; opcua_uint32_t sid, tok;
+    opcua_uint64_t revised;
+    opcua_uint32_t sid, tok;
     mu_session_create(&server.sessions[0], 0, &revised, &sid, &tok);
     mu_session_activate(&server.sessions[0], tok, 321); /* -> ACTIVATED */
 
@@ -273,9 +295,9 @@ void test_dispatch_close_session(void) {
     opcua_byte_t req[256];
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, req, sizeof(req));
-    mu_nodeid_t auth = { 0, MU_NODEID_NUMERIC, { tok } };
-    mu_string_t null_str = { -1, NULL };
-    mu_nodeid_t null_id = { 0, MU_NODEID_NUMERIC, { 0 } };
+    mu_nodeid_t auth = {0, MU_NODEID_NUMERIC, {tok}};
+    mu_string_t null_str = {-1, NULL};
+    mu_nodeid_t null_id = {0, MU_NODEID_NUMERIC, {0}};
     mu_binary_write_nodeid(&w, &auth);
     mu_binary_write_int64(&w, 0);
     mu_binary_write_uint32(&w, 0);
@@ -289,7 +311,7 @@ void test_dispatch_close_session(void) {
     opcua_byte_t resp[256];
     size_t resp_len = sizeof(resp);
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_service_dispatch(&server, MU_ID_CLOSESESSIONREQUEST, req, req_len, resp, &resp_len));
+                      mu_service_dispatch(&server, MU_ID_CLOSESESSIONREQUEST, req, req_len, resp, &resp_len));
     TEST_ASSERT_EQUAL(MU_SESSION_STATE_CLOSED, server.sessions[0].state);
 
     mu_binary_reader_t r;
@@ -299,26 +321,28 @@ void test_dispatch_close_session(void) {
     TEST_ASSERT_EQUAL(MU_ID_CLOSESESSIONRESPONSE, type.identifier.numeric);
 }
 
-#include "../../src/services/read.h"
 #include "../../src/services/browse.h"
+#include "../../src/services/read.h"
 
 /* Small address space: Objects(85) Organizes MyVar1(1000, Int32=42). */
-static const mu_reference_t s_obj_refs[] = {
-    { { 0, MU_NODEID_NUMERIC, { 35 } }, { 1, MU_NODEID_NUMERIC, { 1000 } }, true }
-};
-static const mu_reference_t s_var_refs[] = {
-    { { 0, MU_NODEID_NUMERIC, { 35 } }, { 0, MU_NODEID_NUMERIC, { 85 } }, false }
-};
-static const mu_value_source_t s_var_value = {
-    MU_VALUESOURCE_STATIC, { .static_value = { MU_TYPE_INT32, { .i32 = 42 } } }
-};
-static const mu_node_t s_nodes[] = {
-    { { 0, MU_NODEID_NUMERIC, { 85 } }, MU_NODECLASS_OBJECT,
-      { 7, (const opcua_byte_t *)"Objects" }, { 7, (const opcua_byte_t *)"Objects" }, s_obj_refs, 1, NULL },
-    { { 1, MU_NODEID_NUMERIC, { 1000 } }, MU_NODECLASS_VARIABLE,
-      { 6, (const opcua_byte_t *)"MyVar1" }, { 6, (const opcua_byte_t *)"MyVar1" }, s_var_refs, 1, &s_var_value }
-};
-static const mu_address_space_t s_address_space = { s_nodes, 2 };
+static const mu_reference_t s_obj_refs[] = {{{0, MU_NODEID_NUMERIC, {35}}, {1, MU_NODEID_NUMERIC, {1000}}, true}};
+static const mu_reference_t s_var_refs[] = {{{0, MU_NODEID_NUMERIC, {35}}, {0, MU_NODEID_NUMERIC, {85}}, false}};
+static const mu_value_source_t s_var_value = {MU_VALUESOURCE_STATIC, {.static_value = {MU_TYPE_INT32, {.i32 = 42}}}};
+static const mu_node_t s_nodes[] = {{{0, MU_NODEID_NUMERIC, {85}},
+                                     MU_NODECLASS_OBJECT,
+                                     {7, (const opcua_byte_t *)"Objects"},
+                                     {7, (const opcua_byte_t *)"Objects"},
+                                     s_obj_refs,
+                                     1,
+                                     NULL},
+                                    {{1, MU_NODEID_NUMERIC, {1000}},
+                                     MU_NODECLASS_VARIABLE,
+                                     {6, (const opcua_byte_t *)"MyVar1"},
+                                     {6, (const opcua_byte_t *)"MyVar1"},
+                                     s_var_refs,
+                                     1,
+                                     &s_var_value}};
+static const mu_address_space_t s_address_space = {s_nodes, 2};
 
 static void activated_server(mu_server_t *server) {
     memset(server, 0, sizeof(*server));
@@ -330,7 +354,8 @@ static void activated_server(mu_server_t *server) {
     mu_subscriptions_init(&server->subs);
 #endif
     mu_session_init(&server->sessions[0]);
-    opcua_uint64_t rev; opcua_uint32_t sid, tok;
+    opcua_uint64_t rev;
+    opcua_uint32_t sid, tok;
     mu_session_create(&server->sessions[0], 0, &rev, &sid, &tok);
     mu_session_activate(&server->sessions[0], tok, 321);
 }
@@ -341,18 +366,17 @@ static opcua_uint32_t create_subscription_via_dispatch(mu_server_t *server) {
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, req, sizeof(req));
     write_request_header(&w, 21);
-    mu_binary_write_double(&w, 1000.0);     /* RequestedPublishingInterval */
-    mu_binary_write_uint32(&w, 30);         /* RequestedLifetimeCount */
-    mu_binary_write_uint32(&w, 10);         /* RequestedMaxKeepAliveCount */
-    mu_binary_write_uint32(&w, 0);          /* MaxNotificationsPerPublish */
-    mu_binary_write_boolean(&w, true);      /* PublishingEnabled */
-    mu_binary_write_byte(&w, 0);            /* Priority */
+    mu_binary_write_double(&w, 1000.0); /* RequestedPublishingInterval */
+    mu_binary_write_uint32(&w, 30);     /* RequestedLifetimeCount */
+    mu_binary_write_uint32(&w, 10);     /* RequestedMaxKeepAliveCount */
+    mu_binary_write_uint32(&w, 0);      /* MaxNotificationsPerPublish */
+    mu_binary_write_boolean(&w, true);  /* PublishingEnabled */
+    mu_binary_write_byte(&w, 0);        /* Priority */
 
     opcua_byte_t resp[256];
     size_t resp_len = sizeof(resp);
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_service_dispatch(server, MU_ID_CREATESUBSCRIPTIONREQUEST,
-                            req, w.position, resp, &resp_len));
+                      mu_service_dispatch(server, MU_ID_CREATESUBSCRIPTIONREQUEST, req, w.position, resp, &resp_len));
 
     mu_binary_reader_t r;
     mu_binary_reader_init(&r, resp, resp_len);
@@ -372,27 +396,25 @@ static opcua_uint32_t create_subscription_via_dispatch(mu_server_t *server) {
     return subscription_id;
 }
 
-static void write_monitored_item_create_request(mu_binary_writer_t *w,
-                                                const mu_nodeid_t *node_id,
+static void write_monitored_item_create_request(mu_binary_writer_t *w, const mu_nodeid_t *node_id,
                                                 opcua_uint32_t client_handle) {
-    mu_string_t null_str = { -1, NULL };
-    mu_nodeid_t null_id = { 0, MU_NODEID_NUMERIC, { 0 } };
+    mu_string_t null_str = {-1, NULL};
+    mu_nodeid_t null_id = {0, MU_NODEID_NUMERIC, {0}};
 
-    mu_binary_write_nodeid(w, node_id);     /* itemToMonitor.nodeId */
-    mu_binary_write_uint32(w, 13);          /* attributeId = Value */
-    mu_binary_write_string(w, &null_str);   /* indexRange */
-    mu_binary_write_uint16(w, 0);           /* dataEncoding.namespaceIndex */
-    mu_binary_write_string(w, &null_str);   /* dataEncoding.name */
-    mu_binary_write_uint32(w, 2);           /* monitoringMode = Reporting */
+    mu_binary_write_nodeid(w, node_id);   /* itemToMonitor.nodeId */
+    mu_binary_write_uint32(w, 13);        /* attributeId = Value */
+    mu_binary_write_string(w, &null_str); /* indexRange */
+    mu_binary_write_uint16(w, 0);         /* dataEncoding.namespaceIndex */
+    mu_binary_write_string(w, &null_str); /* dataEncoding.name */
+    mu_binary_write_uint32(w, 2);         /* monitoringMode = Reporting */
     mu_binary_write_uint32(w, client_handle);
-    mu_binary_write_double(w, 500.0);       /* requested samplingInterval */
+    mu_binary_write_double(w, 500.0); /* requested samplingInterval */
     mu_binary_write_extension_object_header(w, &null_id, 0);
-    mu_binary_write_uint32(w, 1);           /* queueSize */
-    mu_binary_write_boolean(w, true);       /* discardOldest */
+    mu_binary_write_uint32(w, 1);     /* queueSize */
+    mu_binary_write_boolean(w, true); /* discardOldest */
 }
 
-static opcua_statuscode_t read_monitored_item_create_result(mu_binary_reader_t *r,
-                                                            opcua_uint32_t *id) {
+static opcua_statuscode_t read_monitored_item_create_result(mu_binary_reader_t *r, opcua_uint32_t *id) {
     opcua_statuscode_t status;
     opcua_double_t revised_sampling_interval;
     opcua_uint32_t revised_queue_size;
@@ -403,36 +425,29 @@ static opcua_statuscode_t read_monitored_item_create_result(mu_binary_reader_t *
     mu_binary_read_uint32(r, id);
     mu_binary_read_double(r, &revised_sampling_interval);
     mu_binary_read_uint32(r, &revised_queue_size);
-    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_binary_read_extension_object_header(r, &filter_type, &filter_length));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_extension_object_header(r, &filter_type, &filter_length));
     TEST_ASSERT_EQUAL_size_t(0, filter_length);
     (void)revised_sampling_interval;
     (void)revised_queue_size;
     return status;
 }
 
-static mu_monitored_item_t *find_monitored_item_by_id(mu_server_t *server,
-                                                      opcua_uint32_t subscription_id,
+static mu_monitored_item_t *find_monitored_item_by_id(mu_server_t *server, opcua_uint32_t subscription_id,
                                                       opcua_uint32_t monitored_item_id) {
     for (size_t i = 0; i < MU_MAX_MONITORED_ITEMS; ++i) {
         mu_monitored_item_t *item = &server->subs.monitored_items[i];
-        if (item->in_use &&
-            item->subscription_id == subscription_id &&
-            item->monitored_item_id == monitored_item_id) {
+        if (item->in_use && item->subscription_id == subscription_id && item->monitored_item_id == monitored_item_id) {
             return item;
         }
     }
     return NULL;
 }
 
-static mu_monitored_item_t *find_monitored_item_by_node(mu_server_t *server,
-                                                        opcua_uint32_t subscription_id,
+static mu_monitored_item_t *find_monitored_item_by_node(mu_server_t *server, opcua_uint32_t subscription_id,
                                                         const mu_nodeid_t *node_id) {
     for (size_t i = 0; i < MU_MAX_MONITORED_ITEMS; ++i) {
         mu_monitored_item_t *item = &server->subs.monitored_items[i];
-        if (item->in_use &&
-            item->subscription_id == subscription_id &&
-            mu_nodeid_equal(&item->node_id, node_id)) {
+        if (item->in_use && item->subscription_id == subscription_id && mu_nodeid_equal(&item->node_id, node_id)) {
             return item;
         }
     }
@@ -444,10 +459,9 @@ void test_dispatch_create_monitored_item_caches_resolved_node(void) {
     activated_server(&server);
 
     opcua_uint32_t subscription_id = create_subscription_via_dispatch(&server);
-    mu_nodeid_t known_node_id = { 1, MU_NODEID_NUMERIC, { 1000 } };
-    mu_nodeid_t missing_node_id = { 1, MU_NODEID_NUMERIC, { 9999 } };
-    const mu_node_t *fresh_node =
-        mu_address_space_find_node(server.config.address_space, &known_node_id);
+    mu_nodeid_t known_node_id = {1, MU_NODEID_NUMERIC, {1000}};
+    mu_nodeid_t missing_node_id = {1, MU_NODEID_NUMERIC, {9999}};
+    const mu_node_t *fresh_node = mu_address_space_find_node(server.config.address_space, &known_node_id);
     TEST_ASSERT_NOT_NULL(fresh_node);
     TEST_ASSERT_NULL(mu_address_space_find_node(server.config.address_space, &missing_node_id));
 
@@ -456,16 +470,15 @@ void test_dispatch_create_monitored_item_caches_resolved_node(void) {
     mu_binary_writer_init(&w, req, sizeof(req));
     write_request_header(&w, 22);
     mu_binary_write_uint32(&w, subscription_id);
-    mu_binary_write_uint32(&w, 3);          /* TimestampsToReturn = Neither */
-    mu_binary_write_int32(&w, 2);           /* ItemsToCreate */
+    mu_binary_write_uint32(&w, 3); /* TimestampsToReturn = Neither */
+    mu_binary_write_int32(&w, 2);  /* ItemsToCreate */
     write_monitored_item_create_request(&w, &known_node_id, 41);
     write_monitored_item_create_request(&w, &missing_node_id, 42);
 
     opcua_byte_t resp[512];
     size_t resp_len = sizeof(resp);
-    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_service_dispatch(&server, MU_ID_CREATEMONITOREDITEMSREQUEST,
-                            req, w.position, resp, &resp_len));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_service_dispatch(&server, MU_ID_CREATEMONITOREDITEMSREQUEST, req, w.position,
+                                                          resp, &resp_len));
 
     mu_binary_reader_t r;
     mu_binary_reader_init(&r, resp, resp_len);
@@ -484,21 +497,17 @@ void test_dispatch_create_monitored_item_caches_resolved_node(void) {
 
     opcua_uint32_t known_item_id;
     opcua_uint32_t missing_item_id;
-    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        read_monitored_item_create_result(&r, &known_item_id));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, read_monitored_item_create_result(&r, &known_item_id));
     TEST_ASSERT_NOT_EQUAL(0, known_item_id);
-    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_BAD_NODEIDUNKNOWN,
-        read_monitored_item_create_result(&r, &missing_item_id));
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_BAD_NODEIDUNKNOWN, read_monitored_item_create_result(&r, &missing_item_id));
     TEST_ASSERT_EQUAL(0, missing_item_id);
 
-    mu_monitored_item_t *known_item =
-        find_monitored_item_by_id(&server, subscription_id, known_item_id);
+    mu_monitored_item_t *known_item = find_monitored_item_by_id(&server, subscription_id, known_item_id);
     TEST_ASSERT_NOT_NULL(known_item);
     TEST_ASSERT_NOT_NULL(known_item->resolved_node);
     TEST_ASSERT_EQUAL_PTR(fresh_node, known_item->resolved_node);
 
-    mu_monitored_item_t *missing_item =
-        find_monitored_item_by_node(&server, subscription_id, &missing_node_id);
+    mu_monitored_item_t *missing_item = find_monitored_item_by_node(&server, subscription_id, &missing_node_id);
     TEST_ASSERT_NULL(missing_item);
 
     size_t items_in_use = 0;
@@ -537,8 +546,7 @@ void test_dispatch_delete_subscriptions_rejects_too_many_operations_before_resul
     /* OPC-10000-4 §7.38.2: Bad_TooManyOperations is a service-level rejection
        for a request that specifies too many operations, before results[] length. */
     opcua_statuscode_t service_result =
-        mu_service_dispatch(&server, MU_ID_DELETESUBSCRIPTIONSREQUEST,
-                            req, req_len, resp, &resp_len);
+        mu_service_dispatch(&server, MU_ID_DELETESUBSCRIPTIONSREQUEST, req, req_len, resp, &resp_len);
 
     TEST_ASSERT_EQUAL_HEX32(MU_STATUS_BAD_TOOMANYOPERATIONS, service_result);
     TEST_ASSERT_EQUAL(response_capacity, resp_len);
@@ -553,38 +561,43 @@ void test_dispatch_read_value(void) {
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, req, sizeof(req));
     write_request_header(&w, 5);
-    mu_string_t null_str = { -1, NULL };
-    mu_binary_write_double(&w, 0.0);                 /* MaxAge */
-    mu_binary_write_uint32(&w, 3);                   /* TimestampsToReturn = NEITHER */
-    mu_binary_write_int32(&w, 1);                    /* NoOfNodesToRead */
-    mu_nodeid_t var = { 1, MU_NODEID_NUMERIC, { 1000 } };
-    mu_binary_write_nodeid(&w, &var);               /* nodeId */
-    mu_binary_write_uint32(&w, 13);                  /* attributeId = Value */
-    mu_binary_write_string(&w, &null_str);          /* indexRange */
-    mu_binary_write_uint16(&w, 0);                   /* dataEncoding.namespaceIndex */
-    mu_binary_write_string(&w, &null_str);          /* dataEncoding.name */
+    mu_string_t null_str = {-1, NULL};
+    mu_binary_write_double(&w, 0.0); /* MaxAge */
+    mu_binary_write_uint32(&w, 3);   /* TimestampsToReturn = NEITHER */
+    mu_binary_write_int32(&w, 1);    /* NoOfNodesToRead */
+    mu_nodeid_t var = {1, MU_NODEID_NUMERIC, {1000}};
+    mu_binary_write_nodeid(&w, &var);      /* nodeId */
+    mu_binary_write_uint32(&w, 13);        /* attributeId = Value */
+    mu_binary_write_string(&w, &null_str); /* indexRange */
+    mu_binary_write_uint16(&w, 0);         /* dataEncoding.namespaceIndex */
+    mu_binary_write_string(&w, &null_str); /* dataEncoding.name */
     size_t req_len = w.position;
 
     opcua_byte_t resp[256];
     size_t resp_len = sizeof(resp);
-    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_service_dispatch(&server, MU_ID_READREQUEST, req, req_len, resp, &resp_len));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_service_dispatch(&server, MU_ID_READREQUEST, req, req_len, resp, &resp_len));
 
     mu_binary_reader_t r;
     mu_binary_reader_init(&r, resp, resp_len);
-    mu_nodeid_t type; mu_binary_read_nodeid(&r, &type);
+    mu_nodeid_t type;
+    mu_binary_read_nodeid(&r, &type);
     TEST_ASSERT_EQUAL(MU_ID_READRESPONSE, type.identifier.numeric);
-    opcua_uint32_t handle; opcua_statuscode_t result;
+    opcua_uint32_t handle;
+    opcua_statuscode_t result;
     skip_response_header(&r, &handle, &result);
     TEST_ASSERT_EQUAL(5, handle);
 
-    opcua_int32_t count; mu_binary_read_int32(&r, &count);
+    opcua_int32_t count;
+    mu_binary_read_int32(&r, &count);
     TEST_ASSERT_EQUAL(1, count);
-    opcua_byte_t mask; mu_binary_read_byte(&r, &mask);
-    TEST_ASSERT_EQUAL(0x01, mask);                   /* has value */
-    opcua_byte_t vtype; mu_binary_read_byte(&r, &vtype);
+    opcua_byte_t mask;
+    mu_binary_read_byte(&r, &mask);
+    TEST_ASSERT_EQUAL(0x01, mask); /* has value */
+    opcua_byte_t vtype;
+    mu_binary_read_byte(&r, &vtype);
     TEST_ASSERT_EQUAL(MU_TYPE_INT32, vtype);
-    opcua_int32_t val; mu_binary_read_int32(&r, &val);
+    opcua_int32_t val;
+    mu_binary_read_int32(&r, &val);
     TEST_ASSERT_EQUAL(42, val);
 }
 
@@ -596,41 +609,46 @@ void test_dispatch_browse(void) {
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, req, sizeof(req));
     write_request_header(&w, 9);
-    mu_nodeid_t empty = { 0, MU_NODEID_NUMERIC, { 0 } };
-    mu_binary_write_nodeid(&w, &empty);             /* ViewDescription.viewId */
-    mu_binary_write_int64(&w, 0);                    /* timestamp */
-    mu_binary_write_uint32(&w, 0);                   /* viewVersion */
-    mu_binary_write_uint32(&w, 0);                   /* RequestedMaxReferencesPerNode */
-    mu_binary_write_int32(&w, 1);                    /* NoOfNodesToBrowse */
-    mu_nodeid_t objects = { 0, MU_NODEID_NUMERIC, { 85 } };
-    mu_binary_write_nodeid(&w, &objects);           /* nodeId */
-    mu_binary_write_uint32(&w, 0);                   /* browseDirection = FORWARD */
-    mu_binary_write_nodeid(&w, &empty);             /* referenceTypeId (any) */
-    mu_binary_write_boolean(&w, false);             /* includeSubtypes */
-    mu_binary_write_uint32(&w, 0);                   /* nodeClassMask */
-    mu_binary_write_uint32(&w, 0x3F);                /* resultMask */
+    mu_nodeid_t empty = {0, MU_NODEID_NUMERIC, {0}};
+    mu_binary_write_nodeid(&w, &empty); /* ViewDescription.viewId */
+    mu_binary_write_int64(&w, 0);       /* timestamp */
+    mu_binary_write_uint32(&w, 0);      /* viewVersion */
+    mu_binary_write_uint32(&w, 0);      /* RequestedMaxReferencesPerNode */
+    mu_binary_write_int32(&w, 1);       /* NoOfNodesToBrowse */
+    mu_nodeid_t objects = {0, MU_NODEID_NUMERIC, {85}};
+    mu_binary_write_nodeid(&w, &objects); /* nodeId */
+    mu_binary_write_uint32(&w, 0);        /* browseDirection = FORWARD */
+    mu_binary_write_nodeid(&w, &empty);   /* referenceTypeId (any) */
+    mu_binary_write_boolean(&w, false);   /* includeSubtypes */
+    mu_binary_write_uint32(&w, 0);        /* nodeClassMask */
+    mu_binary_write_uint32(&w, 0x3F);     /* resultMask */
     size_t req_len = w.position;
 
     opcua_byte_t resp[512];
     size_t resp_len = sizeof(resp);
-    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_service_dispatch(&server, MU_ID_BROWSEREQUEST, req, req_len, resp, &resp_len));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_service_dispatch(&server, MU_ID_BROWSEREQUEST, req, req_len, resp, &resp_len));
 
     mu_binary_reader_t r;
     mu_binary_reader_init(&r, resp, resp_len);
-    mu_nodeid_t type; mu_binary_read_nodeid(&r, &type);
+    mu_nodeid_t type;
+    mu_binary_read_nodeid(&r, &type);
     TEST_ASSERT_EQUAL(MU_ID_BROWSERESPONSE, type.identifier.numeric);
-    opcua_uint32_t handle; opcua_statuscode_t result;
+    opcua_uint32_t handle;
+    opcua_statuscode_t result;
     skip_response_header(&r, &handle, &result);
     TEST_ASSERT_EQUAL(9, handle);
 
-    opcua_int32_t n_results; mu_binary_read_int32(&r, &n_results);
+    opcua_int32_t n_results;
+    mu_binary_read_int32(&r, &n_results);
     TEST_ASSERT_EQUAL(1, n_results);
-    opcua_statuscode_t op_status; mu_binary_read_statuscode(&r, &op_status);
+    opcua_statuscode_t op_status;
+    mu_binary_read_statuscode(&r, &op_status);
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, op_status);
-    opcua_int32_t cp_len; mu_binary_read_int32(&r, &cp_len);  /* continuationPoint (null) */
-    opcua_int32_t n_refs; mu_binary_read_int32(&r, &n_refs);
-    TEST_ASSERT_EQUAL(1, n_refs);                    /* Objects -> MyVar1 */
+    opcua_int32_t cp_len;
+    mu_binary_read_int32(&r, &cp_len); /* continuationPoint (null) */
+    opcua_int32_t n_refs;
+    mu_binary_read_int32(&r, &n_refs);
+    TEST_ASSERT_EQUAL(1, n_refs); /* Objects -> MyVar1 */
 }
 
 static void discovery_server(mu_server_t *server) {
@@ -655,18 +673,22 @@ void test_dispatch_get_endpoints(void) {
     opcua_byte_t resp[512];
     size_t resp_len = sizeof(resp);
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_service_dispatch(&server, MU_ID_GETENDPOINTSREQUEST, req, req_len, resp, &resp_len));
+                      mu_service_dispatch(&server, MU_ID_GETENDPOINTSREQUEST, req, req_len, resp, &resp_len));
 
     mu_binary_reader_t r;
     mu_binary_reader_init(&r, resp, resp_len);
-    mu_nodeid_t type; mu_binary_read_nodeid(&r, &type);
+    mu_nodeid_t type;
+    mu_binary_read_nodeid(&r, &type);
     TEST_ASSERT_EQUAL(MU_ID_GETENDPOINTSRESPONSE, type.identifier.numeric);
-    opcua_uint32_t handle; opcua_statuscode_t result;
+    opcua_uint32_t handle;
+    opcua_statuscode_t result;
     skip_response_header(&r, &handle, &result);
     TEST_ASSERT_EQUAL(3, handle);
-    opcua_int32_t n_ep; mu_binary_read_int32(&r, &n_ep);
+    opcua_int32_t n_ep;
+    mu_binary_read_int32(&r, &n_ep);
     TEST_ASSERT_EQUAL(1, n_ep);
-    mu_string_t url; mu_binary_read_string(&r, &url);
+    mu_string_t url;
+    mu_binary_read_string(&r, &url);
     TEST_ASSERT_EQUAL_MEMORY("opc.tcp://localhost:4840", url.data, 24);
 }
 
@@ -683,32 +705,37 @@ void test_dispatch_find_servers(void) {
     opcua_byte_t resp[512];
     size_t resp_len = sizeof(resp);
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_service_dispatch(&server, MU_ID_FINDSERVERSREQUEST, req, req_len, resp, &resp_len));
+                      mu_service_dispatch(&server, MU_ID_FINDSERVERSREQUEST, req, req_len, resp, &resp_len));
 
     mu_binary_reader_t r;
     mu_binary_reader_init(&r, resp, resp_len);
-    mu_nodeid_t type; mu_binary_read_nodeid(&r, &type);
+    mu_nodeid_t type;
+    mu_binary_read_nodeid(&r, &type);
     TEST_ASSERT_EQUAL(MU_ID_FINDSERVERSRESPONSE, type.identifier.numeric);
-    opcua_uint32_t handle; opcua_statuscode_t result;
+    opcua_uint32_t handle;
+    opcua_statuscode_t result;
     skip_response_header(&r, &handle, &result);
-    opcua_int32_t n_srv; mu_binary_read_int32(&r, &n_srv);
+    opcua_int32_t n_srv;
+    mu_binary_read_int32(&r, &n_srv);
     TEST_ASSERT_EQUAL(1, n_srv);
-    mu_string_t app_uri; mu_binary_read_string(&r, &app_uri);
+    mu_string_t app_uri;
+    mu_binary_read_string(&r, &app_uri);
     TEST_ASSERT_EQUAL_MEMORY("urn:test:app", app_uri.data, 12);
 }
 
 void test_service_fault_encode(void) {
     opcua_byte_t buf[64];
     size_t len = sizeof(buf);
-    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_write_service_fault(buf, &len, 0, MU_STATUS_BAD_SERVICEUNSUPPORTED));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_write_service_fault(buf, &len, 0, MU_STATUS_BAD_SERVICEUNSUPPORTED));
 
     mu_binary_reader_t r;
     mu_binary_reader_init(&r, buf, len);
     mu_nodeid_t type;
     mu_binary_read_nodeid(&r, &type);
     TEST_ASSERT_EQUAL(MU_ID_SERVICEFAULT, type.identifier.numeric);
-    opcua_int64_t ts; opcua_uint32_t h; opcua_statuscode_t res;
+    opcua_int64_t ts;
+    opcua_uint32_t h;
+    opcua_statuscode_t res;
     mu_binary_read_int64(&r, &ts);
     mu_binary_read_uint32(&r, &h);
     mu_binary_read_statuscode(&r, &res);

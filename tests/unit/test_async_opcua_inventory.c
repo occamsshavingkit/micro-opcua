@@ -1,10 +1,10 @@
 /* tests/unit/test_async_opcua_inventory.c */
 #define _POSIX_C_SOURCE 200809L
 #include "unity.h"
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 #ifndef PROJECT_ROOT_DIR
 #define PROJECT_ROOT_DIR "."
@@ -17,7 +17,7 @@ void test_async_opcua_inventory_has_areas(void) {
     char path[1024];
     snprintf(path, sizeof(path), "%s/docs/conformance/async-opcua-inventory.md", PROJECT_ROOT_DIR);
     FILE *fp = fopen(path, "r");
-    
+
     if (!fp) {
         TEST_IGNORE_MESSAGE("async-opcua-inventory.md not found yet");
         return;
@@ -30,14 +30,20 @@ void test_async_opcua_inventory_has_areas(void) {
     bool has_fuzz = false;
     bool has_schemas = false;
     bool has_tools = false;
-    
+
     while (fgets(buf, sizeof(buf), fp)) {
-        if (strstr(buf, ".devcontainer") != NULL) has_devcontainer = true;
-        if (strstr(buf, "codegen-tests") != NULL) has_codegen_tests = true;
-        if (strstr(buf, "dotnet-tests") != NULL) has_dotnet_tests = true;
-        if (strstr(buf, "fuzz") != NULL) has_fuzz = true;
-        if (strstr(buf, "schemas") != NULL) has_schemas = true;
-        if (strstr(buf, "tools") != NULL) has_tools = true;
+        if (strstr(buf, ".devcontainer") != NULL)
+            has_devcontainer = true;
+        if (strstr(buf, "codegen-tests") != NULL)
+            has_codegen_tests = true;
+        if (strstr(buf, "dotnet-tests") != NULL)
+            has_dotnet_tests = true;
+        if (strstr(buf, "fuzz") != NULL)
+            has_fuzz = true;
+        if (strstr(buf, "schemas") != NULL)
+            has_schemas = true;
+        if (strstr(buf, "tools") != NULL)
+            has_tools = true;
     }
     fclose(fp);
 

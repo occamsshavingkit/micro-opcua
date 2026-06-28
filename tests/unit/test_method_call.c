@@ -446,8 +446,8 @@ void test_resend_data_reissues_current_values_on_next_publish(void) {
 
 #ifdef MICRO_OPCUA_CUSTOM_METHODS
 static size_t write_custom_call_request(opcua_byte_t *buffer, size_t capacity, opcua_uint32_t request_handle,
-                                       const mu_nodeid_t *object_id, const mu_nodeid_t *method_id,
-                                       const mu_variant_t *args, opcua_int32_t arg_count) {
+                                        const mu_nodeid_t *object_id, const mu_nodeid_t *method_id,
+                                        const mu_variant_t *args, opcua_int32_t arg_count) {
     mu_binary_writer_t writer;
     mu_binary_writer_init(&writer, buffer, capacity);
     write_request_header(&writer, AUTH_TOKEN, request_handle);
@@ -462,15 +462,10 @@ static size_t write_custom_call_request(opcua_byte_t *buffer, size_t capacity, o
     return writer.position;
 }
 
-static opcua_statuscode_t custom_test_method_cb(
-    struct mu_server *server,
-    const mu_nodeid_t *object_id,
-    const mu_nodeid_t *method_id,
-    const mu_variant_t *input_args,
-    size_t input_args_count,
-    mu_variant_t *output_args,
-    size_t *output_args_count)
-{
+static opcua_statuscode_t custom_test_method_cb(struct mu_server *server, const mu_nodeid_t *object_id,
+                                                const mu_nodeid_t *method_id, const mu_variant_t *input_args,
+                                                size_t input_args_count, mu_variant_t *output_args,
+                                                size_t *output_args_count) {
     (void)server;
     (void)object_id;
     (void)method_id;
@@ -498,30 +493,26 @@ void test_custom_method_callback_execution(void) {
 
     prepare_server(&server, &io);
 
-    static const mu_node_t custom_nodes[] = {
-        {
-            {1u, MU_NODEID_NUMERIC, {8888u}},
-            MU_NODECLASS_OBJECT,
-            {10, (const opcua_byte_t *)"TestObject"},
-            {10, (const opcua_byte_t *)"TestObject"},
-            NULL, 0, NULL
-        },
-        {
-            {1u, MU_NODEID_NUMERIC, {9999u}},
-            MU_NODECLASS_METHOD,
-            {10, (const opcua_byte_t *)"TestMethod"},
-            {10, (const opcua_byte_t *)"TestMethod"},
-            NULL, 0, NULL
-        }
-    };
-    mu_address_space_t custom_as = {
-        custom_nodes,
-        sizeof(custom_nodes) / sizeof(custom_nodes[0])
-    };
+    static const mu_node_t custom_nodes[] = {{{1u, MU_NODEID_NUMERIC, {8888u}},
+                                              MU_NODECLASS_OBJECT,
+                                              {10, (const opcua_byte_t *)"TestObject"},
+                                              {10, (const opcua_byte_t *)"TestObject"},
+                                              NULL,
+                                              0,
+                                              NULL},
+                                             {{1u, MU_NODEID_NUMERIC, {9999u}},
+                                              MU_NODECLASS_METHOD,
+                                              {10, (const opcua_byte_t *)"TestMethod"},
+                                              {10, (const opcua_byte_t *)"TestMethod"},
+                                              NULL,
+                                              0,
+                                              NULL}};
+    mu_address_space_t custom_as = {custom_nodes, sizeof(custom_nodes) / sizeof(custom_nodes[0])};
     server.config.address_space = &custom_as;
 
     mu_nodeid_t method_id = {1u, MU_NODEID_NUMERIC, {9999u}};
-    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, mu_server_register_method_callback(&server, &method_id, custom_test_method_cb, NULL));
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD,
+                            mu_server_register_method_callback(&server, &method_id, custom_test_method_cb, NULL));
 
     mu_nodeid_t object_id = {1u, MU_NODEID_NUMERIC, {8888u}};
     mu_variant_t input_arg;
@@ -529,12 +520,14 @@ void test_custom_method_callback_execution(void) {
     input_arg.type = MU_TYPE_INT32;
     input_arg.value.i32 = 42;
 
-    size_t request_len = write_custom_call_request(request_body, sizeof(request_body), 12u, &object_id, &method_id, &input_arg, 1);
+    size_t request_len =
+        write_custom_call_request(request_body, sizeof(request_body), 12u, &object_id, &method_id, &input_arg, 1);
     dispatch_call(&server, request_body, request_len, response_body, &response_len);
 
     mu_binary_reader_t reader;
     mu_binary_reader_init(&reader, response_body, response_len);
-    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, read_call_result_prefix(&reader, 12u, &input_result_count, &output_arg_count));
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD,
+                            read_call_result_prefix(&reader, 12u, &input_result_count, &output_arg_count));
     TEST_ASSERT_EQUAL_INT32(0, input_result_count);
     TEST_ASSERT_EQUAL_INT32(1, output_arg_count);
 

@@ -37,26 +37,31 @@ mu_security_policy_id_t mu_security_policy_from_uri(const opcua_byte_t *uri, siz
 
 const char *mu_security_policy_uri(mu_security_policy_id_t id) {
     switch (id) {
-        case MU_SECURITY_POLICY_NONE_ID:                 return POLICY_NONE_URI;
+    case MU_SECURITY_POLICY_NONE_ID:
+        return POLICY_NONE_URI;
 #ifdef MICRO_OPCUA_SECURITY
-        case MU_SECURITY_POLICY_BASIC256SHA256_ID:       return POLICY_B256S256_URI;
-        case MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID: return POLICY_AES128_OAEP_URI;
-        case MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID:   return POLICY_AES256_PSS_URI;
+    case MU_SECURITY_POLICY_BASIC256SHA256_ID:
+        return POLICY_B256S256_URI;
+    case MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID:
+        return POLICY_AES128_OAEP_URI;
+    case MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID:
+        return POLICY_AES256_PSS_URI;
 #endif
-        case MU_SECURITY_POLICY_INVALID_ID:
-        default:                                         return NULL;
+    case MU_SECURITY_POLICY_INVALID_ID:
+    default:
+        return NULL;
     }
 }
 
 size_t mu_security_policy_signature_key_length(mu_security_policy_id_t policy) {
 #ifdef MICRO_OPCUA_SECURITY
     switch (policy) {
-        case MU_SECURITY_POLICY_BASIC256SHA256_ID:
-        case MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID:
-        case MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID:
-            return 32;
-        default:
-            return 0;
+    case MU_SECURITY_POLICY_BASIC256SHA256_ID:
+    case MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID:
+    case MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID:
+        return 32;
+    default:
+        return 0;
     }
 #else
     (void)policy;
@@ -67,13 +72,13 @@ size_t mu_security_policy_signature_key_length(mu_security_policy_id_t policy) {
 size_t mu_security_policy_encryption_key_length(mu_security_policy_id_t policy) {
 #ifdef MICRO_OPCUA_SECURITY
     switch (policy) {
-        case MU_SECURITY_POLICY_BASIC256SHA256_ID:
-        case MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID:
-            return 32;
-        case MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID:
-            return 16;
-        default:
-            return 0;
+    case MU_SECURITY_POLICY_BASIC256SHA256_ID:
+    case MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID:
+        return 32;
+    case MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID:
+        return 16;
+    default:
+        return 0;
     }
 #else
     (void)policy;
@@ -84,12 +89,12 @@ size_t mu_security_policy_encryption_key_length(mu_security_policy_id_t policy) 
 size_t mu_security_policy_encryption_block_size(mu_security_policy_id_t policy) {
 #ifdef MICRO_OPCUA_SECURITY
     switch (policy) {
-        case MU_SECURITY_POLICY_BASIC256SHA256_ID:
-        case MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID:
-        case MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID:
-            return 16;
-        default:
-            return 0;
+    case MU_SECURITY_POLICY_BASIC256SHA256_ID:
+    case MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID:
+    case MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID:
+        return 16;
+    default:
+        return 0;
     }
 #else
     (void)policy;
@@ -100,12 +105,12 @@ size_t mu_security_policy_encryption_block_size(mu_security_policy_id_t policy) 
 size_t mu_security_policy_signature_length(mu_security_policy_id_t policy) {
 #ifdef MICRO_OPCUA_SECURITY
     switch (policy) {
-        case MU_SECURITY_POLICY_BASIC256SHA256_ID:
-        case MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID:
-        case MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID:
-            return 32;
-        default:
-            return 0;
+    case MU_SECURITY_POLICY_BASIC256SHA256_ID:
+    case MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID:
+    case MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID:
+        return 32;
+    default:
+        return 0;
     }
 #else
     (void)policy;
@@ -116,12 +121,12 @@ size_t mu_security_policy_signature_length(mu_security_policy_id_t policy) {
 size_t mu_security_policy_nonce_length(mu_security_policy_id_t policy) {
 #ifdef MICRO_OPCUA_SECURITY
     switch (policy) {
-        case MU_SECURITY_POLICY_BASIC256SHA256_ID:
-        case MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID:
-        case MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID:
-            return 32;
-        default:
-            return 0;
+    case MU_SECURITY_POLICY_BASIC256SHA256_ID:
+    case MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID:
+    case MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID:
+        return 32;
+    default:
+        return 0;
     }
 #else
     (void)policy;

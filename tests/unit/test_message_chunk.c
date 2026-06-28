@@ -1,6 +1,6 @@
 /* tests/unit/test_message_chunk.c */
-#include "unity.h"
 #include "micro_opcua/micro_opcua.h"
+#include "unity.h"
 
 void setUp(void) {}
 void tearDown(void) {}
@@ -16,9 +16,9 @@ void test_message_chunk_parser_valid_header(void) {
     header.chunk_type = 'F';
     header.message_size = 12;
     header.secure_channel_id = 1;
-    
+
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_write_message_header(buffer, sizeof(buffer), &header));
-    
+
     mu_message_header_t parsed;
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_parse_message_header(buffer, 12, &parsed));
     TEST_ASSERT_EQUAL('M', parsed.message_type[0]);
@@ -34,7 +34,7 @@ void test_message_chunk_parser_invalid_message_type(void) {
 }
 
 void test_message_chunk_parser_invalid_size(void) {
-    opcua_byte_t buffer[12] = { 'M', 'S', 'G', 'F', 20, 0, 0, 0, 1, 0, 0, 0 };
+    opcua_byte_t buffer[12] = {'M', 'S', 'G', 'F', 20, 0, 0, 0, 1, 0, 0, 0};
     mu_message_header_t parsed;
     TEST_ASSERT_EQUAL(MU_STATUS_BAD_TCPMESSAGETOOLARGE, mu_parse_message_header(buffer, 12, &parsed));
 }
@@ -44,12 +44,12 @@ void test_message_chunk_parser_invalid_size(void) {
 void test_sequence_validation(void) {
     mu_sequence_validator_t validator;
     mu_sequence_validator_init(&validator);
-    
+
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_sequence_validate(&validator, 10));
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_sequence_validate(&validator, 11));
     TEST_ASSERT_EQUAL(MU_STATUS_BAD_SECURITYCHECKSFAILED, mu_sequence_validate(&validator, 11));
     TEST_ASSERT_EQUAL(MU_STATUS_BAD_SECURITYCHECKSFAILED, mu_sequence_validate(&validator, 13));
-    
+
     /* Valid again if we re-init? No, it just aborts. Let's re-init and test wrap around */
     mu_sequence_validator_init(&validator);
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_sequence_validate(&validator, 4294966272U));

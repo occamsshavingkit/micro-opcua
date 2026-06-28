@@ -2,10 +2,10 @@
 #ifndef MICRO_OPCUA_SERVICES_SERVICE_HEADER_H
 #define MICRO_OPCUA_SERVICES_SERVICE_HEADER_H
 
-#include "micro_opcua/opcua_types.h"
-#include "micro_opcua/types.h"
-#include "micro_opcua/status.h"
 #include "micro_opcua/encoding.h"
+#include "micro_opcua/opcua_types.h"
+#include "micro_opcua/status.h"
+#include "micro_opcua/types.h"
 
 /* RequestHeader (OPC 10000-4 7.32) - common to every service request. */
 typedef struct {

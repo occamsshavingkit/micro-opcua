@@ -1,6 +1,6 @@
 /* tests/unit/test_binary_primitives.c */
-#include "unity.h"
 #include "micro_opcua/micro_opcua.h"
+#include "unity.h"
 #include <stdint.h>
 #include <string.h>
 
@@ -12,21 +12,21 @@ void test_binary_primitive_roundtrip(void) {
     opcua_byte_t buffer[64];
     mu_binary_writer_t writer;
     mu_binary_reader_t reader;
-    
+
     mu_binary_writer_init(&writer, buffer, sizeof(buffer));
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_write_boolean(&writer, true));
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_write_int32(&writer, -12345));
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_write_uint32(&writer, 12345));
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_write_float(&writer, 3.14f));
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_write_statuscode(&writer, MU_STATUS_BAD_INTERNALERROR));
-    
+
     mu_binary_reader_init(&reader, buffer, writer.position);
     opcua_boolean_t b = false;
     opcua_int32_t i = 0;
     opcua_uint32_t u = 0;
     opcua_float_t f = 0.0f;
     opcua_statuscode_t s = MU_STATUS_GOOD;
-    
+
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_boolean(&reader, &b));
     TEST_ASSERT_TRUE(b);
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_int32(&reader, &i));
@@ -50,8 +50,7 @@ void test_binary_reader_rejects_overflowed_bounds_check(void) {
        Bad_DecodingError for invalid stream data. This places the reader one
        byte before SIZE_MAX so a UInt32 read's position + 4 check overflows if
        implemented as direct addition. */
-    mu_binary_reader_init(&reader,
-                          (const opcua_byte_t *)((uintptr_t)&backing[0] - (uintptr_t)overflow_position),
+    mu_binary_reader_init(&reader, (const opcua_byte_t *)((uintptr_t)&backing[0] - (uintptr_t)overflow_position),
                           SIZE_MAX);
     reader.position = overflow_position;
 

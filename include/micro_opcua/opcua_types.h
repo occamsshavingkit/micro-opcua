@@ -2,8 +2,8 @@
 #ifndef OPCUA_TYPES_H
 #define OPCUA_TYPES_H
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 /* Basic OPC UA Built-in Types (OPC 10000-6, 5.2.1) */
 

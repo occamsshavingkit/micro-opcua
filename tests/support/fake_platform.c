@@ -14,20 +14,24 @@ static opcua_statuscode_t fake_tcp_accept(void *context, void **connection_handl
     return MU_STATUS_GOOD;
 }
 
-static opcua_statuscode_t fake_tcp_read(void *context, void *connection_handle, opcua_byte_t *buffer, size_t buffer_size, size_t *bytes_read) {
+static opcua_statuscode_t fake_tcp_read(void *context, void *connection_handle, opcua_byte_t *buffer,
+                                        size_t buffer_size, size_t *bytes_read) {
     (void)context;
     (void)connection_handle;
     (void)buffer;
     (void)buffer_size;
-    if (bytes_read) *bytes_read = 0;
+    if (bytes_read)
+        *bytes_read = 0;
     return MU_STATUS_GOOD;
 }
 
-static opcua_statuscode_t fake_tcp_write(void *context, void *connection_handle, const opcua_byte_t *buffer, size_t buffer_size, size_t *bytes_written) {
+static opcua_statuscode_t fake_tcp_write(void *context, void *connection_handle, const opcua_byte_t *buffer,
+                                         size_t buffer_size, size_t *bytes_written) {
     (void)context;
     (void)connection_handle;
     (void)buffer;
-    if (bytes_written) *bytes_written = buffer_size;
+    if (bytes_written)
+        *bytes_written = buffer_size;
     return MU_STATUS_GOOD;
 }
 
@@ -58,11 +62,8 @@ static opcua_statuscode_t fake_generate_random(void *context, opcua_byte_t *buff
     return MU_STATUS_GOOD;
 }
 
-void fake_platform_init(
-    mu_tcp_adapter_t *tcp_adapter,
-    mu_time_adapter_t *time_adapter,
-    mu_entropy_adapter_t *entropy_adapter)
-{
+void fake_platform_init(mu_tcp_adapter_t *tcp_adapter, mu_time_adapter_t *time_adapter,
+                        mu_entropy_adapter_t *entropy_adapter) {
     if (tcp_adapter) {
         memset(tcp_adapter, 0, sizeof(*tcp_adapter));
         tcp_adapter->listen = fake_tcp_listen;

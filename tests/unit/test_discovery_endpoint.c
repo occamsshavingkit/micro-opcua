@@ -1,8 +1,8 @@
 /* tests/unit/test_discovery_endpoint.c
  * Discovery services (FindServers, GetEndpoints) are usable on an open
  * SecureChannel without an activated Session (OPC 10000-4 5.5). */
-#include "unity.h"
 #include "micro_opcua/micro_opcua.h"
+#include "unity.h"
 
 void setUp(void) {}
 void tearDown(void) {}
@@ -25,8 +25,8 @@ static void discovery_server(mu_server_t *server) {
 static size_t build_header_only(opcua_byte_t *buf, size_t cap) {
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, buf, cap);
-    mu_nodeid_t null_id = { 0, MU_NODEID_NUMERIC, { 0 } };
-    mu_string_t null_str = { -1, NULL };
+    mu_nodeid_t null_id = {0, MU_NODEID_NUMERIC, {0}};
+    mu_string_t null_str = {-1, NULL};
     mu_binary_write_nodeid(&w, &null_id);
     mu_binary_write_int64(&w, 0);
     mu_binary_write_uint32(&w, 1);
@@ -55,7 +55,7 @@ void test_findservers_no_session(void) {
     size_t resp_len = sizeof(resp);
 
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_service_dispatch(&server, MU_ID_FINDSERVERSREQUEST, req, req_len, resp, &resp_len));
+                      mu_service_dispatch(&server, MU_ID_FINDSERVERSREQUEST, req, req_len, resp, &resp_len));
     TEST_ASSERT_EQUAL(MU_ID_FINDSERVERSRESPONSE, response_type(resp, resp_len));
 }
 
@@ -69,7 +69,7 @@ void test_getendpoints_no_session(void) {
     size_t resp_len = sizeof(resp);
 
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_service_dispatch(&server, MU_ID_GETENDPOINTSREQUEST, req, req_len, resp, &resp_len));
+                      mu_service_dispatch(&server, MU_ID_GETENDPOINTSREQUEST, req, req_len, resp, &resp_len));
     TEST_ASSERT_EQUAL(MU_ID_GETENDPOINTSRESPONSE, response_type(resp, resp_len));
 }
 

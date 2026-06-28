@@ -29,26 +29,18 @@ static inline void mu_binary_le_put_u64(opcua_byte_t *dst, opcua_uint64_t value)
 }
 
 static inline opcua_uint16_t mu_binary_le_get_u16(const opcua_byte_t *src) {
-    return (opcua_uint16_t)((opcua_uint16_t)src[0] |
-                           ((opcua_uint16_t)src[1] << 8));
+    return (opcua_uint16_t)((opcua_uint16_t)src[0] | ((opcua_uint16_t)src[1] << 8));
 }
 
 static inline opcua_uint32_t mu_binary_le_get_u32(const opcua_byte_t *src) {
-    return (opcua_uint32_t)src[0] |
-           ((opcua_uint32_t)src[1] << 8) |
-           ((opcua_uint32_t)src[2] << 16) |
+    return (opcua_uint32_t)src[0] | ((opcua_uint32_t)src[1] << 8) | ((opcua_uint32_t)src[2] << 16) |
            ((opcua_uint32_t)src[3] << 24);
 }
 
 static inline opcua_uint64_t mu_binary_le_get_u64(const opcua_byte_t *src) {
-    return (opcua_uint64_t)src[0] |
-           ((opcua_uint64_t)src[1] << 8) |
-           ((opcua_uint64_t)src[2] << 16) |
-           ((opcua_uint64_t)src[3] << 24) |
-           ((opcua_uint64_t)src[4] << 32) |
-           ((opcua_uint64_t)src[5] << 40) |
-           ((opcua_uint64_t)src[6] << 48) |
-           ((opcua_uint64_t)src[7] << 56);
+    return (opcua_uint64_t)src[0] | ((opcua_uint64_t)src[1] << 8) | ((opcua_uint64_t)src[2] << 16) |
+           ((opcua_uint64_t)src[3] << 24) | ((opcua_uint64_t)src[4] << 32) | ((opcua_uint64_t)src[5] << 40) |
+           ((opcua_uint64_t)src[6] << 48) | ((opcua_uint64_t)src[7] << 56);
 }
 
 #endif /* MICRO_OPCUA_BINARY_LE_H */

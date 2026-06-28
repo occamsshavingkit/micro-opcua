@@ -14,7 +14,8 @@ void tearDown(void) {}
 
 void test_conformance_claims_have_evidence(void) {
     char cmd[1024];
-    snprintf(cmd, sizeof(cmd), "grep -rniE 'profile-compliant|CTT-verified' %s/docs | grep -v 'evidence'", PROJECT_ROOT_DIR);
+    snprintf(cmd, sizeof(cmd), "grep -rniE 'profile-compliant|CTT-verified' %s/docs | grep -v 'evidence'",
+             PROJECT_ROOT_DIR);
     FILE *fp = popen(cmd, "r");
     if (!fp) {
         TEST_IGNORE_MESSAGE("popen failed");

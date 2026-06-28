@@ -1,10 +1,10 @@
 /* tests/unit/test_certificate.c
  * Certificate thumbprint computation and peer-certificate validation for
  * Basic256Sha256 (OPC 10000-6 §6.7.4 / 10000-4 §7.2). Uses the host crypto backend. */
-#include "unity.h"
 #include "micro_opcua/micro_opcua.h"
-#include "security/security_policy.h"
 #include "security/certificate.h"
+#include "security/security_policy.h"
+#include "unity.h"
 #include <string.h>
 
 #ifdef MICRO_OPCUA_HAVE_OPENSSL
@@ -49,7 +49,7 @@ void test_validate_accepts_rsa2048(void) {
     size_t cert_len = 0;
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, crypto.get_own_certificate(crypto.context, &cert, &cert_len));
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_certificate_validate(&crypto, MU_SECURITY_POLICY_BASIC256SHA256_ID, cert, cert_len));
+                      mu_certificate_validate(&crypto, MU_SECURITY_POLICY_BASIC256SHA256_ID, cert, cert_len));
 }
 
 /* Unparseable bytes are rejected. */
@@ -57,19 +57,18 @@ void test_validate_rejects_garbage(void) {
     opcua_byte_t junk[64];
     memset(junk, 0xAB, sizeof(junk));
     TEST_ASSERT_NOT_EQUAL(MU_STATUS_GOOD,
-        mu_certificate_validate(&crypto, MU_SECURITY_POLICY_BASIC256SHA256_ID, junk, sizeof(junk)));
+                          mu_certificate_validate(&crypto, MU_SECURITY_POLICY_BASIC256SHA256_ID, junk, sizeof(junk)));
 }
 
 /* Basic256Sha256 requires a certificate; a missing one is rejected. */
 void test_validate_rejects_missing_cert_for_secure_policy(void) {
     TEST_ASSERT_NOT_EQUAL(MU_STATUS_GOOD,
-        mu_certificate_validate(&crypto, MU_SECURITY_POLICY_BASIC256SHA256_ID, NULL, 0));
+                          mu_certificate_validate(&crypto, MU_SECURITY_POLICY_BASIC256SHA256_ID, NULL, 0));
 }
 
 /* SecurityPolicy None uses no certificate, so validation is a no-op success. */
 void test_validate_none_policy_needs_no_cert(void) {
-    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_certificate_validate(&crypto, MU_SECURITY_POLICY_NONE_ID, NULL, 0));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_certificate_validate(&crypto, MU_SECURITY_POLICY_NONE_ID, NULL, 0));
 }
 
 int main(void) {

@@ -14,11 +14,10 @@
 /* Given a MessageBody already written at offset MU_UASC_SYMMETRIC_HEADER_SIZE,
    fill in the MSG chunk header (type, size, channel, token, sequence header).
    Returns the total chunk length in out_total_length. */
-opcua_statuscode_t mu_uasc_finalize_symmetric(
-    opcua_byte_t *buffer, size_t buffer_size,
-    opcua_uint32_t secure_channel_id, opcua_uint32_t token_id,
-    opcua_uint32_t sequence_number, opcua_uint32_t request_id,
-    size_t body_length, size_t *out_total_length);
+opcua_statuscode_t mu_uasc_finalize_symmetric(opcua_byte_t *buffer, size_t buffer_size,
+                                              opcua_uint32_t secure_channel_id, opcua_uint32_t token_id,
+                                              opcua_uint32_t sequence_number, opcua_uint32_t request_id,
+                                              size_t body_length, size_t *out_total_length);
 
 /* Offset where the MessageBody begins in an OpenSecureChannel response chunk with
    SecurityPolicy None: MessageHeader(8) + SecureChannelId(4) +
@@ -29,10 +28,9 @@ opcua_statuscode_t mu_uasc_finalize_symmetric(
 /* Given a MessageBody already written at offset MU_UASC_ASYMMETRIC_NONE_HEADER_SIZE,
    fill in the OPN chunk header with an AsymmetricSecurityHeader for SecurityPolicy
    None. Returns the total chunk length in out_total_length. */
-opcua_statuscode_t mu_uasc_finalize_asymmetric_none(
-    opcua_byte_t *buffer, size_t buffer_size,
-    opcua_uint32_t secure_channel_id,
-    opcua_uint32_t sequence_number, opcua_uint32_t request_id,
-    size_t body_length, size_t *out_total_length);
+opcua_statuscode_t mu_uasc_finalize_asymmetric_none(opcua_byte_t *buffer, size_t buffer_size,
+                                                    opcua_uint32_t secure_channel_id, opcua_uint32_t sequence_number,
+                                                    opcua_uint32_t request_id, size_t body_length,
+                                                    size_t *out_total_length);
 
 #endif /* MICRO_OPCUA_UASC_H */

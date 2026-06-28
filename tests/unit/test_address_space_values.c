@@ -1,12 +1,12 @@
 /* tests/unit/test_address_space_values.c */
-#include "unity.h"
 #include "micro_opcua/micro_opcua.h"
+#include "unity.h"
 
 void setUp(void) {}
 void tearDown(void) {}
 
-#define INDEX_LOOKUP_NUMERIC_NODE(ns, id) \
-    { { (ns), MU_NODEID_NUMERIC, { (id) } }, MU_NODECLASS_VARIABLE, { 0, NULL }, { 0, NULL }, NULL, 0, NULL }
+#define INDEX_LOOKUP_NUMERIC_NODE(ns, id)                                                                              \
+    { {(ns), MU_NODEID_NUMERIC, {(id)}}, MU_NODECLASS_VARIABLE, {0, NULL}, {0, NULL}, NULL, 0, NULL }
 
 static const opcua_byte_t s_index_lookup_string_id[] = "indexed-string-node";
 static const opcua_byte_t s_missing_index_lookup_string_id[] = "missing-indexed-node";
@@ -52,17 +52,18 @@ static const mu_node_t s_index_lookup_nodes[] = {
     INDEX_LOOKUP_NUMERIC_NODE(3, 333),
     INDEX_LOOKUP_NUMERIC_NODE(1, 999),
     INDEX_LOOKUP_NUMERIC_NODE(0, 65536),
-    {
-        { 1, MU_NODEID_STRING,
-          { .string = { (opcua_int32_t)(sizeof(s_index_lookup_string_id) - 1u), s_index_lookup_string_id } } },
-        MU_NODECLASS_VARIABLE, { 0, NULL }, { 0, NULL }, NULL, 0, NULL
-    }
-};
+    {{1,
+      MU_NODEID_STRING,
+      {.string = {(opcua_int32_t)(sizeof(s_index_lookup_string_id) - 1u), s_index_lookup_string_id}}},
+     MU_NODECLASS_VARIABLE,
+     {0, NULL},
+     {0, NULL},
+     NULL,
+     0,
+     NULL}};
 
-static const mu_address_space_t s_index_lookup_space = {
-    s_index_lookup_nodes,
-    sizeof(s_index_lookup_nodes) / sizeof(s_index_lookup_nodes[0])
-};
+static const mu_address_space_t s_index_lookup_space = {s_index_lookup_nodes,
+                                                        sizeof(s_index_lookup_nodes) / sizeof(s_index_lookup_nodes[0])};
 
 #undef INDEX_LOOKUP_NUMERIC_NODE
 
@@ -82,11 +83,11 @@ void test_static_value_source_boolean(void) {
     mu_value_source_t source;
     mu_variant_t value;
     mu_nodeid_t id = {0, MU_NODEID_NUMERIC, {1000}};
-    
+
     source.type = MU_VALUESOURCE_STATIC;
     source.data.static_value.type = MU_TYPE_BOOLEAN;
     source.data.static_value.value.b = true;
-    
+
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_value_source_read(&source, &id, &value));
     TEST_ASSERT_EQUAL(MU_TYPE_BOOLEAN, value.type);
     TEST_ASSERT_TRUE(value.value.b);
@@ -96,11 +97,11 @@ void test_static_value_source_int32(void) {
     mu_value_source_t source;
     mu_variant_t value;
     mu_nodeid_t id = {0, MU_NODEID_NUMERIC, {1000}};
-    
+
     source.type = MU_VALUESOURCE_STATIC;
     source.data.static_value.type = MU_TYPE_INT32;
     source.data.static_value.value.i32 = -42;
-    
+
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_value_source_read(&source, &id, &value));
     TEST_ASSERT_EQUAL(MU_TYPE_INT32, value.type);
     TEST_ASSERT_EQUAL_INT32(-42, value.value.i32);
@@ -110,11 +111,11 @@ void test_static_value_source_uint32(void) {
     mu_value_source_t source;
     mu_variant_t value;
     mu_nodeid_t id = {0, MU_NODEID_NUMERIC, {1000}};
-    
+
     source.type = MU_VALUESOURCE_STATIC;
     source.data.static_value.type = MU_TYPE_UINT32;
     source.data.static_value.value.ui32 = 42;
-    
+
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_value_source_read(&source, &id, &value));
     TEST_ASSERT_EQUAL(MU_TYPE_UINT32, value.type);
     TEST_ASSERT_EQUAL_UINT32(42, value.value.ui32);
@@ -124,11 +125,11 @@ void test_static_value_source_float(void) {
     mu_value_source_t source;
     mu_variant_t value;
     mu_nodeid_t id = {0, MU_NODEID_NUMERIC, {1000}};
-    
+
     source.type = MU_VALUESOURCE_STATIC;
     source.data.static_value.type = MU_TYPE_FLOAT;
     source.data.static_value.value.f = 3.14f;
-    
+
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_value_source_read(&source, &id, &value));
     TEST_ASSERT_EQUAL(MU_TYPE_FLOAT, value.type);
     TEST_ASSERT_EQUAL_FLOAT(3.14f, value.value.f);
@@ -138,12 +139,12 @@ void test_static_value_source_string_empty(void) {
     mu_value_source_t source;
     mu_variant_t value;
     mu_nodeid_t id = {0, MU_NODEID_NUMERIC, {1000}};
-    
+
     source.type = MU_VALUESOURCE_STATIC;
     source.data.static_value.type = MU_TYPE_STRING;
     source.data.static_value.value.str.length = 0;
     source.data.static_value.value.str.data = NULL;
-    
+
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_value_source_read(&source, &id, &value));
     TEST_ASSERT_EQUAL(MU_TYPE_STRING, value.type);
     TEST_ASSERT_EQUAL_INT32(0, value.value.str.length);
@@ -154,12 +155,12 @@ void test_static_value_source_string_64_bytes(void) {
     mu_variant_t value;
     mu_nodeid_t id = {0, MU_NODEID_NUMERIC, {1000}};
     opcua_byte_t str_data[64] = {0};
-    
+
     source.type = MU_VALUESOURCE_STATIC;
     source.data.static_value.type = MU_TYPE_STRING;
     source.data.static_value.value.str.length = 64;
     source.data.static_value.value.str.data = str_data;
-    
+
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_value_source_read(&source, &id, &value));
     TEST_ASSERT_EQUAL(MU_TYPE_STRING, value.type);
     TEST_ASSERT_EQUAL_INT32(64, value.value.str.length);
@@ -167,17 +168,15 @@ void test_static_value_source_string_64_bytes(void) {
 
 void test_address_space_find_node_index_matches_linear_scan(void) {
     static const mu_nodeid_t missing_node_ids[] = {
-        { 1, MU_NODEID_NUMERIC, { 1404 } },
-        { 0, MU_NODEID_NUMERIC, { 2259 } },
-        { 2, MU_NODEID_NUMERIC, { 60011 } },
-        { 9, MU_NODEID_NUMERIC, { 1403 } },
-        { 1, MU_NODEID_NUMERIC, { 85 } },
-        {
-            1, MU_NODEID_STRING,
-            { .string = { (opcua_int32_t)(sizeof(s_missing_index_lookup_string_id) - 1u),
-                          s_missing_index_lookup_string_id } }
-        }
-    };
+        {1, MU_NODEID_NUMERIC, {1404}},
+        {0, MU_NODEID_NUMERIC, {2259}},
+        {2, MU_NODEID_NUMERIC, {60011}},
+        {9, MU_NODEID_NUMERIC, {1403}},
+        {1, MU_NODEID_NUMERIC, {85}},
+        {1,
+         MU_NODEID_STRING,
+         {.string = {(opcua_int32_t)(sizeof(s_missing_index_lookup_string_id) - 1u),
+                     s_missing_index_lookup_string_id}}}};
     size_t i;
 
     TEST_ASSERT_TRUE(s_index_lookup_space.node_count > 40u);

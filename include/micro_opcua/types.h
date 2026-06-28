@@ -2,8 +2,8 @@
 #ifndef MICRO_OPCUA_TYPES_H
 #define MICRO_OPCUA_TYPES_H
 
-#include "micro_opcua/opcua_types.h"
 #include "micro_opcua/config.h"
+#include "micro_opcua/opcua_types.h"
 
 /* OPC UA ByteString and String (bounded by caller configuration or static max) */
 typedef struct {
@@ -17,12 +17,7 @@ typedef struct {
 } mu_bytestring_t;
 
 /* NodeId Type Enumeration */
-typedef enum {
-    MU_NODEID_NUMERIC = 0,
-    MU_NODEID_STRING  = 1,
-    MU_NODEID_GUID    = 2,
-    MU_NODEID_OPAQUE  = 3
-} mu_nodeid_type_t;
+typedef enum { MU_NODEID_NUMERIC = 0, MU_NODEID_STRING = 1, MU_NODEID_GUID = 2, MU_NODEID_OPAQUE = 3 } mu_nodeid_type_t;
 
 /* OPC UA NodeId (Numeric and String supported for Nano profile) */
 typedef struct {
@@ -48,32 +43,32 @@ typedef struct {
 
 /* Variant Type Enumeration (Built-in Types) */
 typedef enum {
-    MU_TYPE_NULL             = 0,
-    MU_TYPE_BOOLEAN          = 1,
-    MU_TYPE_SBYTE            = 2,
-    MU_TYPE_BYTE             = 3,
-    MU_TYPE_INT16            = 4,
-    MU_TYPE_UINT16           = 5,
-    MU_TYPE_INT32            = 6,
-    MU_TYPE_UINT32           = 7,
-    MU_TYPE_INT64            = 8,
-    MU_TYPE_UINT64           = 9,
-    MU_TYPE_FLOAT            = 10,
-    MU_TYPE_DOUBLE           = 11,
-    MU_TYPE_STRING           = 12,
-    MU_TYPE_DATETIME         = 13,
-    MU_TYPE_GUID             = 14,
-    MU_TYPE_BYTESTRING       = 15,
-    MU_TYPE_XMLELEMENT       = 16,
-    MU_TYPE_NODEID           = 17,
-    MU_TYPE_EXPANDEDNODEID   = 18,
-    MU_TYPE_STATUSCODE       = 19,
-    MU_TYPE_QUALIFIEDNAME    = 20,
-    MU_TYPE_LOCALIZEDTEXT    = 21,
-    MU_TYPE_EXTENSIONOBJECT  = 22,
-    MU_TYPE_DATAVALUE        = 23,
-    MU_TYPE_VARIANT          = 24,
-    MU_TYPE_DIAGNOSTICINFO   = 25
+    MU_TYPE_NULL = 0,
+    MU_TYPE_BOOLEAN = 1,
+    MU_TYPE_SBYTE = 2,
+    MU_TYPE_BYTE = 3,
+    MU_TYPE_INT16 = 4,
+    MU_TYPE_UINT16 = 5,
+    MU_TYPE_INT32 = 6,
+    MU_TYPE_UINT32 = 7,
+    MU_TYPE_INT64 = 8,
+    MU_TYPE_UINT64 = 9,
+    MU_TYPE_FLOAT = 10,
+    MU_TYPE_DOUBLE = 11,
+    MU_TYPE_STRING = 12,
+    MU_TYPE_DATETIME = 13,
+    MU_TYPE_GUID = 14,
+    MU_TYPE_BYTESTRING = 15,
+    MU_TYPE_XMLELEMENT = 16,
+    MU_TYPE_NODEID = 17,
+    MU_TYPE_EXPANDEDNODEID = 18,
+    MU_TYPE_STATUSCODE = 19,
+    MU_TYPE_QUALIFIEDNAME = 20,
+    MU_TYPE_LOCALIZEDTEXT = 21,
+    MU_TYPE_EXTENSIONOBJECT = 22,
+    MU_TYPE_DATAVALUE = 23,
+    MU_TYPE_VARIANT = 24,
+    MU_TYPE_DIAGNOSTICINFO = 25
 } mu_builtin_type_t;
 
 /* Variant */
@@ -98,12 +93,12 @@ typedef struct {
         mu_nodeid_t nodeid;
         mu_qualified_name_t qualified_name;
         mu_localized_text_t localized_text;
-        const void *array;          /* element array when is_array (points to type[array_length]) */
+        const void *array; /* element array when is_array (points to type[array_length]) */
     } value;
     /* 1-D array support. These follow the union so existing scalar initializers
        ({ type, { .scalar } }) keep working (is_array defaults to false). */
     opcua_boolean_t is_array;
-    opcua_int32_t array_length;     /* element count when is_array (>= 0; -1 = null array) */
+    opcua_int32_t array_length; /* element count when is_array (>= 0; -1 = null array) */
 } mu_variant_t;
 
 /* DataValue */

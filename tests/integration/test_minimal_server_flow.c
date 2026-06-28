@@ -1,6 +1,6 @@
 /* tests/integration/test_minimal_server_flow.c */
-#include "unity.h"
 #include "micro_opcua/micro_opcua.h"
+#include "unity.h"
 
 void setUp(void) {}
 void tearDown(void) {}

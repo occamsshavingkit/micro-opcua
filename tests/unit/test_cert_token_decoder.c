@@ -12,8 +12,8 @@ void test_decode_cert_token_direct(void) {
        - policyId: "cert_policy" (len 11) -> 0b 00 00 00 + "cert_policy"
        - certificateData: "mock_cert" (len 9) -> 09 00 00 00 + "mock_cert"
     */
-    opcua_byte_t buf[] = {0x0b, 0x00, 0x00, 0x00, 'c', 'e', 'r', 't', '_', 'p', 'o', 'l', 'i', 'c', 'y',
-                          0x09, 0x00, 0x00, 0x00, 'm', 'o', 'c', 'k', '_', 'c', 'e', 'r', 't'};
+    opcua_byte_t buf[] = {0x0b, 0x00, 0x00, 0x00, 'c',  'e', 'r', 't', '_', 'p', 'o', 'l', 'i', 'c',
+                          'y',  0x09, 0x00, 0x00, 0x00, 'm', 'o', 'c', 'k', '_', 'c', 'e', 'r', 't'};
 
     mu_binary_reader_t reader;
     mu_binary_reader_init(&reader, buf, sizeof(buf));

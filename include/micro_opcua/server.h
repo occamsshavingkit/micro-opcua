@@ -20,14 +20,10 @@ extern "C" {
  */
 typedef struct mu_server mu_server_t;
 
-typedef opcua_statuscode_t (*mu_user_auth_handler_t)(void *handle,
-                                                      const mu_string_t *username,
-                                                      const mu_bytestring_t *password,
-                                                      const mu_string_t *policy_id);
+typedef opcua_statuscode_t (*mu_user_auth_handler_t)(void *handle, const mu_string_t *username,
+                                                     const mu_bytestring_t *password, const mu_string_t *policy_id);
 
-typedef opcua_statuscode_t (*mu_write_handler_t)(void *handle,
-                                                 const mu_nodeid_t *node_id,
-                                                 opcua_uint32_t attribute_id,
+typedef opcua_statuscode_t (*mu_write_handler_t)(void *handle, const mu_nodeid_t *node_id, opcua_uint32_t attribute_id,
                                                  const mu_variant_t *value);
 
 /* Server Configuration */
@@ -61,23 +57,23 @@ typedef struct {
 
     /* Static Address Space (optional) */
     const mu_address_space_t *address_space;
-    
+
     /* User Authentication (optional) */
     mu_user_auth_handler_t user_auth_handler;
     void *user_auth_handler_handle;
-    
+
 #ifdef MICRO_OPCUA_PUBSUB
     /* PubSub Configuration (optional) */
     mu_pubsub_connection_t pubsub;
     mu_udp_adapter_t udp_adapter;
 #endif
-    
+
     /* Write Service Callback (optional) */
 #ifdef MICRO_OPCUA_SERVICE_WRITE
     mu_write_handler_t write_handler;
     void *write_handler_handle;
 #endif
-    
+
 } mu_server_config_t;
 
 /*
@@ -109,12 +105,8 @@ opcua_statuscode_t mu_server_config_validate(const mu_server_config_t *config);
 /*
  * Register a callback handler for a method node.
  */
-opcua_statuscode_t mu_server_register_method_callback(
-    mu_server_t *server,
-    const mu_nodeid_t *method_id,
-    mu_method_callback_t callback,
-    void *context
-);
+opcua_statuscode_t mu_server_register_method_callback(mu_server_t *server, const mu_nodeid_t *method_id,
+                                                      mu_method_callback_t callback, void *context);
 #endif
 
 #ifdef MICRO_OPCUA_EVENTS

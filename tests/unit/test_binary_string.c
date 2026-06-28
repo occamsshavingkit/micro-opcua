@@ -1,6 +1,6 @@
 /* tests/unit/test_binary_string.c */
-#include "unity.h"
 #include "micro_opcua/micro_opcua.h"
+#include "unity.h"
 
 void setUp(void) {}
 void tearDown(void) {}
@@ -10,25 +10,25 @@ void test_binary_string_roundtrip(void) {
     opcua_byte_t buffer[128];
     mu_binary_writer_t writer;
     mu_binary_reader_t reader;
-    
-    mu_string_t empty_str = { 0, NULL };
-    mu_string_t null_str = { -1, NULL };
-    mu_string_t valid_str = { 4, (const opcua_byte_t*)"test" };
-    
+
+    mu_string_t empty_str = {0, NULL};
+    mu_string_t null_str = {-1, NULL};
+    mu_string_t valid_str = {4, (const opcua_byte_t *)"test"};
+
     mu_binary_writer_init(&writer, buffer, sizeof(buffer));
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_write_string(&writer, &empty_str));
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_write_string(&writer, &null_str));
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_write_string(&writer, &valid_str));
-    
+
     mu_binary_reader_init(&reader, buffer, writer.position);
     mu_string_t read_str;
-    
+
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_string(&reader, &read_str));
     TEST_ASSERT_EQUAL(0, read_str.length);
-    
+
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_string(&reader, &read_str));
     TEST_ASSERT_EQUAL(-1, read_str.length);
-    
+
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_string(&reader, &read_str));
     TEST_ASSERT_EQUAL(4, read_str.length);
     TEST_ASSERT_EQUAL_MEMORY("test", read_str.data, 4);
@@ -40,7 +40,7 @@ void test_binary_string_over_limit(void) {
 
     /* 4097-byte string exceeds the 4096-byte wire encoding limit */
     static opcua_byte_t long_str_data[4097] = {0};
-    mu_string_t long_str = { 4097, long_str_data };
+    mu_string_t long_str = {4097, long_str_data};
 
     mu_binary_writer_init(&writer, buffer, sizeof(buffer));
     TEST_ASSERT_EQUAL(MU_STATUS_BAD_ENCODINGLIMITSEXCEEDED, mu_binary_write_string(&writer, &long_str));
@@ -55,8 +55,9 @@ void test_binary_string_above_value_limit_roundtrips(void) {
     mu_binary_reader_t reader;
 
     static opcua_byte_t data[100];
-    for (int i = 0; i < 100; ++i) data[i] = (opcua_byte_t)('A' + (i % 26));
-    mu_string_t str = { 100, data };
+    for (int i = 0; i < 100; ++i)
+        data[i] = (opcua_byte_t)('A' + (i % 26));
+    mu_string_t str = {100, data};
 
     mu_binary_writer_init(&writer, buffer, sizeof(buffer));
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_write_string(&writer, &str));
