@@ -96,11 +96,11 @@ typedef enum {
 typedef struct {
     /* 8-byte aligned fields */
     opcua_uint64_t next_sample_ms;                        /* monotonic tick of the next sample */
-    const mu_node_t *resolved_node;                       /* cached static address-space resolution */
 #if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
     opcua_double_t deadband_value;
     opcua_double_t last_reported_numeric;
 #endif
+    const mu_node_t *resolved_node;                       /* cached static address-space resolution */
 
     /* Struct/Union fields (4-byte aligned on 32-bit) */
     mu_variant_t last_value;
@@ -112,11 +112,8 @@ typedef struct {
     opcua_uint32_t client_handle;                         /* echoed in every notification */
     opcua_uint32_t attribute_id;                          /* usually Value (13) */
     opcua_uint32_t sampling_interval_ms;                  /* revised */
-    mu_monitoring_mode_t monitoring_mode;
-    mu_datachange_trigger_t trigger;
     opcua_statuscode_t last_status;
 #if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
-    mu_deadband_type_t deadband_type;
     opcua_uint32_t queue_size;
     opcua_uint32_t triggered_items[MU_MAX_TRIGGER_LINKS];
     
@@ -130,10 +127,13 @@ typedef struct {
     opcua_byte_t node_id_string[MU_MAX_MONITORED_STRING]; /* backing store for a string identifier */
 
     /* 1-byte fields */
+    opcua_byte_t monitoring_mode;                         /* mu_monitoring_mode_t */
+    opcua_byte_t trigger;                                 /* mu_datachange_trigger_t */
     bool in_use;
     bool has_value;                                       /* a baseline sample has been taken */
     bool pending;                                         /* a change is queued, awaiting the next Publish */
 #if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+    opcua_byte_t deadband_type;                           /* mu_deadband_type_t */
     bool has_reported;
     opcua_byte_t queue_head;
     opcua_byte_t queue_tail;
