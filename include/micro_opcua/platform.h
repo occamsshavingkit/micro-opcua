@@ -146,6 +146,24 @@ typedef struct mu_crypto_adapter {
         const opcua_byte_t *input, size_t length,
         opcua_byte_t *output, size_t *output_length);
 
+    /* RSA-PSS (RSASSA-PSS with SHA-256, salt length = 32B) (User Story 2) */
+    opcua_statuscode_t (*rsa_pss_sha256_sign)(void *context,
+        const opcua_byte_t *data, size_t length,
+        opcua_byte_t *signature, size_t *signature_length);
+    opcua_statuscode_t (*rsa_pss_sha256_verify)(void *context,
+        const opcua_byte_t *certificate, size_t certificate_length,
+        const opcua_byte_t *data, size_t data_length,
+        const opcua_byte_t *signature, size_t signature_length);
+
+    /* RSA-OAEP (MGF1-SHA256) (User Story 2) */
+    opcua_statuscode_t (*rsa_oaep_sha256_decrypt)(void *context,
+        const opcua_byte_t *input, size_t length,
+        opcua_byte_t *output, size_t *output_length);
+    opcua_statuscode_t (*rsa_oaep_sha256_encrypt)(void *context,
+        const opcua_byte_t *certificate, size_t certificate_length,
+        const opcua_byte_t *input, size_t length,
+        opcua_byte_t *output, size_t *output_length);
+
     /* The server's own certificate (DER), and the RSA modulus size (bits) of a cert. */
     opcua_statuscode_t (*get_own_certificate)(void *context,
         const opcua_byte_t **certificate, size_t *length);

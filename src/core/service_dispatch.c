@@ -114,17 +114,14 @@ static opcua_statuscode_t handle_read(mu_server_t *server, mu_binary_reader_t *r
                                       size_t *response_length);
 #endif
 #ifdef MICRO_OPCUA_SERVICE_WRITE
-static opcua_statuscode_t handle_write(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+opcua_statuscode_t handle_write(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                        size_t *response_length);
 #endif
 #if MU_DISPATCH_CALL_ENABLED
 static opcua_statuscode_t handle_call(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                       size_t *response_length);
 #endif
-#ifdef MICRO_OPCUA_SERVICE_WRITE
-opcua_statuscode_t handle_write(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
-                                size_t *response_length);
-#endif
+
 
 /* Fill a ServerNonce from the entropy adapter (zeros if unavailable). */
 static void fill_server_nonce(mu_server_t *server, opcua_byte_t *nonce, size_t len) {
@@ -675,7 +672,9 @@ static opcua_statuscode_t handle_activate_session(mu_server_t *server, mu_binary
 #ifdef MICRO_OPCUA_USER_AUTH
     mu_username_identity_token_t user_token = {{-1, NULL}, {-1, NULL}, {-1, NULL}, {-1, NULL}};
 #endif
+#ifdef MICRO_OPCUA_SECURITY
     mu_certificate_identity_token_t cert_token = {{-1, NULL}, {-1, NULL}};
+#endif
     mu_string_t anon_policy_id = {-1, NULL};
     mu_string_t user_token_algorithm = {-1, NULL};
     mu_bytestring_t user_token_signature = {-1, NULL};
@@ -706,6 +705,7 @@ static opcua_statuscode_t handle_activate_session(mu_server_t *server, mu_binary
             return s;
 #endif
     } else if (token_type_is_ns0_numeric && token_type.identifier.numeric == 327) {
+#ifdef MICRO_OPCUA_SECURITY
         if (token_body_len > 0) {
             mu_binary_reader_t sub;
             mu_binary_reader_init(&sub, r->buffer + r->position, token_body_len);
@@ -714,6 +714,11 @@ static opcua_statuscode_t handle_activate_session(mu_server_t *server, mu_binary
                 return s;
         }
         r->position += token_body_len;
+#else
+        s = skip_extension_object_body(r, token_body_len);
+        if (s != MU_STATUS_GOOD)
+            return s;
+#endif
     } else {
         s = skip_extension_object_body(r, token_body_len);
         if (s != MU_STATUS_GOOD)
@@ -815,6 +820,7 @@ static opcua_statuscode_t handle_activate_session(mu_server_t *server, mu_binary
 #endif
                 } else if (token_type.identifier.numeric == 327) {
                     /* Certificate user authentication */
+#ifdef MICRO_OPCUA_SECURITY
                     if (cert_token.certificate_data.length <= 0 || user_token_signature.length <= 0) {
                         activate_result = MU_STATUS_BAD_IDENTITYTOKENREJECTED;
                     } else {
@@ -857,6 +863,9 @@ static opcua_statuscode_t handle_activate_session(mu_server_t *server, mu_binary
                             activate_result = MU_STATUS_BAD_IDENTITYTOKENREJECTED;
                         }
                     }
+#else
+                    activate_result = MU_STATUS_BAD_IDENTITYTOKENREJECTED;
+#endif
                 } else {
                     activate_result = MU_STATUS_BAD_IDENTITYTOKENINVALID;
                 }
@@ -2268,28 +2277,67 @@ static opcua_statuscode_t write_single_call_method_result(mu_server_t *server, m
                                                           const mu_variant_t *args, opcua_int32_t arg_count) {
     opcua_statuscode_t input_result = MU_STATUS_BAD_INVALIDARGUMENT;
 
-    if (!nodeid_is_ns0_numeric(object_id, MU_ID_SERVER_OBJECT)) {
+    if (nodeid_is_ns0_numeric(method_id, MU_ID_SERVER_GETMONITOREDITEMS) ||
+        nodeid_is_ns0_numeric(method_id, MU_ID_SERVER_RESENDDATA)) {
+        if (!nodeid_is_ns0_numeric(object_id, MU_ID_SERVER_OBJECT)) {
+            return write_call_method_result(w, MU_STATUS_BAD_NODEIDINVALID, 0, NULL, 0, NULL);
+        }
+        if (arg_count <= 0) {
+            return write_call_method_result(w, MU_STATUS_BAD_ARGUMENTSMISSING, 0, NULL, 0, NULL);
+        }
+        if (arg_count > 1) {
+            return write_call_method_result(w, MU_STATUS_BAD_TOOMANYARGUMENTS, 0, NULL, 0, NULL);
+        }
+        if (args[0].is_array || args[0].type != MU_TYPE_UINT32) {
+            return write_call_method_result(w, MU_STATUS_BAD_INVALIDARGUMENT, 1, &input_result, 0, NULL);
+        }
+
+        if (nodeid_is_ns0_numeric(method_id, MU_ID_SERVER_GETMONITOREDITEMS)) {
+            return write_get_monitored_items_result(server, w, args[0].value.ui32);
+        }
+
+        return write_resend_data_result(server, w, args[0].value.ui32);
+    }
+
+#ifdef MICRO_OPCUA_CUSTOM_METHODS
+    /* Verify object exists in address space */
+    const mu_node_t *obj_node = mu_address_space_find_node(server->config.address_space, &server->user_address_space_index, object_id);
+    if (obj_node == NULL) {
         return write_call_method_result(w, MU_STATUS_BAD_NODEIDINVALID, 0, NULL, 0, NULL);
     }
-    if (!nodeid_is_ns0_numeric(method_id, MU_ID_SERVER_GETMONITOREDITEMS) &&
-        !nodeid_is_ns0_numeric(method_id, MU_ID_SERVER_RESENDDATA)) {
+
+    /* Verify method node exists in address space */
+    const mu_node_t *method_node = mu_address_space_find_node(server->config.address_space, &server->user_address_space_index, method_id);
+    if (method_node == NULL) {
         return write_call_method_result(w, MU_STATUS_BAD_METHODINVALID, 0, NULL, 0, NULL);
     }
-    if (arg_count <= 0) {
-        return write_call_method_result(w, MU_STATUS_BAD_ARGUMENTSMISSING, 0, NULL, 0, NULL);
-    }
-    if (arg_count > 1) {
-        return write_call_method_result(w, MU_STATUS_BAD_TOOMANYARGUMENTS, 0, NULL, 0, NULL);
-    }
-    if (args[0].is_array || args[0].type != MU_TYPE_UINT32) {
-        return write_call_method_result(w, MU_STATUS_BAD_INVALIDARGUMENT, 1, &input_result, 0, NULL);
+
+    /* Lookup registered callback */
+    mu_method_callback_t callback = NULL;
+    for (size_t i = 0; i < server->registered_method_count; ++i) {
+        if (mu_nodeid_equal(&server->registered_methods[i].method_id, method_id)) {
+            callback = server->registered_methods[i].callback;
+            break;
+        }
     }
 
-    if (nodeid_is_ns0_numeric(method_id, MU_ID_SERVER_GETMONITOREDITEMS)) {
-        return write_get_monitored_items_result(server, w, args[0].value.ui32);
+    if (callback == NULL) {
+        return write_call_method_result(w, MU_STATUS_BAD_METHODINVALID, 0, NULL, 0, NULL);
     }
 
-    return write_resend_data_result(server, w, args[0].value.ui32);
+    /* Invoke the custom callback */
+    mu_variant_t output_args[8];
+    size_t output_args_count = 8;
+    memset(output_args, 0, sizeof(output_args));
+    opcua_statuscode_t handler_status = callback(server, object_id, method_id, args, (size_t)arg_count, output_args, &output_args_count);
+    if (handler_status != MU_STATUS_GOOD) {
+        return write_call_method_result(w, handler_status, 0, NULL, 0, NULL);
+    }
+
+    return write_call_method_result(w, MU_STATUS_GOOD, 0, NULL, (opcua_int32_t)output_args_count, output_args);
+#else
+    return write_call_method_result(w, MU_STATUS_BAD_METHODINVALID, 0, NULL, 0, NULL);
+#endif
 }
 
 /* Call (OPC-10000-4 §5.12.2.2), limited to OPC-10000-5 Base Info methods
@@ -2625,7 +2673,7 @@ static opcua_statuscode_t handle_read(mu_server_t *server, mu_binary_reader_t *r
 #endif /* MICRO_OPCUA_SERVICE_READ */
 
 #ifdef MICRO_OPCUA_SERVICE_WRITE
-static opcua_statuscode_t handle_write(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+opcua_statuscode_t handle_write(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                        size_t *response_length) {
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
@@ -2679,7 +2727,7 @@ static opcua_statuscode_t handle_write(mu_server_t *server, mu_binary_reader_t *
         /* Apply write callback if configured */
         if (server->config.write_handler) {
             results[i] = server->config.write_handler(server->config.write_handler_handle, &write_val->node_id,
-                                                      write_val->attribute_id, &write_val->value.value);
+                                                      (opcua_uint32_t)write_val->attribute_id, &write_val->value.value);
         } else {
             results[i] = MU_STATUS_BAD_WRITENOTSUPPORTED;
         }
@@ -2850,107 +2898,4 @@ opcua_statuscode_t mu_service_dispatch(mu_server_t *server, opcua_uint32_t reque
     return MU_STATUS_GOOD;
 }
 
-#ifdef MICRO_OPCUA_SERVICE_WRITE
-/* Write (OPC 10000-4 §5.11.4): decode request, write attributes to address space/callbacks, and encode response. */
-opcua_statuscode_t handle_write(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
-                                size_t *response_length) {
-    mu_request_header_t req;
-    opcua_statuscode_t s = mu_request_header_decode(r, &req);
-    if (s != MU_STATUS_GOOD)
-        return s;
 
-    opcua_int32_t nodes_to_write_size = 0;
-    s = mu_binary_read_int32(r, &nodes_to_write_size);
-    if (s != MU_STATUS_GOOD)
-        return s;
-
-    if (nodes_to_write_size < 0) {
-        return MU_STATUS_BAD_DECODINGERROR;
-    }
-    if (nodes_to_write_size == 0) {
-        return MU_STATUS_BAD_NOTHINGTODO;
-    }
-
-    /* We write the response prefix (ResponseHeader) first so we can encode the results array. */
-    s = write_response_prefix(w, MU_ID_WRITERESPONSE, req.request_handle, MU_STATUS_GOOD);
-    if (s != MU_STATUS_GOOD)
-        return s;
-
-    /* Write the size of the results array (must match nodes_to_write_size) */
-    s = mu_binary_write_int32(w, nodes_to_write_size);
-    if (s != MU_STATUS_GOOD)
-        return s;
-
-    /* Loop and process each WriteValue */
-    for (opcua_int32_t i = 0; i < nodes_to_write_size; ++i) {
-        mu_write_value_t wv;
-        opcua_statuscode_t item_status = MU_STATUS_GOOD;
-
-        s = mu_write_value_decode(r, &wv);
-        if (s != MU_STATUS_GOOD) {
-            item_status = s;
-        }
-
-        if (item_status == MU_STATUS_GOOD) {
-            /* Check attribute validation (FR-002) */
-            if (wv.attribute_id != 13) { /* AttributeId_Value */
-                item_status = MU_STATUS_BAD_ATTRIBUTEIDINVALID;
-            }
-            /* Check index range constraint (FR-006) */
-            else if (wv.index_range.length > 0) {
-                item_status = MU_STATUS_BAD_WRITENOTSUPPORTED;
-            }
-            /* Check if write callback is NULL (FR-004) */
-            else if (server->config.write_handler == NULL) {
-                item_status = MU_STATUS_BAD_NOTWRITABLE;
-            } else {
-                /* Resolve node in address space */
-                const mu_node_t *node = mu_resolve_node(server->config.address_space, &server->user_address_space_index,
-                                                        &server->runtime_base.space, &wv.node_id);
-                if (node == NULL) {
-                    item_status = MU_STATUS_BAD_NODEIDUNKNOWN;
-                } else if (node->node_class != MU_NODECLASS_VARIABLE) {
-                    item_status = MU_STATUS_BAD_ATTRIBUTEIDINVALID;
-                } else if (node->value == NULL) {
-                    item_status = MU_STATUS_BAD_NOTWRITABLE;
-                } else {
-                    /* Perform type validation (FR-007) */
-                    if (node->value->type == MU_VALUESOURCE_STATIC) {
-                        if (wv.value.value.type != node->value->data.static_value.type) {
-                            item_status = MU_STATUS_BAD_TYPEMISMATCH;
-                        }
-                    } else if (node->value->type == MU_VALUESOURCE_CALLBACK) {
-                        mu_variant_t current_val;
-                        memset(&current_val, 0, sizeof(current_val));
-                        if (node->value->data.callback.read(node->value->data.callback.context, &node->node_id,
-                                                            &current_val) == MU_STATUS_GOOD) {
-                            if (wv.value.value.type != current_val.type) {
-                                item_status = MU_STATUS_BAD_TYPEMISMATCH;
-                            }
-                        }
-                    }
-
-                    if (item_status == MU_STATUS_GOOD) {
-                        /* Invoke application callback (FR-003) */
-                        item_status = server->config.write_handler(server->config.write_handler_handle, &wv.node_id,
-                                                                   &wv.value.value);
-                    }
-                }
-            }
-        }
-
-        /* Write the status code result for this item (OPC-10000-6 §7.36) */
-        s = mu_binary_write_statuscode(w, item_status);
-        if (s != MU_STATUS_GOOD)
-            return s;
-    }
-
-    /* DiagnosticInfos array: empty (length 0) */
-    s = mu_binary_write_int32(w, 0);
-    if (s != MU_STATUS_GOOD)
-        return s;
-
-    *response_length = w->position;
-    return MU_STATUS_GOOD;
-}
-#endif

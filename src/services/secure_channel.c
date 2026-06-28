@@ -66,7 +66,8 @@ opcua_statuscode_t mu_secure_channel_open(mu_secure_channel_t *channel, const mu
     }
 #ifdef MICRO_OPCUA_SECURITY
     else if (channel->policy == MU_SECURITY_POLICY_BASIC256SHA256_ID ||
-             channel->policy == MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID) {
+             channel->policy == MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID ||
+             channel->policy == MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID) {
         if (requested_policy != channel->policy) {
             return MU_STATUS_BAD_SECURITYPOLICYREJECTED;
         }

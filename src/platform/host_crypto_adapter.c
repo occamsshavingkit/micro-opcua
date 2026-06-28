@@ -257,6 +257,89 @@ static opcua_statuscode_t h_rsa_oaep_encrypt(void *c, const opcua_byte_t *cert, 
     return rc;
 }
 
+static opcua_statuscode_t h_rsa_pss_sha256_sign(void *c, const opcua_byte_t *data, size_t len,
+                                                opcua_byte_t *sig, size_t *sig_len) {
+    struct host_crypto_context *cx = (struct host_crypto_context *)c;
+    EVP_MD_CTX *md = EVP_MD_CTX_new();
+    if (!md) return MU_STATUS_BAD_OUTOFMEMORY;
+    opcua_statuscode_t rc = MU_STATUS_BAD_INTERNALERROR;
+    size_t sl = *sig_len;
+    EVP_PKEY_CTX *pctx = NULL;
+    if (EVP_DigestSignInit(md, &pctx, EVP_sha256(), NULL, cx->key) == 1) {
+        if (EVP_PKEY_CTX_set_rsa_padding(pctx, RSA_PKCS1_PSS_PADDING) == 1 &&
+            EVP_PKEY_CTX_set_rsa_pss_saltlen(pctx, 32) == 1 &&
+            EVP_PKEY_CTX_set_rsa_mgf1_md(pctx, EVP_sha256()) == 1 &&
+            EVP_DigestSign(md, sig, &sl, data, len) == 1) {
+            *sig_len = sl;
+            rc = MU_STATUS_GOOD;
+        }
+    }
+    EVP_MD_CTX_free(md);
+    return rc;
+}
+
+static opcua_statuscode_t h_rsa_pss_sha256_verify(void *c, const opcua_byte_t *cert, size_t cert_len,
+                                                  const opcua_byte_t *data, size_t data_len,
+                                                  const opcua_byte_t *sig, size_t sig_len) {
+    (void)c;
+    EVP_PKEY *pk = pubkey_from_cert(cert, cert_len);
+    if (!pk) return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+    opcua_statuscode_t rc = MU_STATUS_BAD_SECURITYCHECKSFAILED;
+    EVP_MD_CTX *md = EVP_MD_CTX_new();
+    EVP_PKEY_CTX *pctx = NULL;
+    if (md && EVP_DigestVerifyInit(md, &pctx, EVP_sha256(), NULL, pk) == 1) {
+        if (EVP_PKEY_CTX_set_rsa_padding(pctx, RSA_PKCS1_PSS_PADDING) == 1 &&
+            EVP_PKEY_CTX_set_rsa_pss_saltlen(pctx, 32) == 1 &&
+            EVP_PKEY_CTX_set_rsa_mgf1_md(pctx, EVP_sha256()) == 1 &&
+            EVP_DigestVerify(md, sig, sig_len, data, data_len) == 1) {
+            rc = MU_STATUS_GOOD;
+        }
+    }
+    if (md) EVP_MD_CTX_free(md);
+    EVP_PKEY_free(pk);
+    return rc;
+}
+
+static opcua_statuscode_t rsa_oaep_sha256(EVP_PKEY *pk, int encrypt,
+                                          const opcua_byte_t *in, size_t in_len,
+                                          opcua_byte_t *out, size_t *out_len) {
+    EVP_PKEY_CTX *pc = EVP_PKEY_CTX_new(pk, NULL);
+    if (!pc) return MU_STATUS_BAD_INTERNALERROR;
+    opcua_statuscode_t rc = MU_STATUS_BAD_INTERNALERROR;
+    size_t ol = *out_len;
+    int init_ok = encrypt ? (EVP_PKEY_encrypt_init(pc) == 1) : (EVP_PKEY_decrypt_init(pc) == 1);
+    if (init_ok &&
+        EVP_PKEY_CTX_set_rsa_padding(pc, RSA_PKCS1_OAEP_PADDING) == 1 &&
+        EVP_PKEY_CTX_set_rsa_oaep_md(pc, EVP_sha256()) == 1 &&
+        EVP_PKEY_CTX_set_rsa_mgf1_md(pc, EVP_sha256()) == 1) {
+        int op = encrypt ? EVP_PKEY_encrypt(pc, out, &ol, in, in_len)
+                         : EVP_PKEY_decrypt(pc, out, &ol, in, in_len);
+        if (op == 1) {
+            *out_len = ol;
+            rc = MU_STATUS_GOOD;
+        }
+    }
+    EVP_PKEY_CTX_free(pc);
+    return rc;
+}
+
+static opcua_statuscode_t h_rsa_oaep_sha256_decrypt(void *c, const opcua_byte_t *in, size_t len,
+                                                    opcua_byte_t *out, size_t *out_len) {
+    struct host_crypto_context *cx = (struct host_crypto_context *)c;
+    return rsa_oaep_sha256(cx->key, 0, in, len, out, out_len);
+}
+
+static opcua_statuscode_t h_rsa_oaep_sha256_encrypt(void *c, const opcua_byte_t *cert, size_t cert_len,
+                                                    const opcua_byte_t *in, size_t len,
+                                                    opcua_byte_t *out, size_t *out_len) {
+    (void)c;
+    EVP_PKEY *pk = pubkey_from_cert(cert, cert_len);
+    if (!pk) return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+    opcua_statuscode_t rc = rsa_oaep_sha256(pk, 1, in, len, out, out_len);
+    EVP_PKEY_free(pk);
+    return rc;
+}
+
 static opcua_statuscode_t h_get_own_certificate(void *c, const opcua_byte_t **cert, size_t *len) {
     struct host_crypto_context *cx = (struct host_crypto_context *)c;
     *cert = cx->cert_der;
@@ -341,6 +424,10 @@ opcua_statuscode_t mu_host_crypto_adapter_init(mu_crypto_adapter_t *adapter) {
     adapter->rsa_sha256_verify = h_rsa_verify;
     adapter->rsa_oaep_decrypt = h_rsa_oaep_decrypt;
     adapter->rsa_oaep_encrypt = h_rsa_oaep_encrypt;
+    adapter->rsa_pss_sha256_sign = h_rsa_pss_sha256_sign;
+    adapter->rsa_pss_sha256_verify = h_rsa_pss_sha256_verify;
+    adapter->rsa_oaep_sha256_decrypt = h_rsa_oaep_sha256_decrypt;
+    adapter->rsa_oaep_sha256_encrypt = h_rsa_oaep_sha256_encrypt;
     adapter->get_own_certificate = h_get_own_certificate;
     adapter->get_certificate_key_bits = h_get_certificate_key_bits;
     adapter->get_certificate_thumbprint = h_get_certificate_thumbprint;

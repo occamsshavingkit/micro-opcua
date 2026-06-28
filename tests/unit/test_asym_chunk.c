@@ -101,6 +101,51 @@ void test_none_passthrough(void) {
     TEST_ASSERT_EQUAL_UINT32(99, info.request_id);
 }
 
+void test_aes256_sha256_rsapss_roundtrip(void) {
+    const opcua_byte_t *server_cert = NULL, *client_cert = NULL;
+    size_t server_cert_len = 0, client_cert_len = 0;
+    get_cert(&server_crypto, &server_cert, &server_cert_len);
+    get_cert(&client_crypto, &client_cert, &client_cert_len);
+
+    /* A representative OPN request body (opaque bytes here). */
+    opcua_byte_t body[120];
+    for (size_t i = 0; i < sizeof(body); i++) body[i] = (opcua_byte_t)(i * 7 + 1);
+
+    opcua_byte_t chunk[4096];
+    size_t chunk_len = 0;
+    /* Client wraps, encrypting to the server certificate. */
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
+        mu_asym_chunk_wrap(&client_crypto, MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID,
+                           0 /* new channel */, 1 /* seq */, 42 /* request id */,
+                           server_cert, server_cert_len, body, sizeof(body),
+                           chunk, sizeof(chunk), &chunk_len));
+    TEST_ASSERT_GREATER_THAN(0, chunk_len);
+    /* Header is cleartext "OPNF". */
+    TEST_ASSERT_EQUAL('O', chunk[0]);
+    TEST_ASSERT_EQUAL('P', chunk[1]);
+    TEST_ASSERT_EQUAL('N', chunk[2]);
+
+    /* Server unwraps with its private key, verifying the client signature. */
+    opcua_byte_t recovered[2048];
+    size_t recovered_len = 0;
+    mu_asym_chunk_info_t info;
+    memset(&info, 0, sizeof(info));
+    opcua_byte_t scratch[6144];
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
+        mu_asym_chunk_unwrap(&server_crypto, chunk, chunk_len,
+                             recovered, sizeof(recovered), &recovered_len,
+                             scratch, sizeof(scratch), &info));
+
+    TEST_ASSERT_EQUAL(sizeof(body), recovered_len);
+    TEST_ASSERT_EQUAL_MEMORY(body, recovered, sizeof(body));
+    TEST_ASSERT_EQUAL(MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID, info.policy);
+    TEST_ASSERT_EQUAL_UINT32(1, info.sequence_number);
+    TEST_ASSERT_EQUAL_UINT32(42, info.request_id);
+    /* The embedded SenderCertificate is the client's. */
+    TEST_ASSERT_EQUAL(client_cert_len, info.sender_cert_len);
+    TEST_ASSERT_EQUAL_MEMORY(client_cert, info.sender_cert, client_cert_len);
+}
+
 void test_tampered_signature_rejected(void) {
     const opcua_byte_t *server_cert = NULL;
     size_t server_cert_len = 0;
@@ -162,6 +207,7 @@ int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_basic256sha256_roundtrip);
     RUN_TEST(test_none_passthrough);
+    RUN_TEST(test_aes256_sha256_rsapss_roundtrip);
     RUN_TEST(test_tampered_signature_rejected);
     RUN_TEST(test_wrong_receiver_thumbprint_rejected);
     return UNITY_END();

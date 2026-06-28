@@ -61,6 +61,15 @@ struct mu_server {
     mu_subscriptions_t subs;
     opcua_uint32_t current_request_id;
 #endif
+#ifdef MICRO_OPCUA_CUSTOM_METHODS
+#define MU_MAX_REGISTERED_METHODS 8
+    struct {
+        mu_nodeid_t method_id;
+        mu_method_callback_t callback;
+        void *context;
+    } registered_methods[MU_MAX_REGISTERED_METHODS];
+    size_t registered_method_count;
+#endif
 };
 
 #if MICRO_OPCUA_SUBSCRIPTIONS

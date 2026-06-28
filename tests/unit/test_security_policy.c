@@ -22,6 +22,11 @@ void test_policy_basic256sha256_recognized(void) {
         from_uri("http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256"));
 }
 
+void test_policy_aes256_sha256_rsapss_recognized(void) {
+    TEST_ASSERT_EQUAL(MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID,
+        from_uri("http://opcfoundation.org/UA/SecurityPolicy#Aes256_Sha256_RsaPss"));
+}
+
 void test_unknown_policy_rejected(void) {
     TEST_ASSERT_EQUAL(MU_SECURITY_POLICY_INVALID_ID,
         from_uri("http://opcfoundation.org/UA/SecurityPolicy#Basic128Rsa15"));
@@ -41,6 +46,8 @@ void test_uri_roundtrip(void) {
         mu_security_policy_uri(MU_SECURITY_POLICY_NONE_ID));
     TEST_ASSERT_EQUAL_STRING("http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256",
         mu_security_policy_uri(MU_SECURITY_POLICY_BASIC256SHA256_ID));
+    TEST_ASSERT_EQUAL_STRING("http://opcfoundation.org/UA/SecurityPolicy#Aes256_Sha256_RsaPss",
+        mu_security_policy_uri(MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID));
     TEST_ASSERT_NULL(mu_security_policy_uri(MU_SECURITY_POLICY_INVALID_ID));
 }
 
@@ -59,6 +66,7 @@ int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_policy_none_recognized);
     RUN_TEST(test_policy_basic256sha256_recognized);
+    RUN_TEST(test_policy_aes256_sha256_rsapss_recognized);
     RUN_TEST(test_unknown_policy_rejected);
     RUN_TEST(test_empty_policy_is_none);
     RUN_TEST(test_uri_roundtrip);
