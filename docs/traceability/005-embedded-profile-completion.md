@@ -105,3 +105,22 @@ US3 host size proxy:
 
 Compared with the US1 Standard-capacity storage build, US3 adds no caller-storage growth:
 the `resend_data_pending` flag fits existing structure padding. Heap use remains zero by design.
+
+## US4 size and profile-build record
+
+ARM Cortex-M0+ Thumb `-Os` portable-core measurement, reproduced with
+`scripts/measure_size.sh all`:
+
+| Profile | Core `.text` | `.data` | `.bss` | Notes |
+|---|---:|---:|---:|---|
+| nano | 16,713 B | 0 B | 0 B | unchanged vs pre-feature lower-tier profile |
+| micro | 22,919 B | 0 B | 0 B | unchanged vs pre-feature lower-tier profile |
+| embedded | 35,628 B | 0 B | 0 B | full Embedded 2017 profile gates enabled |
+
+Host profile build reference:
+
+| Profile | `libmicro_opcua.a` `.text` | `minimal_server` ELF `.text` | Notes |
+|---|---:|---:|---|
+| nano | 32,169 B | 36,213 B | host runtime/adapter inflated |
+| micro | 42,552 B | 47,072 B | host runtime/adapter inflated |
+| embedded | 65,664 B | 79,264 B | host OpenSSL adapter and example storage included |

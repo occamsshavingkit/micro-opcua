@@ -39,8 +39,7 @@ Fuzz targets extended to the new request/filter decoders.
 
 ```sh
 # Core .text for each profile, ARM Cortex-M0+ -Os (per docs/size/feature-size-ledger.md "How")
-make all-profiles
-# then cross-compile the portable core and sum .text with `size -t`; record nano/micro/embedded
+scripts/measure_size.sh all
 ```
 
 Record the new `embedded` flash/RAM figures and the `MU_SERVER_STORAGE_BYTES` delta in

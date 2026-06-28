@@ -114,7 +114,7 @@ profile-scoped). Reading an unsupported attribute → `Bad_AttributeIdInvalid`; 
 - `MU_MAX_TRIGGER_LINKS` — new, bounds the SetTriggering link list.
 - `embedded` build raises `MU_MAX_MONITORED_ITEMS` ≥ 100, `MU_MAX_SUBSCRIPTIONS` ≥ 2,
   `MU_MAX_PUBLISH_REQUESTS` ≥ 5 (research Decision 6); `micro`/`nano` keep small defaults.
-- `MU_SERVER_STORAGE_BYTES` recomputed for `embedded` (expected ~25–30 KiB) and documented;
+- `MU_SERVER_STORAGE_BYTES` recomputed for `embedded` (**45,696 B**) and documented;
   checked by `mu_server_init`. `.bss`/heap stay 0.
 
 ## Entity relationships

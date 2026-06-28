@@ -33,7 +33,7 @@ All in-scope Nano conformance units are implemented and covered by tests/CI.
 
 The Micro Embedded Device 2017 Server Profile builds on Nano (see
 [profile-micro.md](profile-micro.md)). The subscription facet is implemented; the
-≥2-session requirement is the remaining implementation item.
+≥2-session requirement is implemented.
 
 | Conformance group / unit | Status | Evidence |
 |---|---|---|

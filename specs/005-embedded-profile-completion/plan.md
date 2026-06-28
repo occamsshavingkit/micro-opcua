@@ -45,15 +45,16 @@ preserves freestanding C11, no-heap, no-mutable-globals, bounded execution, and 
 
 ## Embedded Size Budget
 
-**Flash Impact**: Estimated **+3–5 KiB** core `.text` over today's ~27.1 KiB embedded core:
+**Flash Impact**: Estimated **+3–5 KiB** core `.text` over the pre-feature ~27.1 KiB embedded core:
 absolute-deadband comparison incl. soft-float for Float/Double (~0.3–0.6 KiB), per-item queue
 + overflow logic (~0.3–0.6 KiB), SetTriggering handler (~0.3–0.5 KiB), Call service +
 GetMonitoredItems/ResendData (~0.8–1.5 KiB), enlarged type-system const node set (~1.0–2.0 KiB).
-Measured per US into `docs/size/feature-size-ledger.md`.  
+Final measured ARM Cortex-M0+ Thumb `-Os` core is **35,628 B** (+7,827 B), recorded in
+`docs/size/feature-size-ledger.md`.
 **RAM Impact (significant, mandated)**: raising `MU_MAX_MONITORED_ITEMS` from 8 to ≥ 100 grows
 the fixed MonitoredItem array in `struct mu_server` by ~92 × `sizeof(mu_monitored_item_t)`
 (≈ **+11–15 KiB**), plus queue depth ≥ 2 per item, plus ≥ 5 parked Publish slots. All
-caller-provided; `MU_SERVER_STORAGE_BYTES` for `embedded` recomputed (expected ~25–30 KiB) and
+caller-provided; `MU_SERVER_STORAGE_BYTES` for `embedded` recomputed to **45,696 B** and
 documented. Still no static RAM in the library; `.bss` stays 0. On RP2040 (264 KiB) this leaves
 ample headroom; the `Monitor Items 100` CU makes it non-optional. `micro`/`nano` keep their small
 capacities (their facet needs only `Monitor Items 2`).  
