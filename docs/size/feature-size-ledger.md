@@ -15,20 +15,19 @@ restoring `.bss = 0`.)
 
 ## Summary — core library `.text` (flash), ARM Cortex-M0+ Thumb `-Os`
 
-Refreshed 2026-06-28 after feature `005-embedded-profile-completion`.
+Refreshed 2026-06-28 after feature `006-implement-memory-and`.
 
 | Profile | Services | Core `.text` | vs nano | `.data` | `.bss` | Heap |
 |---|---|---|---|---|---|---|
-| **nano** | Core + View + Read, None | **16.3 KiB** (16,713 B) | -4 B vs previous | 0 | 0 | 0 |
-| **micro** | nano + Embedded DataChange Subscriptions | **22.4 KiB** (22,919 B) | +6.1 KiB | 0 | 0 | 0 |
-| **embedded** | micro + Basic256Sha256 + Standard DataChange 2017 + Base Info Type System + required methods | **34.8 KiB** (35,628 B) | +18.5 KiB | 0 | 0 | 0 |
+| **nano** | Core + View + Read, None | **16.1 KiB** (16,481 B) | -232 B vs previous | 0 | 0 | 0 |
+| **micro** | nano + Embedded DataChange Subscriptions | **22.4 KiB** (22,917 B) | +6.4 KiB | 0 | 0 | 0 |
+| **embedded** | micro + Basic256Sha256 + Standard DataChange 2017 + Base Info Type System + required methods | **34.8 KiB** (35,598 B) | +19.1 KiB | 0 | 0 | 0 |
 
 - **Subscriptions (Micro)** cost **~6.0 KiB** of flash (engine `subscription.c` plus the
   Subscription/MonitoredItem dispatch handlers + DataChangeNotification encoding).
-- **Nano and Micro are unchanged** by feature 005: the current ARM Thumb totals are 4 B
-  smaller than the previous ledger because the new Embedded 2017 work is profile-gated.
-- **Embedded 2017** grows from the former security-only embedded build by **+7,827 B**
-  (27,801 B -> 35,628 B). That is the mandated Standard DataChange 2017 facet, Call
+- **Nano and Micro are unchanged** by feature 005/006: the current ARM Thumb totals are smaller than the previous ledger because the new Embedded 2017 work is profile-gated.
+- **Embedded 2017** grows from the former security-only embedded build by **+7,797 B**
+  (27,801 B -> 35,598 B). That is the mandated Standard DataChange 2017 facet, Call
   service methods, and Base Info Type System table.
 - **`.bss` = 0 (no mutable global state).** Feature 004 briefly introduced ~156 B of
   file-static state (the address-space lookup index cache + the OPN policy hand-off);
@@ -38,7 +37,7 @@ Refreshed 2026-06-28 after feature `005-embedded-profile-completion`.
   `MU_SERVER_STORAGE_BYTES` now also includes `MU_ADDRESS_SPACE_INDEX_STORAGE_BYTES`.
   The trade cost ~170 B of `.text` per profile (the index cache is now threaded rather
   than file-static). Net core flash is still flat-to-down vs the pre-feature baseline
-  (nano 16.9 → 16.3 KiB) despite the added parser-robustness, address-space index, OPN
+  (nano 16.9 → 16.1 KiB) despite the added parser-robustness, address-space index, OPN
   validation, and per-channel cipher context.
 
 ## RAM (all caller-provided; the library adds 0 static RAM)
@@ -47,21 +46,21 @@ Refreshed 2026-06-28 after feature `005-embedded-profile-completion`.
 the context is smaller. `MU_SERVER_STORAGE_BYTES` is the arch-independent caller block
 the integrator must provide (and is the value `mu_server_init` checks against).
 
-| Profile | `sizeof(struct mu_server)` (host) | `MU_SERVER_STORAGE_BYTES` | + RX/TX buffers |
-|---|---|---|---|
-| nano | **672 B** | 1,280 | 2 × 8192 = 16 KiB |
-| micro | **2,848 B** | 3,328 | 2 × 8192 = 16 KiB |
-| embedded | **41,960 B** | 45,696 | 2 × 8192 = 16 KiB |
+| Profile | `sizeof(struct mu_server)` (host) | `sizeof(struct mu_server)` (ARM) | `MU_SERVER_STORAGE_BYTES` | + RX/TX buffers |
+|---|---|---|---|---|
+| nano | **832 B** | **576 B** | **1,280 B** | 2 × 8192 = 16 KiB |
+| micro | **2,920 B** | **2,472 B** | **3,328 B** | 2 × 8192 = 16 KiB |
+| embedded | **39,376 B** | **32,696 B** | **44,736 B** | 2 × 8192 = 16 KiB |
 
 - The subscription engine adds the fixed-size subscription / MonitoredItem / parked-Publish
   arrays (capacities `-D`-overridable: `MU_MAX_SUBSCRIPTIONS`=2, `MU_MAX_MONITORED_ITEMS`=8,
   `MU_MAX_PUBLISH_REQUESTS`=4); each MonitoredItem also caches its resolved node (FR-010).
   `MU_SERVER_STORAGE_BYTES` rises to 3,328 automatically when `MICRO_OPCUA_SUBSCRIPTIONS`
   is defined.
-- **Embedded 2017 grows to `MU_SERVER_STORAGE_BYTES`=45,696** because the Standard
+- **Embedded 2017 grows to `MU_SERVER_STORAGE_BYTES`=44,736** because the Standard
   DataChange facet requires 100 monitored items, queue depth 2, trigger links, and five
-  parked Publish requests. The earlier security-only embedded build was 10,496 B.
-- **Static RAM for the protocol ≈ 17.3 KiB (nano) / 19.3 KiB (micro) / 60.6 KiB (embedded)**
+  parked Publish requests. Thanks to our optimizations, this is **960 bytes smaller** than before.
+- **Static RAM for the protocol ≈ 17.3 KiB (nano) / 19.3 KiB (micro) / 48.7 KiB (embedded)**
   (the caller-provided server context + the two 8 KiB transport buffers). The core
   library itself contributes 0 static RAM (`.data`/`.bss` = 0).
 - Peak stack: **~5.5 KiB** plaintext (Read/Browse with the 32-deep dispatch arrays);
