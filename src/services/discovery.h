@@ -57,8 +57,8 @@ typedef struct {
     opcua_byte_t security_level;
 } mu_endpoint_description_t;
 
-/* None + Basic256Sha256(Sign/SignAndEncrypt) + Aes128_Sha256_RsaOaep(Sign/SignAndEncrypt) + Aes256_Sha256_RsaPss(Sign/SignAndEncrypt). */
-#define MU_DISCOVERY_MAX_ENDPOINTS 7
+/* None + Basic256Sha256(Sign/SignAndEncrypt) + Aes128_Sha256_RsaOaep(Sign/SignAndEncrypt). */
+#define MU_DISCOVERY_MAX_ENDPOINTS 5
 
 opcua_statuscode_t mu_discovery_get_endpoint_description(const mu_server_config_t *config,
                                                          mu_endpoint_description_t *desc);
