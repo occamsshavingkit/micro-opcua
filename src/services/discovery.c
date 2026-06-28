@@ -188,6 +188,8 @@ opcua_statuscode_t mu_discovery_get_endpoints(const mu_server_config_t *config, 
 
     const char *none_uri = mu_security_policy_uri(MU_SECURITY_POLICY_NONE_ID);
     const char *b256_uri = mu_security_policy_uri(MU_SECURITY_POLICY_BASIC256SHA256_ID);
+    const char *aes128_uri = mu_security_policy_uri(MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID);
+    const char *aes256_uri = mu_security_policy_uri(MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID);
     size_t n = 0;
 
     fill_endpoint(config, &eps[n++], MU_MESSAGE_SECURITY_MODE_NONE, none_uri, have_crypto ? cert : NULL,
@@ -197,6 +199,14 @@ opcua_statuscode_t mu_discovery_get_endpoints(const mu_server_config_t *config, 
             fill_endpoint(config, &eps[n++], MU_MESSAGE_SECURITY_MODE_SIGN, b256_uri, cert, cert_len, 1);
         if (n < max)
             fill_endpoint(config, &eps[n++], MU_MESSAGE_SECURITY_MODE_SIGN_AND_ENCRYPT, b256_uri, cert, cert_len, 2);
+        if (n < max)
+            fill_endpoint(config, &eps[n++], MU_MESSAGE_SECURITY_MODE_SIGN, aes128_uri, cert, cert_len, 3);
+        if (n < max)
+            fill_endpoint(config, &eps[n++], MU_MESSAGE_SECURITY_MODE_SIGN_AND_ENCRYPT, aes128_uri, cert, cert_len, 4);
+        if (n < max)
+            fill_endpoint(config, &eps[n++], MU_MESSAGE_SECURITY_MODE_SIGN, aes256_uri, cert, cert_len, 5);
+        if (n < max)
+            fill_endpoint(config, &eps[n++], MU_MESSAGE_SECURITY_MODE_SIGN_AND_ENCRYPT, aes256_uri, cert, cert_len, 6);
     }
     *count = n;
     return MU_STATUS_GOOD;

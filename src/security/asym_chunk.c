@@ -95,7 +95,9 @@ opcua_statuscode_t mu_asym_chunk_wrap(
     if (policy == MU_SECURITY_POLICY_NONE_ID) {
         return wrap_none(secure_channel_id, sequence_number, request_id, body, body_len, out, out_cap, out_len);
     }
-    if (policy != MU_SECURITY_POLICY_BASIC256SHA256_ID) return MU_STATUS_BAD_SECURITYPOLICYREJECTED;
+    if (policy != MU_SECURITY_POLICY_BASIC256SHA256_ID &&
+        policy != MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID &&
+        policy != MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID) return MU_STATUS_BAD_SECURITYPOLICYREJECTED;
     if (!crypto || !receiver_cert || receiver_cert_len == 0) return MU_STATUS_BAD_INTERNALERROR;
 
     /* Our certificate goes in the header; we sign with our key. */
@@ -258,7 +260,9 @@ opcua_statuscode_t mu_asym_chunk_unwrap(
         *out_body_len = body_len;
         return MU_STATUS_GOOD;
     }
-    if (info->policy != MU_SECURITY_POLICY_BASIC256SHA256_ID) return MU_STATUS_BAD_SECURITYPOLICYREJECTED;
+    if (info->policy != MU_SECURITY_POLICY_BASIC256SHA256_ID &&
+        info->policy != MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID &&
+        info->policy != MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID) return MU_STATUS_BAD_SECURITYPOLICYREJECTED;
 
     /* Validate the sender certificate and that the chunk is addressed to us. */
     s = mu_certificate_validate(crypto, info->policy, info->sender_cert, info->sender_cert_len);

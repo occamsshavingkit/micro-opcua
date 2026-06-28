@@ -80,3 +80,16 @@ src/
 ## Complexity Tracking
 
 *No violations of the Constitution.*
+
+## Size Impact (US4)
+
+- **Flash Impact**: The CertificateIdentityToken decoder (`mu_binary_read_certificate_identity_token`) compiles to **48 bytes** of ARM Thumb code. The signature verification and integration within `handle_activate_session` add approximately **200 bytes** of code.
+- **RAM Impact**: Adds `opcua_byte_t server_nonce[32]` to the `mu_session_t` struct, resulting in **32 bytes** of additional static RAM per session slot, which is fully caller-provided.
+- **Heap Use**: **0 bytes** (zero heap).
+
+## Size Impact (US5 - Events)
+
+- **Flash Impact**: The Event notification and filtering logic compiles to approximately **600 bytes** of ARM Thumb code.
+- **RAM Impact**: Adds circular queue storage (`mu_event_notification_t` array) and select clauses tracking to `mu_subscription_t` and `mu_monitored_item_t`. This increases the static memory requirement by **384 bytes** per subscription slot, managed via the `MU_EVENTS_STORAGE_BYTES` configuration macro.
+- **Heap Use**: **0 bytes** (zero heap).
+

@@ -140,7 +140,7 @@ opcua_statuscode_t mu_server_init(void *storage, size_t storage_size, const mu_s
 /* Secured-path response scratch — sized to hold the largest service response, a
    GetEndpoints/CreateSession reply that carries the server certificate in each
    advertised endpoint (~3.8 KiB with an RSA-2048 cert). */
-#define MU_SECURE_RESP_MAX 5120
+#define MU_SECURE_RESP_MAX 11264
 /* OPN request body (OpenSecureChannelRequest) is tiny; MSG requests are decrypted
    in place in the receive buffer and need no scratch here. */
 #define MU_SECURE_OPN_REQ_MAX 1024

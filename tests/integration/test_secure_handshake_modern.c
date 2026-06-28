@@ -1,8 +1,6 @@
-/* tests/integration/test_server_handshake_secure.c
- * End-to-end Basic256Sha256 SignAndEncrypt: drive mu_server_poll through
- * HEL -> OPN(secured) -> GetEndpoints -> CreateSession -> ActivateSession -> Read,
- * acting as the client via the asym/sym chunk modules. Proves the wired secure
- * channel decrypts requests, derives keys, and signs+encrypts responses. */
+/* tests/integration/test_secure_handshake_modern.c
+ * Verifies that secure channels can be established and read from using
+ * Aes128_Sha256_RsaOaep and Aes256_Sha256_RsaPss policies. */
 #include "unity.h"
 #include "micro_opcua/micro_opcua.h"
 #include "../../src/core/server_internal.h"
@@ -18,9 +16,8 @@
 void setUp(void) {}
 void tearDown(void) {}
 
-/* ---- mock transport with chunks large enough to carry certificates ---- */
-#define MAX_INBOUND 8
 #define CHUNK_CAP 8192
+#define MAX_INBOUND 8
 typedef struct {
     int accept_count;
     opcua_byte_t inbound[MAX_INBOUND][CHUNK_CAP];
@@ -73,7 +70,6 @@ static void write_request_header(mu_binary_writer_t *w, opcua_uint32_t auth_toke
     mu_binary_write_extension_object_header(w, &null_id, 0);
 }
 
-/* Skip a decrypted response's type NodeId + ResponseHeader; return the type id. */
 static opcua_uint32_t parse_decoded(const opcua_byte_t *body, size_t len, mu_binary_reader_t *out) {
     mu_binary_reader_t r; mu_binary_reader_init(&r, body, len);
     mu_nodeid_t type; mu_binary_read_nodeid(&r, &type);
@@ -83,7 +79,6 @@ static opcua_uint32_t parse_decoded(const opcua_byte_t *body, size_t len, mu_bin
     *out = r; return type.identifier.numeric;
 }
 
-/* Wrap a service body as a secured MSG, drive one poll, and unwrap+parse the reply. */
 static void secure_call(mock_t *mock, mu_server_t *server, mu_crypto_adapter_t *cc,
                         const mu_sym_keys_t *c2s, const mu_sym_keys_t *s2c,
                         opcua_uint32_t scid, opcua_uint32_t token, opcua_uint32_t seq,
@@ -96,18 +91,17 @@ static void secure_call(mock_t *mock, mu_server_t *server, mu_crypto_adapter_t *
     mock->inbound_count = 0; mock->read_index = 0;
     enqueue(mock, chunk, mlen);
     mu_server_poll(server);
-    /* Unwrap decrypts mock->last_write in place; rbody points into it. */
     const opcua_byte_t *rbody = NULL; size_t rblen = 0; mu_sym_chunk_info_t si; memset(&si, 0, sizeof(si));
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
         mu_sym_chunk_unwrap(cc, MU_MESSAGE_SECURITY_MODE_SIGN_AND_ENCRYPT, s2c,
                             mock->last_write, mock->last_write_len, &rbody, &rblen, &si));
-    TEST_ASSERT_EQUAL(expect_type, parse_decoded(rbody, rblen, resp));
+    opcua_uint32_t type = parse_decoded(rbody, rblen, resp);
+    TEST_ASSERT_EQUAL(expect_type, type);
 }
 
-void test_secure_handshake_read(void) {
+static void run_handshake_for_policy(mu_security_policy_id_t policy_id) {
     mock_t mock; memset(&mock, 0, sizeof(mock));
 
-    /* Two host crypto identities: one for the server, one for this test client. */
     static mu_crypto_adapter_t server_crypto, client_crypto;
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_host_crypto_adapter_init(&server_crypto));
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_host_crypto_adapter_init(&client_crypto));
@@ -116,7 +110,6 @@ void test_secure_handshake_read(void) {
     const opcua_byte_t *client_cert = NULL; size_t client_cert_len = 0;
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, client_crypto.get_own_certificate(client_crypto.context, &client_cert, &client_cert_len));
 
-    /* Address space: Objects(85) Organizes MyVar1(1000, Int32=42). */
     static const mu_reference_t var_refs[] = {
         { { 0, MU_NODEID_NUMERIC, { 35 } }, { 0, MU_NODEID_NUMERIC, { 85 } }, false }
     };
@@ -148,7 +141,7 @@ void test_secure_handshake_read(void) {
     { mu_binary_writer_t hs; mu_binary_writer_init(&hs, tmp, sizeof(tmp)); hs.position = 4; mu_binary_write_uint32(&hs, (opcua_uint32_t)w.position); }
     enqueue(&mock, tmp, w.position);
 
-    /* OPN: OpenSecureChannelRequest, Basic256Sha256 / SignAndEncrypt, wrapped asymmetrically. */
+    /* OPN: OpenSecureChannelRequest */
     mu_binary_writer_init(&w, tmp, sizeof(tmp));
     { mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_OPENSECURECHANNELREQUEST}}; mu_binary_write_nodeid(&w, &t); }
     write_request_header(&w, 0, 1);
@@ -159,11 +152,10 @@ void test_secure_handshake_read(void) {
     mu_binary_write_uint32(&w, 3600000);    /* RequestedLifetime */
     clen = 0;
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_asym_chunk_wrap(&client_crypto, MU_SECURITY_POLICY_BASIC256SHA256_ID, 0, 1, 1,
+        mu_asym_chunk_wrap(&client_crypto, policy_id, 0, 1, 1,
                            server_cert, server_cert_len, tmp, w.position, chunk, sizeof(chunk), &clen));
     enqueue(&mock, chunk, clen);
 
-    /* ---- Configure the secured server ---- */
     mu_server_config_t config; memset(&config, 0, sizeof(config));
     config.endpoint_url = "opc.tcp://host:4840";
     config.application_uri = "urn:test"; config.product_uri = "urn:test"; config.application_name = "test";
@@ -191,14 +183,13 @@ void test_secure_handshake_read(void) {
     mu_server_poll(server); /* OPN -> secured OpenSecureChannelResponse */
     TEST_ASSERT_EQUAL_MEMORY("OPNF", mock.last_write, 4);
 
-    /* Unwrap the OPN response with the client key; extract token + serverNonce. */
     opcua_byte_t opn_body[8192]; size_t opn_body_len = 0; mu_asym_chunk_info_t ai; memset(&ai, 0, sizeof(ai));
     opcua_byte_t scratch[6144];
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
         mu_asym_chunk_unwrap(&client_crypto, mock.last_write, mock.last_write_len,
                              opn_body, sizeof(opn_body), &opn_body_len,
                              scratch, sizeof(scratch), &ai));
-    TEST_ASSERT_EQUAL(MU_SECURITY_POLICY_BASIC256SHA256_ID, ai.policy);
+    TEST_ASSERT_EQUAL(policy_id, ai.policy);
 
     mu_binary_reader_t br;
     TEST_ASSERT_EQUAL(MU_ID_OPENSECURECHANNELRESPONSE, parse_decoded(opn_body, opn_body_len, &br));
@@ -211,12 +202,13 @@ void test_secure_handshake_read(void) {
     mu_bytestring_t server_nonce; mu_binary_read_bytestring(&br, &server_nonce);
     TEST_ASSERT_EQUAL(32, server_nonce.length);
 
-    /* Derive the two key sets (client perspective). */
-    mu_sym_keys_t c2s, s2c;  /* client->server (we send), server->client (we receive) */
+    mu_sym_keys_t c2s, s2c;
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_sym_keys_derive(&client_crypto, MU_SECURITY_POLICY_BASIC256SHA256_ID, server_nonce.data, 32, client_nonce, 32, &c2s));
+        mu_sym_keys_derive(&client_crypto, policy_id, server_nonce.data, 32, client_nonce, 32, &c2s));
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_sym_keys_derive(&client_crypto, MU_SECURITY_POLICY_BASIC256SHA256_ID, client_nonce, 32, server_nonce.data, 32, &s2c));
+        mu_sym_keys_derive(&client_crypto, policy_id, client_nonce, 32, server_nonce.data, 32, &s2c));
+
+
 
     mu_binary_reader_t resp;
 
@@ -227,26 +219,25 @@ void test_secure_handshake_read(void) {
     secure_call(&mock, server, &client_crypto, &c2s, &s2c, scid, token_id, 2, tmp, w.position,
                 MU_ID_GETENDPOINTSRESPONSE, &resp);
 
-    /* CreateSession with a full ClientDescription + ClientNonce + ClientCertificate,
-       so the server computes a real ServerSignature over (ClientCert || ClientNonce). */
+    /* CreateSession */
     mu_binary_writer_init(&w, tmp, sizeof(tmp));
     { mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_CREATESESSIONREQUEST}}; mu_binary_write_nodeid(&w, &t); }
     write_request_header(&w, 0, 3);
     { mu_string_t ns = {-1, NULL};
-      mu_binary_write_string(&w, &ns);            /* ClientDescription.applicationUri */
-      mu_binary_write_string(&w, &ns);            /* productUri */
-      mu_binary_write_byte(&w, 0x00);             /* applicationName LocalizedText: no fields */
-      mu_binary_write_uint32(&w, 1);              /* applicationType Client */
-      mu_binary_write_string(&w, &ns);            /* gatewayServerUri */
-      mu_binary_write_string(&w, &ns);            /* discoveryProfileUri */
-      mu_binary_write_int32(&w, 0);               /* discoveryUrls[] */
-      mu_binary_write_string(&w, &ns);            /* ServerUri */
-      mu_binary_write_string(&w, &ns);            /* EndpointUrl */
-      mu_binary_write_string(&w, &ns);            /* SessionName */
-      mu_bytestring_t cn = {32, client_nonce}; mu_binary_write_bytestring(&w, &cn);             /* ClientNonce */
-      mu_bytestring_t cc = {(opcua_int32_t)client_cert_len, client_cert}; mu_binary_write_bytestring(&w, &cc); /* ClientCertificate */
-      mu_binary_write_double(&w, 60000.0);        /* RequestedSessionTimeout */
-      mu_binary_write_uint32(&w, 0); }            /* MaxResponseMessageSize */
+      mu_binary_write_string(&w, &ns);
+      mu_binary_write_string(&w, &ns);
+      mu_binary_write_byte(&w, 0x00);
+      mu_binary_write_uint32(&w, 1);
+      mu_binary_write_string(&w, &ns);
+      mu_binary_write_string(&w, &ns);
+      mu_binary_write_int32(&w, 0);
+      mu_binary_write_string(&w, &ns);
+      mu_binary_write_string(&w, &ns);
+      mu_binary_write_string(&w, &ns);
+      mu_bytestring_t cn = {32, client_nonce}; mu_binary_write_bytestring(&w, &cn);
+      mu_bytestring_t cc = {(opcua_int32_t)client_cert_len, client_cert}; mu_binary_write_bytestring(&w, &cc);
+      mu_binary_write_double(&w, 60000.0);
+      mu_binary_write_uint32(&w, 0); }
     secure_call(&mock, server, &client_crypto, &c2s, &s2c, scid, token_id, 3, tmp, w.position,
                 MU_ID_CREATESESSIONRESPONSE, &resp);
 
@@ -261,7 +252,7 @@ void test_secure_handshake_read(void) {
     secure_call(&mock, server, &client_crypto, &c2s, &s2c, scid, token_id, 4, tmp, w.position,
                 MU_ID_ACTIVATESESSIONRESPONSE, &resp);
 
-    /* Read MyVar1 Value -> 42, proving the full secured request/response path. */
+    /* Read MyVar1 Value -> 42 */
     mu_binary_writer_init(&w, tmp, sizeof(tmp));
     { mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_READREQUEST}}; mu_binary_write_nodeid(&w, &t); }
     write_request_header(&w, 12345, 5);
@@ -284,13 +275,22 @@ void test_secure_handshake_read(void) {
     mu_host_crypto_adapter_cleanup(&client_crypto);
 }
 
+void test_secure_handshake_aes128_oaep(void) {
+    run_handshake_for_policy(MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID);
+}
+
+void test_secure_handshake_aes256_pss(void) {
+    run_handshake_for_policy(MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID);
+}
+
 int main(void) {
     UNITY_BEGIN();
-    RUN_TEST(test_secure_handshake_read);
+    RUN_TEST(test_secure_handshake_aes128_oaep);
+    RUN_TEST(test_secure_handshake_aes256_pss);
     return UNITY_END();
 }
 
-#else /* !MICRO_OPCUA_HAVE_OPENSSL */
+#else
 void setUp(void) {}
 void tearDown(void) {}
 void test_secure_handshake_skipped(void) { TEST_IGNORE_MESSAGE("OpenSSL not available"); }

@@ -86,13 +86,13 @@
 
 ### Tests for User Story 3
 
-- [ ] T019 [P] [US3] Add unit test validating policy match for AES-128 and AES-256 secure channel setup (citing OPC-10000-7 §6.2) in `tests/unit/test_security_policy_selection.c`
-- [ ] T020 [P] [US3] Add integration test verifying secure channel creation with modern policies (citing OPC-10000-7 §6.2) in `tests/integration/test_secure_handshake_modern.c`
+- [x] T019 [P] [US3] Add unit test validating policy match for AES-128 and AES-256 secure channel setup (citing OPC-10000-7 §6.2) in `tests/unit/test_security_policy_selection.c`
+- [x] T020 [P] [US3] Add integration test verifying secure channel creation with modern policies (citing OPC-10000-7 §6.2) in `tests/integration/test_secure_handshake_modern.c`
 
 ### Implementation for User Story 3
 
-- [ ] T021 [US3] Register security policies `Aes128_Sha256_RsaOaep` and `Aes256_Sha256_RsaPss` (citing OPC-10000-7 §6.2) in `src/security/security_policy.c`
-- [ ] T022 [US3] Measure size impact of new policies in `specs/009-core-feature-expansion/plan.md`
+- [x] T021 [US3] Register security policies `Aes128_Sha256_RsaOaep` and `Aes256_Sha256_RsaPss` (citing OPC-10000-7 §6.2) in `src/security/security_policy.c`
+- [x] T022 [US3] Measure size impact of new policies in `specs/009-core-feature-expansion/plan.md`
 
 **Checkpoint**: User Story 3 works independently.
 
@@ -106,14 +106,14 @@
 
 ### Tests for User Story 4
 
-- [ ] T023 [P] [US4] Add unit test for `CertificateIdentityToken` decoder (citing OPC-10000-6 §7.38.3) in `tests/unit/test_cert_token_decoder.c`
-- [ ] T024 [P] [US4] Add integration test for certificate-based user authentication (citing OPC-10000-4 §7.36.4) in `tests/integration/test_user_auth_certificate.c`
+- [x] T023 [P] [US4] Add unit test for `CertificateIdentityToken` decoder (citing OPC-10000-6 §7.38.3) in `tests/unit/test_cert_token_decoder.c`
+- [x] T024 [P] [US4] Add integration test for certificate-based user authentication (citing OPC-10000-4 §7.36.4) in `tests/integration/test_user_auth_certificate.c`
 
 ### Implementation for User Story 4
 
-- [ ] T025 [P] [US4] Implement binary decoder for `CertificateIdentityToken` (citing OPC-10000-6 §7.38.3) in `src/encoding/binary_reader.c`
-- [ ] T026 [US4] Verify client certificate signature in `ActivateSession` (citing OPC-10000-4 §7.36.4) in `src/core/service_dispatch.c`
-- [ ] T027 [US4] Measure size impact of certificate user auth in `specs/009-core-feature-expansion/plan.md`
+- [x] T025 [P] [US4] Implement binary decoder for `CertificateIdentityToken` (citing OPC-10000-6 §7.38.3) in `src/encoding/binary_reader.c`
+- [x] T026 [US4] Verify client certificate signature in `ActivateSession` (citing OPC-10000-4 §7.36.4) in `src/core/service_dispatch.c`
+- [x] T027 [US4] Measure size impact of certificate user auth in `specs/009-core-feature-expansion/plan.md`
 
 **Checkpoint**: User Story 4 works independently.
 
@@ -127,14 +127,14 @@
 
 ### Tests for User Story 5
 
-- [ ] T028 [P] [US5] Add unit test for event notification payload construction and serializing (citing OPC-10000-4 §5.12.1) in `tests/unit/test_event_serializer.c`
-- [ ] T029 [P] [US5] Add integration test for Alarm event generation and delivery (citing OPC-10000-4 §5.12.1 and OPC-10000-9) in `tests/integration/test_event_notifications.c`
+- [x] T028 [P] [US5] Add unit test for event notification payload construction and serializing (citing OPC-10000-4 §5.12.1) in `tests/unit/test_event_serializer.c`
+- [x] T029 [P] [US5] Add integration test for Alarm event generation and delivery (citing OPC-10000-4 §5.12.1 and OPC-10000-9) in `tests/integration/test_event_notifications.c`
 
 ### Implementation for User Story 5
 
-- [ ] T030 [P] [US5] Implement event queue buffer management (citing OPC-10000-4 §5.12.1) in `src/services/subscription.c`
-- [ ] T031 [US5] Generate and serialize alarm events during subscription polling (citing OPC-10000-4 §5.12.1 and OPC-10000-9) in `src/services/subscription.c`
-- [ ] T032 [US5] Measure size impact of event notification engine in `specs/009-core-feature-expansion/plan.md`
+- [x] T030 [P] [US5] Implement event queue buffer management (citing OPC-10000-4 §5.12.1) in `src/services/subscription.c`
+- [x] T031 [US5] Generate and serialize alarm events during subscription polling (citing OPC-10000-4 §5.12.1 and OPC-10000-9) in `src/services/subscription.c`
+- [x] T032 [US5] Measure size impact of event notification engine in `specs/009-core-feature-expansion/plan.md`
 
 **Checkpoint**: User Story 5 works independently.
 
@@ -144,11 +144,11 @@
 
 **Purpose**: Verification and polish before feature completion.
 
-- [ ] T033 Run all unit and integration tests in `Makefile`
-- [ ] T034 Run AddressSanitizer and UndefinedBehaviorSanitizer builds in `Makefile`
-- [ ] T035 Run formatting with clang-format
-- [ ] T036 Measure flash/RAM size impact and compare with plan.md budget
-- [ ] T037 Complete documentation of traceability mappings in `docs/traceability/009-core-feature-expansion.md`
+- [x] T033 Run all unit and integration tests in `Makefile`
+- [x] T034 Run AddressSanitizer and UndefinedBehaviorSanitizer builds in `Makefile`
+- [x] T035 Run formatting with clang-format
+- [x] T036 Measure flash/RAM size impact and compare with plan.md budget
+- [x] T037 Complete documentation of traceability mappings in `docs/traceability/009-core-feature-expansion.md`
 
 ---
 

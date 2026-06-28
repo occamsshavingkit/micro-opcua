@@ -19,7 +19,9 @@ opcua_statuscode_t mu_certificate_validate(const mu_crypto_adapter_t *crypto,
     if (policy == MU_SECURITY_POLICY_NONE_ID) {
         return MU_STATUS_GOOD;
     }
-    if (policy != MU_SECURITY_POLICY_BASIC256SHA256_ID) {
+    if (policy != MU_SECURITY_POLICY_BASIC256SHA256_ID &&
+        policy != MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID &&
+        policy != MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID) {
         return MU_STATUS_BAD_SECURITYPOLICYREJECTED;
     }
     if (!crypto || !crypto->get_certificate_key_bits) {

@@ -59,4 +59,19 @@ target_link_libraries(test_write_service PRIVATE micro_opcua micro_opcua_test_su
 target_include_directories(test_write_service PRIVATE ${CMAKE_SOURCE_DIR}/src)
 add_test(NAME test_write_service COMMAND test_write_service)
 
+add_executable(test_secure_handshake_modern test_secure_handshake_modern.c)
+target_link_libraries(test_secure_handshake_modern PRIVATE micro_opcua micro_opcua_test_support unity)
+target_include_directories(test_secure_handshake_modern PRIVATE ${CMAKE_SOURCE_DIR}/src)
+add_test(NAME test_secure_handshake_modern COMMAND test_secure_handshake_modern)
+
+add_executable(test_user_auth_certificate test_user_auth_certificate.c)
+target_link_libraries(test_user_auth_certificate PRIVATE micro_opcua micro_opcua_test_support unity)
+target_include_directories(test_user_auth_certificate PRIVATE ${CMAKE_SOURCE_DIR}/src)
+add_test(NAME test_user_auth_certificate COMMAND test_user_auth_certificate)
+
+add_executable(test_event_notifications test_event_notifications.c)
+target_link_libraries(test_event_notifications PRIVATE micro_opcua micro_opcua_test_support unity)
+target_include_directories(test_event_notifications PRIVATE ${CMAKE_SOURCE_DIR}/src)
+add_test(NAME test_event_notifications COMMAND test_event_notifications)
+
 

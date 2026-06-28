@@ -95,6 +95,13 @@ void mu_server_close(mu_server_t *server);
  */
 opcua_statuscode_t mu_server_config_validate(const mu_server_config_t *config);
 
+#ifdef MICRO_OPCUA_EVENTS
+/*
+ * Trigger an Event to be published to all subscriptions that monitor events.
+ */
+opcua_statuscode_t mu_server_trigger_event(mu_server_t *server, const mu_event_notification_t *event);
+#endif
+
 #ifdef __cplusplus
 }
 #endif
