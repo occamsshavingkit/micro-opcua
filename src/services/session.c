@@ -4,8 +4,10 @@
 #include <string.h>
 
 /* IEEE-754 bit patterns of the SessionTimeout bounds (ms). For positive doubles
-   the unsigned bit pattern is monotonic in value, so we clamp by integer compare
-   and never touch the (absent) FPU. */
+   the unsigned bit pattern is monotonic in value, so we clamp by integer compare.
+   To avoid bringing in FPU operations or soft-float emulation on the Cortex-M0+
+   target, the double bits are converted to milliseconds using integer-only shifts
+   and bitmasks. */
 #define MU_SESSION_TIMEOUT_MIN_BITS 0x40c3880000000000ULL /* 10000.0   */
 #define MU_SESSION_TIMEOUT_MAX_BITS 0x414b774000000000ULL /* 3600000.0 */
 #define MU_DOUBLE_SIGN_BIT          0x8000000000000000ULL
@@ -78,9 +80,15 @@ opcua_statuscode_t mu_session_create(mu_session_t *session,
     session->auth_token = 12345; /* Mock token */
 
     opcua_uint64_t revised = clamp_timeout_bits(requested_timeout_bits);
-    double d;
-    memcpy(&d, &revised, sizeof(d));
-    session->revised_session_timeout_ms = (opcua_uint32_t)d;
+    
+    /* Convert IEEE-754 double bits to uint32 milliseconds using integer-only logic
+       to avoid FPU/soft-float calls on Cortex-M0+ (normalized positive doubles only). */
+    opcua_uint32_t exponent_bits = (opcua_uint32_t)((revised >> 52) & 0x7ff);
+    opcua_int32_t exp = (opcua_int32_t)exponent_bits - 1023;
+    opcua_uint64_t fraction_bits = revised & 0xfffffffffffffULL;
+    opcua_uint64_t mantissa = (1ULL << 52) | fraction_bits;
+    session->revised_session_timeout_ms = (opcua_uint32_t)(mantissa >> (52 - exp));
+
     session->state = MU_SESSION_STATE_CREATED;
 
     *revised_timeout_bits = revised;

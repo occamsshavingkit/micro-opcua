@@ -16,9 +16,9 @@ typedef struct {
     mu_session_state_t state;
     opcua_uint32_t session_id;
     opcua_uint32_t auth_token;
-    /* RevisedSessionTimeout as the raw IEEE-754 bits of the Duration (ms). Kept as
-       bits so the value is clamped and echoed with no floating-point math (the
-       Cortex-M0+ target has no FPU). */
+    /* RevisedSessionTimeout in milliseconds, stored as a 4-byte integer to optimize
+       RAM storage (packed). Stored and manipulated using integer math only to avoid
+       FPU or soft-float emulation on the Cortex-M0+ target. */
     opcua_uint32_t revised_session_timeout_ms;
 } mu_session_t;
 
@@ -33,7 +33,8 @@ mu_session_t *mu_session_find_free(mu_session_t *sessions,
 
 /* Create the (single) session. The requested/revised SessionTimeout are passed as
    the raw IEEE-754 bits of the wire Duration; the value is clamped to
-   [10000, 3600000] ms via integer bit comparison (valid for positive doubles). */
+   [10000, 3600000] ms via integer bit comparison and stored internally as milliseconds
+   without floating-point math (valid for positive doubles). */
 opcua_statuscode_t mu_session_create(mu_session_t *session,
                                      opcua_uint64_t requested_timeout_bits,
                                      opcua_uint64_t *revised_timeout_bits,
