@@ -1026,25 +1026,31 @@ feature toggles**. Always pass `MU_SERVER_STORAGE_BYTES` as the storage size to
 #endif
 
 #ifdef MICRO_OPCUA_SUBSCRIPTIONS
-#define MU_SERVER_STORAGE_BYTES (3072 + MU_SERVER_SECURITY_STORAGE_BYTES)
+#define MU_SERVER_STORAGE_BYTES \
+    (3072 + MU_SUBSCRIPTIONS_STANDARD_STORAGE_BYTES + \
+     MU_SERVER_SECURITY_STORAGE_BYTES + MU_ADDRESS_SPACE_INDEX_STORAGE_BYTES)
 #else
-#define MU_SERVER_STORAGE_BYTES (1024 + MU_SERVER_SECURITY_STORAGE_BYTES)
+#define MU_SERVER_STORAGE_BYTES \
+    (1024 + MU_SERVER_SECURITY_STORAGE_BYTES + MU_ADDRESS_SPACE_INDEX_STORAGE_BYTES)
 #endif
 ```
 
 | Macro | Definition | Notes |
 |-------|------------|-------|
 | `MU_SERVER_SECURITY_STORAGE_BYTES` | `MU_SECURE_SCRATCH_SIZE + 2*MU_CIPHER_CTX_SIZE` when `MICRO_OPCUA_SECURITY`, else `0` | Secure scratch + two per-direction prepared cipher contexts. With defaults: `6144 + 2*512 = 7168`. |
-| `MU_SERVER_STORAGE_BYTES` | `(3072 or 1024) + MU_SERVER_SECURITY_STORAGE_BYTES` | Base is `3072` with subscriptions (Micro profile), else `1024` (Nano). The subscription engine adds fixed-size Subscription/MonitoredItem/parked-Publish arrays to `struct mu_server`. |
+| `MU_ADDRESS_SPACE_INDEX_STORAGE_BYTES` | `MU_MAX_ADDRESS_SPACE_NODES * 2 + 128` | Caller-owned lookup-index storage; default `256` B. |
+| `MU_SUBSCRIPTIONS_STANDARD_STORAGE_BYTES` | Standard DataChange storage when `MICRO_OPCUA_SUBSCRIPTIONS_STANDARD`, else `0` | Covers the Embedded 2017 monitored-item queues and trigger links. Default Embedded 2017 capacity contributes `35,200` B. |
+| `MU_SERVER_STORAGE_BYTES` | `(3072 or 1024) + standard-subscription storage + security storage + address-space-index storage` | Base is `3072` with subscriptions (Micro profile), else `1024` (Nano). The subscription engine adds fixed-size Subscription/MonitoredItem/parked-Publish arrays to `struct mu_server`. |
 
 **Worked totals (with default knob values):**
 
 | `MICRO_OPCUA_SUBSCRIPTIONS` | `MICRO_OPCUA_SECURITY` | `MU_SERVER_STORAGE_BYTES` |
 |:---:|:---:|---:|
-| off | off | `1024` |
-| off | on | `1024 + 7168 = 8192` |
-| on | off | `3072` |
-| on | on | `3072 + 7168 = 10240` |
+| off | off | `1024 + 256 = 1280` |
+| off | on | `1024 + 7168 + 256 = 8448` |
+| on | off | `3072 + 256 = 3328` |
+| on | on | `3072 + 7168 + 256 = 10496` |
+| on + Standard DataChange capacities | on | `3072 + 35200 + 7168 + 256 = 45696` |
 
 ---
 

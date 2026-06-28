@@ -1,0 +1,16 @@
+# CallRequest body after the service type NodeId.
+# RequestHeader(authToken ns=0;i=12345, requestHandle=2), one CallMethodRequest:
+# objectId Server(ns=0;i=2253), methodId Server_ResendData(ns=0;i=12873),
+# inputArguments[0] = UInt32 subscriptionId 1.
+01 00 39 30
+00 00 00 00 00 00 00 00
+02 00 00 00
+00 00 00 00
+ff ff ff ff
+00 00 00 00
+00 00 00
+01 00 00 00
+01 00 cd 08
+01 00 49 32
+01 00 00 00
+07 01 00 00 00

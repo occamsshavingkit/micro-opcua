@@ -18,12 +18,38 @@ option(MICRO_OPCUA_SERVICE_REGISTER_NODES "Build RegisterNodes/UnregisterNodes" 
 # ServerStatus, ServerCapabilities). Turn OFF if the integrator supplies a complete
 # address space and does not want the default nodes.
 option(MICRO_OPCUA_BASE_NODES "Build the standard Base Information node set" ON)
+option(MICRO_OPCUA_BASE_TYPE_SYSTEM "Expose the Base Info Type System node set used by the embedded profile" OFF)
 # Data-change subscriptions (the Micro profile: Subscription + MonitoredItem service
 # sets, the Embedded Data Change Subscription Server Facet). Turn OFF for a Nano-only
 # build to drop the subscription engine and its fixed-size state entirely.
 option(MICRO_OPCUA_SUBSCRIPTIONS "Build the data-change subscription engine (Micro profile)" ON)
+option(MICRO_OPCUA_SUBSCRIPTIONS_STANDARD "Build the Standard DataChange Subscription 2017 facet additions" OFF)
+option(MICRO_OPCUA_EMBEDDED_PROFILE "Apply Embedded 2017 profile gates and capacity minima" OFF)
 set(MICRO_OPCUA_SANITIZERS "" CACHE STRING "Comma-separated list of sanitizers (e.g. address,undefined)")
 set(MICRO_OPCUA_PLATFORM "host" CACHE STRING "Target platform (host, pico, arduino-skeleton)")
+
+if(MICRO_OPCUA_EMBEDDED_PROFILE)
+    set(MICRO_OPCUA_SECURITY ON CACHE BOOL "Build SecurityPolicy Basic256Sha256 support" FORCE)
+    set(MICRO_OPCUA_SUBSCRIPTIONS ON CACHE BOOL "Build the data-change subscription engine (Micro profile)" FORCE)
+    set(MICRO_OPCUA_SUBSCRIPTIONS_STANDARD ON CACHE BOOL "Build the Standard DataChange Subscription 2017 facet additions" FORCE)
+    set(MICRO_OPCUA_BASE_NODES ON CACHE BOOL "Build the standard Base Information node set" FORCE)
+    set(MICRO_OPCUA_BASE_TYPE_SYSTEM ON CACHE BOOL "Expose the Base Info Type System node set used by the embedded profile" FORCE)
+    if(NOT DEFINED MU_MAX_SUBSCRIPTIONS)
+        set(MU_MAX_SUBSCRIPTIONS 2 CACHE STRING "Embedded profile minimum subscriptions")
+    endif()
+    if(NOT DEFINED MU_MAX_MONITORED_ITEMS)
+        set(MU_MAX_MONITORED_ITEMS 100 CACHE STRING "Embedded profile minimum monitored items")
+    endif()
+    if(NOT DEFINED MU_MAX_PUBLISH_REQUESTS)
+        set(MU_MAX_PUBLISH_REQUESTS 5 CACHE STRING "Embedded profile minimum parallel Publish requests")
+    endif()
+    if(NOT DEFINED MU_MONITORED_QUEUE_DEPTH)
+        set(MU_MONITORED_QUEUE_DEPTH 2 CACHE STRING "Embedded profile minimum monitored-item queue depth")
+    endif()
+    if(NOT DEFINED MU_MAX_TRIGGER_LINKS)
+        set(MU_MAX_TRIGGER_LINKS 4 CACHE STRING "Embedded profile triggering link capacity")
+    endif()
+endif()
 
 # The Pico SDK installs its cross-compilation toolchain, so it must be imported
 # BEFORE project(). Requires PICO_SDK_PATH to point at a Pico SDK checkout.

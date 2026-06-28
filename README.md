@@ -23,9 +23,9 @@ OPC Foundation 2017 device server profiles, so you compile in only the surface y
 
 - **Zero heap.** No `malloc` anywhere in the protocol path. The application owns all
   memory: one server-storage block plus the RX/TX buffers. Footprint is deterministic.
-- **Tiny flash.** A complete Nano server is **16.2 KiB** of Arm Cortex-M0+ `-Os` core
-  `.text`; Micro (with subscriptions) is **22.2 KiB**; Embedded (with Basic256Sha256) is
-  **27.0 KiB**. Static `.bss` is ~156 B.
+- **Tiny flash.** A complete Nano server is **16.3 KiB** of Arm Cortex-M0+ `-Os` core
+  `.text`; Micro (with subscriptions) is **22.4 KiB**; full Embedded 2017 is
+  **34.8 KiB**. Static `.bss` is 0 B.
 - **Freestanding & portable.** Plain C11 core with no OS assumptions. Hardware and OS
   services are injected via small adapter structs in
   [`include/micro_opcua/platform.h`](include/micro_opcua/platform.h) — bring your own
@@ -48,14 +48,13 @@ Cortex-M0+ with `-Os`; full methodology and breakdown are in
 
 | Profile | Adds | Core `.text` (flash) | `MU_SERVER_STORAGE_BYTES` | Heap |
 |---|---|---|---|---|
-| **nano** | SecurityPolicy None; Discovery + Session + Read + View service sets + Base Information node set; no subscriptions | **16.3 KiB** | 1280 B | 0 |
-| **micro** | nano **+** data-change subscriptions (MonitoredItems / Publish) | **22.4 KiB** | 3328 B | 0 |
-| **embedded**¹ | micro **+** SecurityPolicy Basic256Sha256 (Sign / Sign&Encrypt) | **27.1 KiB** | 10496 B | 0 |
+| **nano** | SecurityPolicy None; Discovery + Session + Read + View service sets + Base Information node set; no subscriptions | **16.3 KiB** | 1,280 B | 0 |
+| **micro** | nano **+** data-change subscriptions (MonitoredItems / Publish) | **22.4 KiB** | 3,328 B | 0 |
+| **embedded**¹ | micro **+** Basic256Sha256, Standard DataChange 2017, Base Info Type System, GetMonitoredItems/ResendData | **34.8 KiB** | 45,696 B | 0 |
 
-¹ The **`embedded` profile is preliminary** — it is "Micro + Basic256Sha256 transport
-security," *not* a complete/CTT-certified OPC UA Embedded 2017 profile (full type-system
-exposure and the Standard DataChange Subscription facet are still pending). See
-[docs/conformance/status.md](docs/conformance/status.md).
+¹ The **`embedded` profile is profile-targeting**, not CTT-certified. It implements the
+Embedded 2017 profile surface selected in the conformance docs, but no formal compliance
+claim is made until the OPC UA CTT passes. See [docs/conformance/status.md](docs/conformance/status.md).
 
 In every profile, `.data`, `.bss`, and heap are **0** (the core has no mutable global
 state). RAM is caller-provided: the `MU_SERVER_STORAGE_BYTES` block above plus two
@@ -251,18 +250,16 @@ Set `-DMICRO_OPCUA_PLATFORM=pico` with `PICO_SDK_PATH` pointing at a Pico SDK ch
 
 - **Profile-targeting, not yet CTT-certified.** Surfaces are implemented and tested, but
   no formal compliance claim is made until the OPC UA CTT passes.
-- **The `embedded` profile is preliminary.** It is the Micro surface **+** SecurityPolicy
-  Basic256Sha256 — *not* a complete OPC UA Embedded 2017 Device Server profile: full
-  address-space/type-system exposure and the Standard DataChange Subscription facet are
-  not yet implemented, and it is not CTT-verified. Use it as "Micro with transport
-  security," not as a certified Embedded profile.
+- **The `embedded` profile targets Embedded 2017.** It includes Basic256Sha256,
+  Standard DataChange 2017, Base Info Type System exposure, and the required
+  GetMonitoredItems/ResendData methods, but it is not CTT-verified.
 - **Single TCP connection**, but it multiplexes up to `MU_MAX_SESSIONS` (default 2)
   concurrent sessions.
 - **Anonymous identity only** — username/x509 user tokens are not implemented.
 - **SecurityPolicy None is for trusted/isolated networks or testing only.** Use
   Basic256Sha256 (embedded profile + crypto adapter) for anything exposed.
-- **Read-only-ish surface:** no Write, Call (Methods), History, NodeManagement, or
-  event/aggregate subscriptions (above the Embedded Data Change facet).
+- **Narrow method surface:** no Write, History, NodeManagement, arbitrary user methods,
+  or event/aggregate subscriptions. Call is limited to GetMonitoredItems/ResendData.
 
 ---
 

@@ -41,11 +41,22 @@ Fixed capacities (integrator-overridable with `-D`): `MU_MAX_SUBSCRIPTIONS` (2),
 floating-point-free (Durations are converted to integer milliseconds at the dispatch
 boundary; no FPU is required on the target).
 
-## Out of scope (Embedded tier and above)
-TransferSubscriptions (§5.14.7), SetTriggering (§5.13.5), event subscriptions, and
-aggregate/percent-deadband filters belong to the Standard/Enhanced DataChange facets.
-Security policies on the Micro tier are not required (None is the baseline), though
-Basic256Sha256 is available.
+## Out of scope for Micro (Embedded tier and above)
+
+The following are not required by the Micro profile and remain disabled unless the
+Embedded profile gates are enabled:
+
+- Standard DataChange Subscription 2017 facet deltas: absolute-deadband filtering
+  (OPC-10000-4 §7.22.2), queue size 2 with overflow handling (§5.13.2, §7.20.1),
+  SetTriggering (§5.13.5), and raised capacities.
+- Method Call for `Server.GetMonitoredItems` and `Server.ResendData`
+  (OPC-10000-4 §5.12.2.2; OPC-10000-5 §9.1, §9.2).
+- Base Info Type System exposure.
+- Security policies beyond None. Basic256Sha256 is available in the embedded build.
+
+TransferSubscriptions (§5.14.7) belongs to the Client Redundancy Facet and is not part
+of the selected Micro or Embedded work. Percent deadband and aggregate filters belong to
+the Data Access Server Facet; unsupported filters return a cited filter StatusCode.
 
 **Concurrent ≥2 sessions** — implemented: the server multiplexes up to
 `MU_MAX_SESSIONS` (default 2) logical sessions over a single TCP connection

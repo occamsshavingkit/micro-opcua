@@ -146,9 +146,12 @@ enabled, so it automatically tracks the cost of subscriptions and security
 #endif
 
 #ifdef MICRO_OPCUA_SUBSCRIPTIONS
-#define MU_SERVER_STORAGE_BYTES (3072 + MU_SERVER_SECURITY_STORAGE_BYTES)
+#define MU_SERVER_STORAGE_BYTES \
+    (3072 + MU_SUBSCRIPTIONS_STANDARD_STORAGE_BYTES + \
+     MU_SERVER_SECURITY_STORAGE_BYTES + MU_ADDRESS_SPACE_INDEX_STORAGE_BYTES)
 #else
-#define MU_SERVER_STORAGE_BYTES (1024 + MU_SERVER_SECURITY_STORAGE_BYTES)
+#define MU_SERVER_STORAGE_BYTES \
+    (1024 + MU_SERVER_SECURITY_STORAGE_BYTES + MU_ADDRESS_SPACE_INDEX_STORAGE_BYTES)
 #endif
 ```
 
@@ -156,9 +159,9 @@ This yields the per-profile sizes you must budget for:
 
 | Profile | Options | `MU_SERVER_STORAGE_BYTES` |
 |---|---|---|
-| Nano | base | **1024** |
-| Micro | `+ MICRO_OPCUA_SUBSCRIPTIONS` | **3072** |
-| Embedded | `+ MICRO_OPCUA_SUBSCRIPTIONS + MICRO_OPCUA_SECURITY` | **10240** (3072 + 6144 secure scratch + 2×512 cipher ctx) |
+| Nano | base | **1,280** |
+| Micro | `+ MICRO_OPCUA_SUBSCRIPTIONS` | **3,328** |
+| Embedded 2017 | `+ MICRO_OPCUA_EMBEDDED_PROFILE`, 100 monitored items, queue depth 2 | **45,696** |
 
 > **Pitfall.** If you hardcode `static opcua_byte_t storage[1024]` and later turn
 > on security, `mu_server_init` returns `Bad_OutOfMemory` at runtime. The example
@@ -693,30 +696,32 @@ cmake -B build -DMICRO_OPCUA_SUBSCRIPTIONS=ON \
 
 ### 7.4 Flash / RAM budget
 
-Measured 2026-06-27 on ARM Cortex-M0+ (RP2040), `arm-none-eabi-gcc -Os
--ffunction-sections -fdata-sections`, core `.text` only (your board TCP/IP stack
-and crypto backend are extra). Full details in
+Measured 2026-06-28 on ARM Cortex-M0+ (RP2040), `arm-none-eabi-gcc -Os
+-mcpu=cortex-m0plus -mthumb -ffunction-sections -fdata-sections`; your board TCP/IP
+stack and crypto backend are extra. Reproduce with `scripts/measure_size.sh all`.
+Full details in
 [`docs/size/feature-size-ledger.md`](size/feature-size-ledger.md).
 
 | Profile | Core `.text` (flash) | Caller RAM = storage + 2×8 KiB buffers | Heap |
 |---|---|---|---|
-| **Nano** | **16.2 KiB** | `MU_SERVER_STORAGE_BYTES` 1024 B + 16 KiB ≈ **17.0 KiB** | **0** |
-| **Micro** | **22.2 KiB** | 3072 B + 16 KiB ≈ **18.8 KiB** | **0** |
-| **Embedded** | **27.0 KiB** | 10240 B + 16 KiB ≈ **26.0 KiB** | **0** |
+| **Nano** | **16.3 KiB** | `MU_SERVER_STORAGE_BYTES` 1,280 B + 16 KiB ≈ **17.3 KiB** | **0** |
+| **Micro** | **22.4 KiB** | 3,328 B + 16 KiB ≈ **19.3 KiB** | **0** |
+| **Embedded 2017** | **34.8 KiB** | 45,696 B + 16 KiB ≈ **60.6 KiB** | **0** |
 
 Additional notes for budgeting:
 
-- **`.bss`** is ~156 B (a lookup-index cache + OPN policy hand-off); **`.data`** is
-  0; **heap is 0** everywhere — the subscription engine is fixed-size, no `malloc`.
+- **`.bss`** and **`.data`** are 0; **heap is 0** everywhere — the subscription engine
+  is fixed-size, no `malloc`.
 - **Crypto backend flash** (mbedTLS/PSA) is *not* included above and is typically
   the largest single addition on an Embedded build — size it from your TLS library.
 - **Peak stack:** ~5.5 KiB on the plaintext (None) path; ~12 KiB on the secured
   path (response buffer + 32-deep dispatch arrays). **Provision ≥16 KiB of stack
   for a security build.** Secured-channel scratch was moved off the stack into the
-  caller storage block (hence Embedded's 10 KiB storage), capping secured-OPN stack
-  at ~7 KiB.
-- On a 264 KiB-RAM RP2040, a full Micro server leaves ~240 KiB for your
-  application and network stack.
+  caller storage block, capping secured-OPN stack at ~7 KiB. Full Embedded 2017
+  storage is larger because it also carries the 100-item Standard DataChange capacity.
+- On a 264 KiB-RAM RP2040, a full Embedded 2017 server leaves roughly 200 KiB for your
+  application and network stack after protocol storage and the two default transport
+  buffers.
 - If RAM/stack constrained: lower the `MU_MAX_*` subscription capacities, shrink
   `MU_RETRANSMIT_BYTES`, or reduce `MU_DISPATCH_MAX_READ_NODES` (and advertise a
   smaller `MaxNodesPerRead`).
@@ -801,7 +806,7 @@ opcua_statuscode_t mu_server_config_validate(const mu_server_config_t *config);
 
 | Constant | Value | Header |
 |---|---|---|
-| `MU_SERVER_STORAGE_BYTES` | 1024 / 3072 / 10240 (per profile) | `config.h` |
+| `MU_SERVER_STORAGE_BYTES` | 1280 / 3328 / 45696 (per profile) | `config.h` |
 | `MU_MIN_CHUNK_SIZE` | 8192 | `config.h` |
 | `MU_DEFAULT_MAX_CHUNK_COUNT` | 1 | `config.h` |
 | `MU_DEFAULT_MAX_MESSAGE_SIZE` | 8192 | `config.h` |

@@ -9,4 +9,4 @@ AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: Empty
 Language: Cpp
-Standard: c11
+Standard: Cpp11

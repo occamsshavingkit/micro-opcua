@@ -54,17 +54,18 @@ options on or off:
 
 | Profile | Command | SecurityPolicy | Subscriptions | Core flash (Cortex-M0+ `-Os`) |
 |---|---|---|---|---|
-| **nano** | `make nano` | None | off | ~16.2 KiB |
-| **micro** | `make micro` | None | **on** (data-change) | ~22.2 KiB |
-| **embedded** | `make embedded` | **Basic256Sha256** (sign/encrypt) | on | ~27.0 KiB |
+| **nano** | `make nano` | None | off | ~16.3 KiB |
+| **micro** | `make micro` | None | **on** (data-change) | ~22.4 KiB |
+| **embedded** | `make embedded` | **Basic256Sha256** (sign/encrypt) | Standard DataChange 2017 | ~34.8 KiB |
 
 - **nano** — the OPC UA *Nano Embedded Device 2017* surface: Discovery, Session,
   Read, and the View (Browse) service set over **SecurityPolicy None**. Smallest build.
 - **micro** — nano **plus** the data-change subscription engine (the Embedded Data
   Change Subscription Server Facet). Choose this if your client polls via subscriptions.
-- **embedded** — micro **plus** SecurityPolicy **Basic256Sha256** (signing and
-  encryption). The host build links OpenSSL to provide the crypto primitives; on an
-  MCU you would swap in mbedTLS/PSA.
+- **embedded** — micro **plus** SecurityPolicy **Basic256Sha256**, Standard DataChange
+  2017, Base Info Type System exposure, and the required GetMonitoredItems/ResendData
+  methods. The host build links OpenSSL to provide the crypto primitives; on an MCU you
+  would swap in mbedTLS/PSA.
 
 > **Note:** All RAM is caller-provided and **heap is zero** in every profile. The
 > figures above are flash (code size); see [docs/size/feature-size-ledger.md](size/feature-size-ledger.md)
