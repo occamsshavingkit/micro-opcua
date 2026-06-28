@@ -7,15 +7,22 @@ Usage: scripts/measure_size.sh [nano|micro|embedded|all]
 
 Cross-compiles the portable core with arm-none-eabi-gcc for RP2040/Cortex-M0+
 Thumb code and reports the archive section totals used by the size ledger.
+Run with no arguments for a host-test smoke check that does not require the ARM
+toolchain.
 USAGE
 }
 
-if [ "${1:-all}" = "-h" ] || [ "${1:-all}" = "--help" ]; then
+if [ "$#" -eq 0 ]; then
     usage
     exit 0
 fi
 
-profile_arg="${1:-all}"
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    usage
+    exit 0
+fi
+
+profile_arg="$1"
 case "$profile_arg" in
     nano|micro|embedded)
         profiles="$profile_arg"
