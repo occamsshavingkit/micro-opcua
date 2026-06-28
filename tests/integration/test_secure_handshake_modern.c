@@ -393,20 +393,7 @@ void test_secure_handshake_aes128_oaep(void) {
 }
 
 void test_secure_handshake_aes256_pss(void) {
-    /* Aes256_Sha256_RsaPss is registered but rejected until PSS/OAEP-SHA256 crypto adapters are implemented */
-    static mu_crypto_adapter_t client_crypto;
-    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_host_crypto_adapter_init(&client_crypto));
-    const opcua_byte_t *server_cert = NULL;
-    size_t server_cert_len = 0;
-    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-                      client_crypto.get_own_certificate(client_crypto.context, &server_cert, &server_cert_len));
-    opcua_byte_t tmp[512], chunk[512];
-    size_t clen = 0;
-    opcua_statuscode_t status =
-        mu_asym_chunk_wrap(&client_crypto, MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID, 0, 1, 1, server_cert,
-                           server_cert_len, tmp, sizeof(tmp), chunk, sizeof(chunk), &clen);
-    TEST_ASSERT_EQUAL(MU_STATUS_BAD_SECURITYPOLICYREJECTED, status);
-    mu_host_crypto_adapter_cleanup(&client_crypto);
+    run_handshake_for_policy(MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID);
 }
 
 int main(void) {

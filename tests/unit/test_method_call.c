@@ -444,6 +444,109 @@ void test_resend_data_reissues_current_values_on_next_publish(void) {
     parse_publish_value(io.last_write, io.last_write_len, 71u, sub->subscription_id, 9001u, 10);
 }
 
+#ifdef MICRO_OPCUA_CUSTOM_METHODS
+static size_t write_custom_call_request(opcua_byte_t *buffer, size_t capacity, opcua_uint32_t request_handle,
+                                       const mu_nodeid_t *object_id, const mu_nodeid_t *method_id,
+                                       const mu_variant_t *args, opcua_int32_t arg_count) {
+    mu_binary_writer_t writer;
+    mu_binary_writer_init(&writer, buffer, capacity);
+    write_request_header(&writer, AUTH_TOKEN, request_handle);
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, mu_binary_write_int32(&writer, 1));
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, mu_binary_write_nodeid(&writer, object_id));
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, mu_binary_write_nodeid(&writer, method_id));
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, mu_binary_write_int32(&writer, arg_count));
+    for (opcua_int32_t i = 0; i < arg_count; ++i) {
+        TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, mu_binary_write_variant(&writer, &args[i]));
+    }
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, writer.status);
+    return writer.position;
+}
+
+static opcua_statuscode_t custom_test_method_cb(
+    struct mu_server *server,
+    const mu_nodeid_t *object_id,
+    const mu_nodeid_t *method_id,
+    const mu_variant_t *input_args,
+    size_t input_args_count,
+    mu_variant_t *output_args,
+    size_t *output_args_count)
+{
+    (void)server;
+    (void)object_id;
+    (void)method_id;
+
+    TEST_ASSERT_EQUAL(1, input_args_count);
+    TEST_ASSERT_EQUAL(MU_TYPE_INT32, input_args[0].type);
+    TEST_ASSERT_EQUAL(42, input_args[0].value.i32);
+
+    output_args[0].type = MU_TYPE_INT32;
+    output_args[0].is_array = false;
+    output_args[0].value.i32 = 999;
+    *output_args_count = 1;
+
+    return MU_STATUS_GOOD;
+}
+
+void test_custom_method_callback_execution(void) {
+    mu_server_t server;
+    test_io_t io;
+    opcua_byte_t request_body[256];
+    opcua_byte_t response_body[1024];
+    size_t response_len = sizeof(response_body);
+    opcua_int32_t input_result_count;
+    opcua_int32_t output_arg_count;
+
+    prepare_server(&server, &io);
+
+    static const mu_node_t custom_nodes[] = {
+        {
+            {1u, MU_NODEID_NUMERIC, {8888u}},
+            MU_NODECLASS_OBJECT,
+            {10, (const opcua_byte_t *)"TestObject"},
+            {10, (const opcua_byte_t *)"TestObject"},
+            NULL, 0, NULL
+        },
+        {
+            {1u, MU_NODEID_NUMERIC, {9999u}},
+            MU_NODECLASS_METHOD,
+            {10, (const opcua_byte_t *)"TestMethod"},
+            {10, (const opcua_byte_t *)"TestMethod"},
+            NULL, 0, NULL
+        }
+    };
+    mu_address_space_t custom_as = {
+        custom_nodes,
+        sizeof(custom_nodes) / sizeof(custom_nodes[0])
+    };
+    server.config.address_space = &custom_as;
+
+    mu_nodeid_t method_id = {1u, MU_NODEID_NUMERIC, {9999u}};
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, mu_server_register_method_callback(&server, &method_id, custom_test_method_cb, NULL));
+
+    mu_nodeid_t object_id = {1u, MU_NODEID_NUMERIC, {8888u}};
+    mu_variant_t input_arg;
+    memset(&input_arg, 0, sizeof(input_arg));
+    input_arg.type = MU_TYPE_INT32;
+    input_arg.value.i32 = 42;
+
+    size_t request_len = write_custom_call_request(request_body, sizeof(request_body), 12u, &object_id, &method_id, &input_arg, 1);
+    dispatch_call(&server, request_body, request_len, response_body, &response_len);
+
+    mu_binary_reader_t reader;
+    mu_binary_reader_init(&reader, response_body, response_len);
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, read_call_result_prefix(&reader, 12u, &input_result_count, &output_arg_count));
+    TEST_ASSERT_EQUAL_INT32(0, input_result_count);
+    TEST_ASSERT_EQUAL_INT32(1, output_arg_count);
+
+    opcua_byte_t mask;
+    opcua_int32_t val;
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, mu_binary_read_byte(&reader, &mask));
+    TEST_ASSERT_EQUAL_UINT8(MU_TYPE_INT32, mask);
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, mu_binary_read_int32(&reader, &val));
+    TEST_ASSERT_EQUAL_INT32(999, val);
+}
+#endif
+
 #else
 
 void test_method_call_us3_is_gated_to_embedded_standard_builds(void) {
@@ -458,6 +561,9 @@ int main(void) {
     RUN_TEST(test_server_call_method_nodes_are_browsable);
     RUN_TEST(test_get_monitored_items_returns_server_and_client_handles);
     RUN_TEST(test_resend_data_reissues_current_values_on_next_publish);
+#ifdef MICRO_OPCUA_CUSTOM_METHODS
+    RUN_TEST(test_custom_method_callback_execution);
+#endif
 #else
     RUN_TEST(test_method_call_us3_is_gated_to_embedded_standard_builds);
 #endif

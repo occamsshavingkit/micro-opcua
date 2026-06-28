@@ -96,6 +96,18 @@ void mu_server_close(mu_server_t *server);
  */
 opcua_statuscode_t mu_server_config_validate(const mu_server_config_t *config);
 
+#ifdef MICRO_OPCUA_CUSTOM_METHODS
+/*
+ * Register a callback handler for a method node.
+ */
+opcua_statuscode_t mu_server_register_method_callback(
+    mu_server_t *server,
+    const mu_nodeid_t *method_id,
+    mu_method_callback_t callback,
+    void *context
+);
+#endif
+
 #ifdef MICRO_OPCUA_EVENTS
 /*
  * Trigger an Event to be published to all subscriptions that monitor events.

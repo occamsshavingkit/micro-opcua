@@ -34,5 +34,8 @@ option(MICRO_OPCUA_MULTIPLE_CONNECTIONS "Support concurrent client TCP connectio
 option(MICRO_OPCUA_EVENTS "Build event and Alarm & Condition support" ON)
 option(MICRO_OPCUA_HAVE_MBEDTLS "Build with Mbed TLS cryptographic platform adapter" OFF)
 option(MICRO_OPCUA_HAVE_WOLFSSL "Build with wolfSSL cryptographic platform adapter" OFF)
+option(MICRO_OPCUA_CUSTOM_METHODS "Build support for custom method calls" ON)
+option(MICRO_OPCUA_SERVER_DIAGNOSTICS "Build support for server diagnostics summary nodes" ON)
+option(MICRO_OPCUA_DYNAMIC_NODES "Build support for AddNodes/DeleteNodes dynamic node management" ON)
 
 

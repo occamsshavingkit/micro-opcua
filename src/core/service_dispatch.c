@@ -2268,28 +2268,67 @@ static opcua_statuscode_t write_single_call_method_result(mu_server_t *server, m
                                                           const mu_variant_t *args, opcua_int32_t arg_count) {
     opcua_statuscode_t input_result = MU_STATUS_BAD_INVALIDARGUMENT;
 
-    if (!nodeid_is_ns0_numeric(object_id, MU_ID_SERVER_OBJECT)) {
+    if (nodeid_is_ns0_numeric(method_id, MU_ID_SERVER_GETMONITOREDITEMS) ||
+        nodeid_is_ns0_numeric(method_id, MU_ID_SERVER_RESENDDATA)) {
+        if (!nodeid_is_ns0_numeric(object_id, MU_ID_SERVER_OBJECT)) {
+            return write_call_method_result(w, MU_STATUS_BAD_NODEIDINVALID, 0, NULL, 0, NULL);
+        }
+        if (arg_count <= 0) {
+            return write_call_method_result(w, MU_STATUS_BAD_ARGUMENTSMISSING, 0, NULL, 0, NULL);
+        }
+        if (arg_count > 1) {
+            return write_call_method_result(w, MU_STATUS_BAD_TOOMANYARGUMENTS, 0, NULL, 0, NULL);
+        }
+        if (args[0].is_array || args[0].type != MU_TYPE_UINT32) {
+            return write_call_method_result(w, MU_STATUS_BAD_INVALIDARGUMENT, 1, &input_result, 0, NULL);
+        }
+
+        if (nodeid_is_ns0_numeric(method_id, MU_ID_SERVER_GETMONITOREDITEMS)) {
+            return write_get_monitored_items_result(server, w, args[0].value.ui32);
+        }
+
+        return write_resend_data_result(server, w, args[0].value.ui32);
+    }
+
+#ifdef MICRO_OPCUA_CUSTOM_METHODS
+    /* Verify object exists in address space */
+    const mu_node_t *obj_node = mu_address_space_find_node(server->config.address_space, &server->user_address_space_index, object_id);
+    if (obj_node == NULL) {
         return write_call_method_result(w, MU_STATUS_BAD_NODEIDINVALID, 0, NULL, 0, NULL);
     }
-    if (!nodeid_is_ns0_numeric(method_id, MU_ID_SERVER_GETMONITOREDITEMS) &&
-        !nodeid_is_ns0_numeric(method_id, MU_ID_SERVER_RESENDDATA)) {
+
+    /* Verify method node exists in address space */
+    const mu_node_t *method_node = mu_address_space_find_node(server->config.address_space, &server->user_address_space_index, method_id);
+    if (method_node == NULL) {
         return write_call_method_result(w, MU_STATUS_BAD_METHODINVALID, 0, NULL, 0, NULL);
     }
-    if (arg_count <= 0) {
-        return write_call_method_result(w, MU_STATUS_BAD_ARGUMENTSMISSING, 0, NULL, 0, NULL);
-    }
-    if (arg_count > 1) {
-        return write_call_method_result(w, MU_STATUS_BAD_TOOMANYARGUMENTS, 0, NULL, 0, NULL);
-    }
-    if (args[0].is_array || args[0].type != MU_TYPE_UINT32) {
-        return write_call_method_result(w, MU_STATUS_BAD_INVALIDARGUMENT, 1, &input_result, 0, NULL);
+
+    /* Lookup registered callback */
+    mu_method_callback_t callback = NULL;
+    for (size_t i = 0; i < server->registered_method_count; ++i) {
+        if (mu_nodeid_equal(&server->registered_methods[i].method_id, method_id)) {
+            callback = server->registered_methods[i].callback;
+            break;
+        }
     }
 
-    if (nodeid_is_ns0_numeric(method_id, MU_ID_SERVER_GETMONITOREDITEMS)) {
-        return write_get_monitored_items_result(server, w, args[0].value.ui32);
+    if (callback == NULL) {
+        return write_call_method_result(w, MU_STATUS_BAD_METHODINVALID, 0, NULL, 0, NULL);
     }
 
-    return write_resend_data_result(server, w, args[0].value.ui32);
+    /* Invoke the custom callback */
+    mu_variant_t output_args[8];
+    size_t output_args_count = 8;
+    memset(output_args, 0, sizeof(output_args));
+    opcua_statuscode_t handler_status = callback(server, object_id, method_id, args, (size_t)arg_count, output_args, &output_args_count);
+    if (handler_status != MU_STATUS_GOOD) {
+        return write_call_method_result(w, handler_status, 0, NULL, 0, NULL);
+    }
+
+    return write_call_method_result(w, MU_STATUS_GOOD, 0, NULL, (opcua_int32_t)output_args_count, output_args);
+#else
+    return write_call_method_result(w, MU_STATUS_BAD_METHODINVALID, 0, NULL, 0, NULL);
+#endif
 }
 
 /* Call (OPC-10000-4 §5.12.2.2), limited to OPC-10000-5 Base Info methods

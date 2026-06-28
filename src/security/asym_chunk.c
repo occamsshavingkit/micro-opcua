@@ -108,7 +108,8 @@ opcua_statuscode_t mu_asym_chunk_wrap(const mu_crypto_adapter_t *crypto, mu_secu
     if (policy == MU_SECURITY_POLICY_NONE_ID) {
         return wrap_none(secure_channel_id, sequence_number, request_id, body, body_len, out, out_cap, out_len);
     }
-    if (policy != MU_SECURITY_POLICY_BASIC256SHA256_ID && policy != MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID)
+    if (policy != MU_SECURITY_POLICY_BASIC256SHA256_ID && policy != MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID &&
+        policy != MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID)
         return MU_STATUS_BAD_SECURITYPOLICYREJECTED;
     if (!crypto || !receiver_cert || receiver_cert_len == 0)
         return MU_STATUS_BAD_INTERNALERROR;
@@ -127,7 +128,9 @@ opcua_statuscode_t mu_asym_chunk_wrap(const mu_crypto_adapter_t *crypto, mu_secu
     s = key_bytes(crypto, receiver_cert, receiver_cert_len, &recv_key_bytes);
     if (s != MU_STATUS_GOOD)
         return s;
-    size_t plain_block = recv_key_bytes - MU_OAEP_SHA1_OVERHEAD;
+    size_t plain_block = (policy == MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID)
+                         ? (recv_key_bytes - 66)
+                         : (recv_key_bytes - MU_OAEP_SHA1_OVERHEAD);
     size_t cipher_block = recv_key_bytes;
 
     /* Receiver thumbprint for the header. */
@@ -199,7 +202,11 @@ opcua_statuscode_t mu_asym_chunk_wrap(const mu_crypto_adapter_t *crypto, mu_secu
     }
     memcpy(out + hdr_len, plain, presig_len);
     size_t produced_sig = sizeof(sig);
-    s = crypto->rsa_sha256_sign(crypto->context, out, hdr_len + presig_len, sig, &produced_sig);
+    if (policy == MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID) {
+        s = crypto->rsa_pss_sha256_sign(crypto->context, out, hdr_len + presig_len, sig, &produced_sig);
+    } else {
+        s = crypto->rsa_sha256_sign(crypto->context, out, hdr_len + presig_len, sig, &produced_sig);
+    }
     if (s != MU_STATUS_GOOD) {
         mu_secure_zero(sig, sizeof(sig));
         mu_secure_zero(out + hdr_len, presig_len);
@@ -215,13 +222,18 @@ opcua_statuscode_t mu_asym_chunk_wrap(const mu_crypto_adapter_t *crypto, mu_secu
     memcpy(plain + presig_len, sig, sig_len); /* signature is the tail of the plaintext */
     mu_secure_zero(sig, sizeof(sig));
     mu_secure_zero(out + hdr_len, presig_len);
-
+ 
     /* Encrypt the plaintext block-by-block to the receiver's public key. */
     size_t blocks = enc_len / plain_block;
     for (size_t i = 0; i < blocks; i++) {
         size_t out_block = cipher_block;
-        s = crypto->rsa_oaep_encrypt(crypto->context, receiver_cert, receiver_cert_len, plain + i * plain_block,
-                                     plain_block, out + hdr_len + i * cipher_block, &out_block);
+        if (policy == MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID) {
+            s = crypto->rsa_oaep_sha256_encrypt(crypto->context, receiver_cert, receiver_cert_len, plain + i * plain_block,
+                                         plain_block, out + hdr_len + i * cipher_block, &out_block);
+        } else {
+            s = crypto->rsa_oaep_encrypt(crypto->context, receiver_cert, receiver_cert_len, plain + i * plain_block,
+                                         plain_block, out + hdr_len + i * cipher_block, &out_block);
+        }
         if (s != MU_STATUS_GOOD) {
             mu_secure_zero(out + hdr_len, cipher_len);
             mu_secure_zero(plain, sizeof(plain));
@@ -294,7 +306,8 @@ opcua_statuscode_t mu_asym_chunk_unwrap(const mu_crypto_adapter_t *crypto, const
         return MU_STATUS_GOOD;
     }
     if (info->policy != MU_SECURITY_POLICY_BASIC256SHA256_ID &&
-        info->policy != MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID)
+        info->policy != MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID &&
+        info->policy != MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID)
         return MU_STATUS_BAD_SECURITYPOLICYREJECTED;
 
     /* Validate the sender certificate and that the chunk is addressed to us. */
@@ -334,8 +347,13 @@ opcua_statuscode_t mu_asym_chunk_unwrap(const mu_crypto_adapter_t *crypto, const
     size_t blocks = cipher_len / own_key_bytes;
     for (size_t i = 0; i < blocks; i++) {
         size_t out_block = MU_ASYM_MAX_PLAINTEXT - plain_len;
-        s = crypto->rsa_oaep_decrypt(crypto->context, chunk + hdr_len + i * own_key_bytes, own_key_bytes,
-                                     plain + plain_len, &out_block);
+        if (info->policy == MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID) {
+            s = crypto->rsa_oaep_sha256_decrypt(crypto->context, chunk + hdr_len + i * own_key_bytes, own_key_bytes,
+                                                plain + plain_len, &out_block);
+        } else {
+            s = crypto->rsa_oaep_decrypt(crypto->context, chunk + hdr_len + i * own_key_bytes, own_key_bytes,
+                                         plain + plain_len, &out_block);
+        }
         if (s != MU_STATUS_GOOD) {
             mu_secure_zero(plain, MU_ASYM_MAX_PLAINTEXT);
             return MU_STATUS_BAD_SECURITYCHECKSFAILED;
@@ -358,8 +376,13 @@ opcua_statuscode_t mu_asym_chunk_unwrap(const mu_crypto_adapter_t *crypto, const
     opcua_byte_t *verify_buf = scratch + MU_ASYM_MAX_PLAINTEXT;
     memcpy(verify_buf, chunk, hdr_len);
     memcpy(verify_buf + hdr_len, plain, signed_len);
-    s = crypto->rsa_sha256_verify(crypto->context, info->sender_cert, info->sender_cert_len, verify_buf,
-                                  hdr_len + signed_len, signature, sig_len);
+    if (info->policy == MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID) {
+        s = crypto->rsa_pss_sha256_verify(crypto->context, info->sender_cert, info->sender_cert_len, verify_buf,
+                                          hdr_len + signed_len, signature, sig_len);
+    } else {
+        s = crypto->rsa_sha256_verify(crypto->context, info->sender_cert, info->sender_cert_len, verify_buf,
+                                      hdr_len + signed_len, signature, sig_len);
+    }
     if (s != MU_STATUS_GOOD) {
         mu_secure_zero(verify_buf, MU_ASYM_SIGNED_INPUT_MAX);
         mu_secure_zero(plain, MU_ASYM_MAX_PLAINTEXT);

@@ -81,6 +81,18 @@ if(MICRO_OPCUA_EVENTS)
     target_compile_definitions(micro_opcua PUBLIC MICRO_OPCUA_EVENTS=1)
 endif()
 
+if(MICRO_OPCUA_CUSTOM_METHODS)
+    target_compile_definitions(micro_opcua PUBLIC MICRO_OPCUA_CUSTOM_METHODS=1)
+endif()
+
+if(MICRO_OPCUA_SERVER_DIAGNOSTICS)
+    target_compile_definitions(micro_opcua PUBLIC MICRO_OPCUA_SERVER_DIAGNOSTICS=1)
+endif()
+
+if(MICRO_OPCUA_DYNAMIC_NODES)
+    target_compile_definitions(micro_opcua PUBLIC MICRO_OPCUA_DYNAMIC_NODES=1)
+endif()
+
 
 foreach(MU_CAPACITY_DEFINE
         MU_MAX_SUBSCRIPTIONS

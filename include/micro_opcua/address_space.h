@@ -43,6 +43,19 @@ typedef struct {
     } data;
 } mu_value_source_t;
 
+struct mu_server;
+
+/* Method callback function signature (OPC-10000-4 §5.12.2) */
+typedef opcua_statuscode_t (*mu_method_callback_t)(
+    struct mu_server *server,
+    const mu_nodeid_t *object_id,
+    const mu_nodeid_t *method_id,
+    const mu_variant_t *input_args,
+    size_t input_args_count,
+    mu_variant_t *output_args,
+    size_t *output_args_count
+);
+
 typedef struct {
     mu_nodeid_t node_id;
     mu_node_class_t node_class;

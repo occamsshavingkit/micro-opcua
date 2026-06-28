@@ -209,6 +209,140 @@ static opcua_statuscode_t m_rsa_oaep_encrypt(void *context, const opcua_byte_t *
     return (ret == 0) ? MU_STATUS_GOOD : MU_STATUS_BAD_INTERNALERROR;
 }
 
+static opcua_statuscode_t m_rsa_pss_sha256_sign(void *context, const opcua_byte_t *data, size_t length,
+                                                opcua_byte_t *signature, size_t *signature_length) {
+    struct mbedtls_crypto_context *ctx = (struct mbedtls_crypto_context *)context;
+    if (mbedtls_pk_get_type(&ctx->pk) != MBEDTLS_PK_RSA)
+        return MU_STATUS_BAD_INTERNALERROR;
+    mbedtls_rsa_context *rsa = mbedtls_pk_rsa(ctx->pk);
+    mbedtls_rsa_set_padding(rsa, MBEDTLS_RSA_PKCS_V21, MBEDTLS_MD_SHA256);
+
+    opcua_byte_t hash[32];
+    int ret = mbedtls_sha256_ret(data, length, hash, 0);
+    if (ret != 0)
+        return MU_STATUS_BAD_INTERNALERROR;
+
+    mbedtls_entropy_context entropy;
+    mbedtls_ctr_drbg_context ctr_drbg;
+    mbedtls_entropy_init(&entropy);
+    mbedtls_ctr_drbg_init(&ctr_drbg);
+    ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char *)"pss", 3);
+    if (ret != 0) {
+        mbedtls_ctr_drbg_free(&ctr_drbg);
+        mbedtls_entropy_free(&entropy);
+        return MU_STATUS_BAD_INTERNALERROR;
+    }
+
+    ret = mbedtls_rsa_rsassa_pss_sign(rsa, mbedtls_ctr_drbg_random, &ctr_drbg, MBEDTLS_RSA_PRIVATE, MBEDTLS_MD_SHA256, sizeof(hash), hash, signature);
+    if (ret == 0) {
+        *signature_length = mbedtls_rsa_get_len(rsa);
+    }
+    mbedtls_ctr_drbg_free(&ctr_drbg);
+    mbedtls_entropy_free(&entropy);
+    return (ret == 0) ? MU_STATUS_GOOD : MU_STATUS_BAD_INTERNALERROR;
+}
+
+static opcua_statuscode_t m_rsa_pss_sha256_verify(void *context, const opcua_byte_t *certificate, size_t certificate_length,
+                                                  const opcua_byte_t *data, size_t data_length,
+                                                  const opcua_byte_t *signature, size_t signature_length) {
+    (void)context;
+    (void)signature_length;
+    mbedtls_x509_crt crt;
+    mbedtls_x509_crt_init(&crt);
+    int ret = mbedtls_x509_crt_parse_der(&crt, certificate, certificate_length);
+    if (ret != 0) {
+        mbedtls_x509_crt_free(&crt);
+        return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+    }
+
+    if (mbedtls_pk_get_type(&crt.pk) != MBEDTLS_PK_RSA) {
+        mbedtls_x509_crt_free(&crt);
+        return MU_STATUS_BAD_INTERNALERROR;
+    }
+    mbedtls_rsa_context *rsa = mbedtls_pk_rsa(crt.pk);
+    mbedtls_rsa_set_padding(rsa, MBEDTLS_RSA_PKCS_V21, MBEDTLS_MD_SHA256);
+
+    opcua_byte_t hash[32];
+    ret = mbedtls_sha256_ret(data, data_length, hash, 0);
+    if (ret != 0) {
+        mbedtls_x509_crt_free(&crt);
+        return MU_STATUS_BAD_INTERNALERROR;
+    }
+
+    ret = mbedtls_rsa_rsassa_pss_verify(rsa, mbedtls_ctr_drbg_random, NULL, MBEDTLS_RSA_PUBLIC, MBEDTLS_MD_SHA256, sizeof(hash), hash, signature);
+    mbedtls_x509_crt_free(&crt);
+    return (ret == 0) ? MU_STATUS_GOOD : MU_STATUS_BAD_SECURITYCHECKSFAILED;
+}
+
+static opcua_statuscode_t m_rsa_oaep_sha256_decrypt(void *context, const opcua_byte_t *input, size_t length,
+                                                    opcua_byte_t *output, size_t *output_length) {
+    (void)length;
+    struct mbedtls_crypto_context *ctx = (struct mbedtls_crypto_context *)context;
+    if (mbedtls_pk_get_type(&ctx->pk) != MBEDTLS_PK_RSA)
+        return MU_STATUS_BAD_INTERNALERROR;
+    mbedtls_rsa_context *rsa = mbedtls_pk_rsa(ctx->pk);
+    mbedtls_rsa_set_padding(rsa, MBEDTLS_RSA_PKCS_V21, MBEDTLS_MD_SHA256);
+
+    mbedtls_entropy_context entropy;
+    mbedtls_ctr_drbg_context ctr_drbg;
+    mbedtls_entropy_init(&entropy);
+    mbedtls_ctr_drbg_init(&ctr_drbg);
+    int ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char *)"oaep", 4);
+    if (ret != 0) {
+        mbedtls_ctr_drbg_free(&ctr_drbg);
+        mbedtls_entropy_free(&entropy);
+        return MU_STATUS_BAD_INTERNALERROR;
+    }
+
+    ret = mbedtls_rsa_rsaes_oaep_decrypt(rsa, mbedtls_ctr_drbg_random, &ctr_drbg, MBEDTLS_RSA_PRIVATE, NULL, 0,
+                                         output_length, input, output, *output_length);
+    mbedtls_ctr_drbg_free(&ctr_drbg);
+    mbedtls_entropy_free(&entropy);
+    return (ret == 0) ? MU_STATUS_GOOD : MU_STATUS_BAD_SECURITYCHECKSFAILED;
+}
+
+static opcua_statuscode_t m_rsa_oaep_sha256_encrypt(void *context, const opcua_byte_t *certificate, size_t certificate_length,
+                                                    const opcua_byte_t *input, size_t length, opcua_byte_t *output,
+                                                    size_t *output_length) {
+    (void)context;
+    mbedtls_x509_crt crt;
+    mbedtls_x509_crt_init(&crt);
+    int ret = mbedtls_x509_crt_parse_der(&crt, certificate, certificate_length);
+    if (ret != 0) {
+        mbedtls_x509_crt_free(&crt);
+        return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+    }
+
+    if (mbedtls_pk_get_type(&crt.pk) != MBEDTLS_PK_RSA) {
+        mbedtls_x509_crt_free(&crt);
+        return MU_STATUS_BAD_INTERNALERROR;
+    }
+    mbedtls_rsa_context *rsa = mbedtls_pk_rsa(crt.pk);
+    mbedtls_rsa_set_padding(rsa, MBEDTLS_RSA_PKCS_V21, MBEDTLS_MD_SHA256);
+
+    mbedtls_entropy_context entropy;
+    mbedtls_ctr_drbg_context ctr_drbg;
+    mbedtls_entropy_init(&entropy);
+    mbedtls_ctr_drbg_init(&ctr_drbg);
+    ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char *)"oaep", 4);
+    if (ret != 0) {
+        mbedtls_ctr_drbg_free(&ctr_drbg);
+        mbedtls_entropy_free(&entropy);
+        mbedtls_x509_crt_free(&crt);
+        return MU_STATUS_BAD_INTERNALERROR;
+    }
+
+    ret = mbedtls_rsa_rsaes_oaep_encrypt(rsa, mbedtls_ctr_drbg_random, &ctr_drbg, MBEDTLS_RSA_PUBLIC, NULL, 0,
+                                         length, input, output);
+    if (ret == 0) {
+        *output_length = mbedtls_rsa_get_len(rsa);
+    }
+    mbedtls_ctr_drbg_free(&ctr_drbg);
+    mbedtls_entropy_free(&entropy);
+    mbedtls_x509_crt_free(&crt);
+    return (ret == 0) ? MU_STATUS_GOOD : MU_STATUS_BAD_SECURITYCHECKSFAILED;
+}
+
 static opcua_statuscode_t m_get_own_certificate(void *context, const opcua_byte_t **certificate, size_t *length) {
     struct mbedtls_crypto_context *ctx = (struct mbedtls_crypto_context *)context;
     if (!ctx->cert_der)
@@ -277,6 +411,10 @@ opcua_statuscode_t mu_mbedtls_crypto_adapter_init(mu_crypto_adapter_t *adapter, 
     adapter->rsa_sha256_verify = m_rsa_sha256_verify;
     adapter->rsa_oaep_decrypt = m_rsa_oaep_decrypt;
     adapter->rsa_oaep_encrypt = m_rsa_oaep_encrypt;
+    adapter->rsa_pss_sha256_sign = m_rsa_pss_sha256_sign;
+    adapter->rsa_pss_sha256_verify = m_rsa_pss_sha256_verify;
+    adapter->rsa_oaep_sha256_decrypt = m_rsa_oaep_sha256_decrypt;
+    adapter->rsa_oaep_sha256_encrypt = m_rsa_oaep_sha256_encrypt;
     adapter->get_own_certificate = m_get_own_certificate;
     adapter->get_certificate_key_bits = m_get_certificate_key_bits;
     adapter->get_certificate_thumbprint = m_get_certificate_thumbprint;
