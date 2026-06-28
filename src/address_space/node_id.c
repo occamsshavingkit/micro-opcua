@@ -1,5 +1,6 @@
 /* src/address_space/node_id.c */
 #include "micro_opcua/address_space.h"
+#include "base_nodes.h"
 #include <string.h>
 
 #undef mu_address_space_find_node
@@ -149,6 +150,28 @@ opcua_boolean_t mu_nodeid_in_namespace(const mu_nodeid_t *node_id, opcua_uint16_
     return node_id->namespace_index == namespace_index;
 }
 
+static const mu_node_t *mu_address_space_find_node_binary_direct(const mu_address_space_t *address_space,
+                                                                 const mu_nodeid_t *node_id) {
+    size_t left = 0;
+    size_t right = address_space->node_count;
+
+    while (left < right) {
+        size_t mid = left + ((right - left) / 2u);
+        const mu_node_t *node = &address_space->nodes[mid];
+        int comparison = mu_nodeid_compare_direct(&node->node_id, node_id);
+
+        if (comparison < 0) {
+            left = mid + 1u;
+        } else if (comparison > 0) {
+            right = mid;
+        } else {
+            return node;
+        }
+    }
+
+    return NULL;
+}
+
 const mu_node_t *mu_address_space_find_node(const mu_address_space_t *address_space,
                                             mu_address_space_index_t *index,
                                             const mu_nodeid_t *node_id) {
@@ -157,6 +180,9 @@ const mu_node_t *mu_address_space_find_node(const mu_address_space_t *address_sp
     }
 
     if (index == NULL) {
+        if (address_space == mu_base_address_space()) {
+            return mu_address_space_find_node_binary_direct(address_space, node_id);
+        }
         return mu_address_space_find_node_linear(address_space, node_id);
     }
 
