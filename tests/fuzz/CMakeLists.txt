@@ -24,3 +24,13 @@ add_executable(fuzz_activate_session fuzz_activate_session.c)
 target_link_libraries(fuzz_activate_session PRIVATE micro_opcua)
 target_compile_options(fuzz_activate_session PRIVATE -fsanitize=fuzzer)
 target_link_options(fuzz_activate_session PRIVATE -fsanitize=fuzzer)
+
+add_executable(fuzz_subscription_filters fuzz_subscription_filters.c)
+target_link_libraries(fuzz_subscription_filters PRIVATE micro_opcua)
+target_compile_options(fuzz_subscription_filters PRIVATE -fsanitize=fuzzer)
+target_link_options(fuzz_subscription_filters PRIVATE -fsanitize=fuzzer)
+
+add_executable(fuzz_call fuzz_call.c)
+target_link_libraries(fuzz_call PRIVATE micro_opcua)
+target_compile_options(fuzz_call PRIVATE -fsanitize=fuzzer)
+target_link_options(fuzz_call PRIVATE -fsanitize=fuzzer)

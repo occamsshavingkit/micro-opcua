@@ -17,7 +17,7 @@ membership is pinned in [research.md](./research.md). Four slices, in priority o
 - **US2 (P2)** — the **Base Info Type System** CU: expose the namespace-0 DataType/ReferenceType/
   ObjectType/VariableType nodes the server uses, with HasSubtype and resolvable HasTypeDefinition
   (OPC-10000-5; OPC-10000-3), plus ServerProfileArray advertising the profile.
-- **US3 (P3)** — a minimal **Call** service (OPC-10000-4 §5.11) implementing the
+- **US3 (P3)** — a minimal **Call** service (OPC-10000-4 §5.12.2.2) implementing the
   **GetMonitoredItems** and **ResendData** Server methods (OPC-10000-5), required by the §6.6.17
   "2017" facet; all other methods rejected with cited StatusCodes.
 - **US4 (P4)** — build wiring, profile isolation, and conformance + size documentation at
@@ -39,7 +39,7 @@ preserves freestanding C11, no-heap, no-mutable-globals, bounded execution, and 
 **Performance Goals**: Bounded per-poll execution; no dynamic allocation; sampling/publish driven cooperatively by `mu_server_poll`  
 **Constraints**: Core flash ≤ 128 KiB (excl. board TCP/IP + crypto backend); RAM ≤ 32 KiB static + peak stack (excl. transport buffers) — *note: the mandated ≥ 100-item capacity raises caller-provided `struct mu_server` storage materially (see Size Budget)*; `.bss` = 0; no mutable globals; no mandatory heap  
 **Scale/Scope**: Single TCP connection multiplexing up to `MU_MAX_SESSIONS` (default 2) sessions; `embedded` raises `MU_MAX_MONITORED_ITEMS`≥100, `MU_MAX_SUBSCRIPTIONS`≥2, `MU_MAX_PUBLISH_REQUESTS`≥5, `MU_MONITORED_QUEUE_DEPTH`≥2  
-**OPC UA Normative References**: OPC-10000-4 §5.11 (Call), §5.13.2 (CreateMonitoredItems/MonitoringParameters), §5.13.5 (SetTriggering), §5.14.2/.5/.6 (Subscription minimums/Publish/Republish), §7.20 + §7.20.1 (NotificationMessage/overflow), §7.22.2 (DataChangeFilter/DeadbandType); OPC-10000-5 (standard NodeSet: type system, GetMonitoredItems/ResendData methods, Server object); OPC-10000-3 (address space model); OPC-10000-6 (UA Binary, UA-TCP, status-code encoding); OPC-10000-7 §6.6.69 (Embedded 2017 profile), §6.6.17 (Standard DataChange 2017 facet), §4.2 (CUs/Groups)  
+**OPC UA Normative References**: OPC-10000-4 §5.12.2.2 (Call), §5.13.2 (CreateMonitoredItems/MonitoringParameters), §5.13.5 (SetTriggering), §5.14.2/.5/.6 (Subscription minimums/Publish/Republish), §7.20 + §7.20.1 (NotificationMessage/overflow), §7.22.2 (DataChangeFilter/DeadbandType); OPC-10000-5 (standard NodeSet: type system, GetMonitoredItems/ResendData methods, Server object); OPC-10000-3 (address space model); OPC-10000-6 (UA Binary, UA-TCP, status-code encoding); OPC-10000-7 §6.6.69 (Embedded 2017 profile), §6.6.17 (Standard DataChange 2017 facet), §4.2 (CUs/Groups)
 **Target OPC UA Profile/Conformance Units**: Embedded 2017 UA Server Profile = Micro 2017 + Basic256Sha256 + Standard DataChange Subscription 2017 Server Facet + Base Info Type System (full membership: research.md)  
 **Conformance Status Target**: `profile-targeting` (CTT run is an external step)
 

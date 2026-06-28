@@ -46,6 +46,9 @@ endif()
 # this flag gates the node-table *content* so the standard node set is dropped.
 if(MICRO_OPCUA_BASE_NODES)
     target_compile_definitions(micro_opcua PUBLIC MICRO_OPCUA_BASE_NODES=1)
+    if(MICRO_OPCUA_BASE_TYPE_SYSTEM)
+        target_compile_definitions(micro_opcua PUBLIC MICRO_OPCUA_BASE_TYPE_SYSTEM=1)
+    endif()
 endif()
 
 # The data-change subscription engine (Micro profile). Source + dispatch handlers are
@@ -53,7 +56,21 @@ endif()
 if(MICRO_OPCUA_SUBSCRIPTIONS)
     target_sources(micro_opcua PRIVATE services/subscription.c)
     target_compile_definitions(micro_opcua PUBLIC MICRO_OPCUA_SUBSCRIPTIONS=1)
+    if(MICRO_OPCUA_SUBSCRIPTIONS_STANDARD)
+        target_compile_definitions(micro_opcua PUBLIC MICRO_OPCUA_SUBSCRIPTIONS_STANDARD=1)
+    endif()
 endif()
+
+foreach(MU_CAPACITY_DEFINE
+        MU_MAX_SUBSCRIPTIONS
+        MU_MAX_MONITORED_ITEMS
+        MU_MAX_PUBLISH_REQUESTS
+        MU_MONITORED_QUEUE_DEPTH
+        MU_MAX_TRIGGER_LINKS)
+    if(DEFINED ${MU_CAPACITY_DEFINE})
+        target_compile_definitions(micro_opcua PUBLIC ${MU_CAPACITY_DEFINE}=${${MU_CAPACITY_DEFINE}})
+    endif()
+endforeach()
 
 # SecurityPolicy Basic256Sha256: the asym/sym chunk crypto and key derivation.
 # Excluded entirely from a None-only build to keep the embedded footprint minimal.

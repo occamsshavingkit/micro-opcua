@@ -132,14 +132,13 @@ Publish re-reports current values; call an unknown method and confirm the cited 
 **Acceptance Scenarios**:
 
 1. **Given** a subscription with monitored items, **When** the client invokes GetMonitoredItems
-   for it via Call (OPC-10000-4 §5.11), **Then** the response returns matching serverHandles[]
+   for it via Call (OPC-10000-4 §5.12.2.2), **Then** the response returns matching serverHandles[]
    and clientHandles[].
 2. **Given** a subscription, **When** the client invokes ResendData for it, **Then** the next
    Publish for that subscription re-reports the current value of every monitored item.
 3. **Given** a Call to a method NodeId the server does not implement, **When** it is dispatched,
-   **Then** the server returns the cited StatusCode (e.g. `Bad_MethodInvalid` /
-   `Bad_NotImplemented`), and a Call with the wrong object/argument shape returns the cited
-   per-argument StatusCode (OPC-10000-4 §5.11).
+   **Then** the server returns the cited StatusCode (`Bad_MethodInvalid`), and a Call with the
+   wrong object/argument shape returns the cited per-argument StatusCode (OPC-10000-4 §5.12.2.2).
 
 ---
 
@@ -185,7 +184,7 @@ and `profile-targeting` status; confirm `nano`/`micro` are unchanged.
 - **SetTriggering edge conditions**: linking unknown triggering/triggered item ids, or items in
   different subscriptions, MUST return the per-link StatusCodes defined in §5.13.5.
 - **Call edge conditions**: Call to an unknown method, wrong objectId, or wrong input-argument
-  count/type MUST return the cited StatusCode(s) (§5.11) and MUST NOT read out of bounds.
+  count/type MUST return the cited StatusCode(s) (§5.12.2.2) and MUST NOT read out of bounds.
 - **Malformed encodings**: malformed Binary encodings, invalid NodeIds, invalid ExtensionObjects,
   and invalid array/string lengths on any new request MUST be rejected with the cited StatusCode
   and MUST NOT access memory out of bounds.
@@ -212,12 +211,12 @@ and `profile-targeting` status; confirm `nano`/`micro` are unchanged.
   minimums: ≥ 2 subscriptions/session, ≥ 10 monitored items/subscription and ≥ 100 monitored
   items total, ≥ 5 parallel Publish requests/session, queue depth ≥ 2 — returning the cited
   OPC-10000-4 StatusCodes when exceeded.
-- **FR-006**: The server MUST support the Call service (OPC-10000-4 §5.11) for the
+- **FR-006**: The server MUST support the Call service (OPC-10000-4 §5.12.2.2) for the
   GetMonitoredItems method (returning serverHandles[]/clientHandles[] of a subscription's
   monitored items) and the ResendData method (re-reporting a subscription's current values on
   the next Publish), with both methods defined per OPC-10000-5.
 - **FR-007**: Call to any method the server does not implement, or with an invalid object/argument
-  shape, MUST return the cited OPC-10000-4 §5.11 StatusCode(s) without out-of-bounds access.
+  shape, MUST return the cited OPC-10000-4 §5.12.2.2 StatusCode(s) without out-of-bounds access.
 - **FR-008**: The server MUST expose the `Base Info Type System` conformance unit: the namespace-0
   DataType, ReferenceType, ObjectType, and VariableType nodes the server uses, as static,
   browseable, readable nodes (OPC-10000-5; OPC-10000-3), with HasSubtype links among types.
@@ -250,14 +249,15 @@ and `profile-targeting` status; confirm `nano`/`micro` are unchanged.
   - SetTriggering — OPC-10000-4 §5.13.5.
   - DataChangeFilter absolute Deadband — OPC-10000-4 §7.22.2 (DeadbandType = Absolute).
   - MonitoringParameters queueSize ≥ 2 / discardOldest / overflow — OPC-10000-4 §5.13.2, §7.20.1.
-  - Call service — OPC-10000-4 §5.11; GetMonitoredItems / ResendData methods — OPC-10000-5.
+  - Call service — OPC-10000-4 §5.12.2.2; GetMonitoredItems / ResendData methods —
+    OPC-10000-5 §9.1 / §9.2.
   - Base Info Type System node exposure — OPC-10000-5 (standard NodeSet), OPC-10000-3 (model).
   - (Already shipped, carried forward) Embedded DataChange facet service set — §5.13/§5.14.
 - **OPC-003**: Unsupported services/features and capacity-exceeded conditions MUST return the
   cited OPC-10000-4 StatusCodes (`Bad_ServiceUnsupported`, `Bad_TooManyMonitoredItems`,
   `Bad_TooManySubscriptions`, `Bad_TooManyPublishRequests`, `Bad_TooManyOperations`,
-  `Bad_FilterNotAllowed`, `Bad_MonitoredItemFilterUnsupported`, `Bad_MethodInvalid` /
-  `Bad_NotImplemented`, `Bad_SubscriptionIdInvalid`), encoded per OPC-10000-6.
+  `Bad_FilterNotAllowed`, `Bad_MonitoredItemFilterUnsupported`, `Bad_MethodInvalid`,
+  `Bad_SubscriptionIdInvalid`), encoded per OPC-10000-6.
 - **OPC-004**: Wire encoding/transport is unchanged: OPC UA Binary over OPC UA TCP / UA-SC
   (OPC-10000-6). No new encodings or transports.
 - **OPC-005**: SecurityPolicy surface is the existing Basic256Sha256 (Sign / Sign&Encrypt) + None

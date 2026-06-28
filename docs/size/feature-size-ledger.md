@@ -94,6 +94,85 @@ embedded) and are *not* representative of an MCU; included for CI comparison.
 | micro | ~43 KiB | ~47 KiB |
 | embedded | ~54 KiB | ~63 KiB |
 
+### Feature 005 US1 host proxy (Standard DataChange facet)
+
+Measured after enabling `MICRO_OPCUA_SUBSCRIPTIONS_STANDARD=ON` with the Standard-facet
+capacity overrides (`MU_MAX_MONITORED_ITEMS=100`, `MU_MAX_SUBSCRIPTIONS=2`,
+`MU_MAX_PUBLISH_REQUESTS=5`, `MU_MONITORED_QUEUE_DEPTH=2`). This is a host `gcc -Os`
+proxy, not the final RP2040 US4 measurement.
+
+| Build | `libmicro_opcua.a` `.text` | `.data` | `.bss` | `sizeof(struct mu_server)` | `MU_SERVER_STORAGE_BYTES` |
+|---|---:|---:|---:|---:|---:|
+| default subscriptions/security host build | 93,145 B | 2,176 B | 0 B | 10,392 B | 10,496 B |
+| Standard US1 capacity build | 101,955 B | 2,200 B | 0 B | 41,960 B | 45,696 B |
+| delta | +8,810 B | +24 B | 0 B | +31,568 B | +35,200 B |
+
+The RAM increase is caller-provided server storage for 100 fixed MonitoredItems, queue depth 2,
+trigger-link fields, and five parked Publish requests. The library still contributes no `.bss`
+and uses no heap. `MU_SERVER_STORAGE_BYTES` is intentionally conservative so it remains above
+`sizeof(struct mu_server)` across host and embedded ABIs.
+
+### Feature 005 US2 host proxy (Base Info Type System)
+
+Measured with `MICRO_OPCUA_BASE_TYPE_SYSTEM=ON`, without the Standard DataChange capacity
+overrides. This is a host `gcc -Os` proxy for the gated namespace-0 type-system table and browse
+NodeClassMask correction, not the final RP2040 US4 measurement.
+
+| Build | `libmicro_opcua.a` `.text` | `.data` | `.bss` | `sizeof(struct mu_server)` | `MU_SERVER_STORAGE_BYTES` |
+|---|---:|---:|---:|---:|---:|
+| default subscriptions/security host build | 93,129 B | 2,176 B | 0 B | 10,392 B | 10,496 B |
+| Base Type System build | 96,466 B | 5,520 B | 0 B | 10,392 B | 10,496 B |
+| delta | +3,337 B | +3,344 B | 0 B | 0 B | 0 B |
+
+The Base Type System slice adds gated standard type/reference nodes, HasSubtype links,
+HasTypeDefinition references, and Embedded 2017 `ServerProfileArray` contents. It does not grow
+the caller-provided server context, leaves `.bss` at zero, and introduces no heap use.
+
+### Feature 005 US3 host proxy (Method Call: GetMonitoredItems + ResendData)
+
+Measured with `MICRO_OPCUA_SUBSCRIPTIONS_STANDARD=ON`, `MICRO_OPCUA_BASE_TYPE_SYSTEM=ON`, and
+the Standard-facet capacity overrides (`MU_MAX_MONITORED_ITEMS=100`,
+`MU_MAX_SUBSCRIPTIONS=2`, `MU_MAX_PUBLISH_REQUESTS=5`, `MU_MONITORED_QUEUE_DEPTH=2`,
+`MU_MAX_TRIGGER_LINKS=4`). This is a host `gcc -Os` proxy for the gated Call service,
+method-node metadata, and resend/enumeration helpers.
+
+| Build | `libmicro_opcua.a` `.text` | `.data` | `.bss` | `sizeof(struct mu_server)` | `MU_SERVER_STORAGE_BYTES` |
+|---|---:|---:|---:|---:|---:|
+| default subscriptions/security host build | 93,129 B | 2,176 B | 0 B | 10,392 B | 10,496 B |
+| Standard+BaseType+Call capacity build | 109,297 B | 6,008 B | 0 B | 41,960 B | 45,696 B |
+| delta vs default | +16,168 B | +3,832 B | 0 B | +31,568 B | +35,200 B |
+
+The caller-storage growth is the same Standard-capacity subscription storage recorded in US1.
+The US3 resend latch fits existing `mu_subscription_t` padding, so Call does not raise
+`MU_SERVER_STORAGE_BYTES` beyond the Standard-capacity build. The library still contributes no
+`.bss` and uses no heap.
+
+### Feature 005 US4 host profile build (`make embedded`)
+
+Measured with the Makefile profile wiring:
+`MICRO_OPCUA_EMBEDDED_PROFILE=ON`, `MICRO_OPCUA_OPTIMIZE_SIZE=ON`, and the embedded capacity
+defines (`MU_MAX_MONITORED_ITEMS=100`, `MU_MAX_SUBSCRIPTIONS=2`,
+`MU_MAX_PUBLISH_REQUESTS=5`, `MU_MONITORED_QUEUE_DEPTH=2`, `MU_MAX_TRIGGER_LINKS=4`).
+
+| Artifact | `.text` | `.data` | `.bss` | Notes |
+|---|---:|---:|---:|---|
+| `build/embedded/src/libmicro_opcua.a` | 65,664 B | 6,008 B | 0 B | host optimized static library; core `.bss` remains zero |
+| `build/embedded/examples/minimal_server` | 79,264 B | 8,068 B | 62,240 B | example-owned storage/RX/TX buffers and host runtime, not core mutable globals |
+
+Caller-provided storage for the embedded profile:
+
+| Metric | Host x86-64 value |
+|---|---:|
+| `sizeof(struct mu_server)` | 41,960 B |
+| `MU_SERVER_STORAGE_BYTES` | 45,696 B |
+| `sizeof(mu_subscriptions_t)` | 33,736 B |
+| `sizeof(mu_subscription_t)` | 344 B |
+| `sizeof(mu_monitored_item_t)` | 328 B |
+| `sizeof(mu_publish_request_t)` | 48 B |
+
+This is the expected mandated RAM growth from the Standard DataChange Subscription 2017 capacity
+minima. It is caller-provided, not heap, and the core library still contributes no `.bss`.
+
 ## Secured-path stack (after in-place decrypt)
 
 MSG chunks are decrypted in place in the receive buffer, so the secured request path

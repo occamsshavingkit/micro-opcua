@@ -1,14 +1,14 @@
 /* src/core/service_dispatch.c */
 #include "service_dispatch.h"
-#include "server_internal.h"
 #include "micro_opcua/address_space.h"
 #include "micro_opcua/encoding.h"
+#include "server_internal.h"
 #ifdef MICRO_OPCUA_SERVICE_BROWSE
 #include "../services/browse.h"
 #endif
 #include "../services/discovery.h"
-#include "../services/session.h"
 #include "../services/secure_channel.h"
+#include "../services/session.h"
 #ifdef MICRO_OPCUA_SERVICE_READ
 #include "../services/read.h"
 #endif
@@ -22,148 +22,104 @@
 
 #define MU_SERVER_NONCE_LENGTH 32
 
+#if MICRO_OPCUA_SUBSCRIPTIONS && MICRO_OPCUA_SUBSCRIPTIONS_STANDARD && MICRO_OPCUA_BASE_TYPE_SYSTEM
+#define MU_DISPATCH_CALL_ENABLED 1
+#else
+#define MU_DISPATCH_CALL_ENABLED 0
+#endif
+
 #ifdef MICRO_OPCUA_SERVICE_READ
 opcua_statuscode_t mu_read_process_with_user_index(const mu_address_space_t *address_space,
                                                    mu_address_space_index_t *user_index,
-                                                   const mu_address_space_t *dynamic,
-                                                   const mu_read_request_t *req,
-                                                   mu_read_response_t *resp,
-                                                   mu_datavalue_t *results_array,
+                                                   const mu_address_space_t *dynamic, const mu_read_request_t *req,
+                                                   mu_read_response_t *resp, mu_datavalue_t *results_array,
                                                    size_t max_results);
 #endif
 
 #ifdef MICRO_OPCUA_SERVICE_BROWSE
 opcua_statuscode_t mu_browse_process_with_user_index(const mu_address_space_t *address_space,
                                                      mu_address_space_index_t *user_index,
-                                                     const mu_address_space_t *dynamic,
-                                                     const mu_browse_request_t *req,
-                                                     mu_browse_result_t *results,
-                                                     size_t max_results,
-                                                     mu_reference_description_t *ref_pool,
-                                                     size_t max_total_refs);
+                                                     const mu_address_space_t *dynamic, const mu_browse_request_t *req,
+                                                     mu_browse_result_t *results, size_t max_results,
+                                                     mu_reference_description_t *ref_pool, size_t max_total_refs);
 #endif
 
-typedef opcua_statuscode_t (*mu_service_dispatch_handler_fn)(
-    mu_server_t *server,
-    mu_binary_reader_t *r,
-    mu_binary_writer_t *w,
-    size_t *response_length);
+typedef opcua_statuscode_t (*mu_service_dispatch_handler_fn)(mu_server_t *server, mu_binary_reader_t *r,
+                                                             mu_binary_writer_t *w, size_t *response_length);
 
 typedef struct {
     mu_service_handler_t service;
     mu_service_dispatch_handler_fn handler;
 } mu_service_descriptor_t;
 
-static opcua_statuscode_t handle_open_secure_channel(mu_server_t *server,
-                                                     mu_binary_reader_t *r,
-                                                     mu_binary_writer_t *w,
+static opcua_statuscode_t handle_open_secure_channel(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                                      size_t *response_length);
-static opcua_statuscode_t handle_create_session(mu_server_t *server,
-                                                mu_binary_reader_t *r,
-                                                mu_binary_writer_t *w,
+static opcua_statuscode_t handle_create_session(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                                 size_t *response_length);
-static opcua_statuscode_t handle_activate_session(mu_server_t *server,
-                                                  mu_binary_reader_t *r,
-                                                  mu_binary_writer_t *w,
+static opcua_statuscode_t handle_activate_session(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                                   size_t *response_length);
-static opcua_statuscode_t handle_close_session(mu_server_t *server,
-                                               mu_binary_reader_t *r,
-                                               mu_binary_writer_t *w,
+static opcua_statuscode_t handle_close_session(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                                size_t *response_length);
 #ifdef MICRO_OPCUA_SERVICE_DISCOVERY
-static opcua_statuscode_t handle_get_endpoints(mu_server_t *server,
-                                               mu_binary_reader_t *r,
-                                               mu_binary_writer_t *w,
+static opcua_statuscode_t handle_get_endpoints(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                                size_t *response_length);
-static opcua_statuscode_t handle_find_servers(mu_server_t *server,
-                                              mu_binary_reader_t *r,
-                                              mu_binary_writer_t *w,
+static opcua_statuscode_t handle_find_servers(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                               size_t *response_length);
 #endif
 #if MICRO_OPCUA_SUBSCRIPTIONS
-static opcua_statuscode_t handle_create_subscription(mu_server_t *server,
-                                                     mu_binary_reader_t *r,
-                                                     mu_binary_writer_t *w,
+static opcua_statuscode_t handle_create_subscription(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                                      size_t *response_length);
-static opcua_statuscode_t handle_modify_subscription(mu_server_t *server,
-                                                     mu_binary_reader_t *r,
-                                                     mu_binary_writer_t *w,
+static opcua_statuscode_t handle_modify_subscription(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                                      size_t *response_length);
-static opcua_statuscode_t handle_set_publishing_mode(mu_server_t *server,
-                                                     mu_binary_reader_t *r,
-                                                     mu_binary_writer_t *w,
+static opcua_statuscode_t handle_set_publishing_mode(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                                      size_t *response_length);
-static opcua_statuscode_t handle_create_monitored_items(mu_server_t *server,
-                                                        mu_binary_reader_t *r,
-                                                        mu_binary_writer_t *w,
-                                                        size_t *response_length);
-static opcua_statuscode_t handle_modify_monitored_items(mu_server_t *server,
-                                                        mu_binary_reader_t *r,
-                                                        mu_binary_writer_t *w,
-                                                        size_t *response_length);
-static opcua_statuscode_t handle_set_monitoring_mode(mu_server_t *server,
-                                                     mu_binary_reader_t *r,
-                                                     mu_binary_writer_t *w,
+static opcua_statuscode_t handle_create_monitored_items(mu_server_t *server, mu_binary_reader_t *r,
+                                                        mu_binary_writer_t *w, size_t *response_length);
+static opcua_statuscode_t handle_modify_monitored_items(mu_server_t *server, mu_binary_reader_t *r,
+                                                        mu_binary_writer_t *w, size_t *response_length);
+static opcua_statuscode_t handle_set_monitoring_mode(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                                      size_t *response_length);
 #if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
-static opcua_statuscode_t handle_set_triggering(mu_server_t *server,
-                                                mu_binary_reader_t *r,
-                                                mu_binary_writer_t *w,
+static opcua_statuscode_t handle_set_triggering(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                                 size_t *response_length);
 #endif
-static opcua_statuscode_t handle_delete_monitored_items(mu_server_t *server,
-                                                        mu_binary_reader_t *r,
-                                                        mu_binary_writer_t *w,
-                                                        size_t *response_length);
-static opcua_statuscode_t handle_delete_subscriptions(mu_server_t *server,
-                                                      mu_binary_reader_t *r,
-                                                      mu_binary_writer_t *w,
+static opcua_statuscode_t handle_delete_monitored_items(mu_server_t *server, mu_binary_reader_t *r,
+                                                        mu_binary_writer_t *w, size_t *response_length);
+static opcua_statuscode_t handle_delete_subscriptions(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                                       size_t *response_length);
-static opcua_statuscode_t handle_publish(mu_server_t *server,
-                                         mu_binary_reader_t *r,
-                                         mu_binary_writer_t *w,
+static opcua_statuscode_t handle_publish(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                          size_t *response_length);
-static opcua_statuscode_t handle_republish(mu_server_t *server,
-                                           mu_binary_reader_t *r,
-                                           mu_binary_writer_t *w,
+static opcua_statuscode_t handle_republish(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                            size_t *response_length);
 #endif
 #ifdef MICRO_OPCUA_SERVICE_REGISTER_NODES
-static opcua_statuscode_t handle_register_nodes(mu_server_t *server,
-                                                mu_binary_reader_t *r,
-                                                mu_binary_writer_t *w,
+static opcua_statuscode_t handle_register_nodes(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                                 size_t *response_length);
-static opcua_statuscode_t handle_unregister_nodes(mu_server_t *server,
-                                                  mu_binary_reader_t *r,
-                                                  mu_binary_writer_t *w,
+static opcua_statuscode_t handle_unregister_nodes(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                                   size_t *response_length);
 #endif
 #ifdef MICRO_OPCUA_SERVICE_BROWSE
-static opcua_statuscode_t handle_translate_browse_paths(mu_server_t *server,
-                                                        mu_binary_reader_t *r,
-                                                        mu_binary_writer_t *w,
-                                                        size_t *response_length);
-static opcua_statuscode_t handle_browse(mu_server_t *server,
-                                        mu_binary_reader_t *r,
-                                        mu_binary_writer_t *w,
+static opcua_statuscode_t handle_translate_browse_paths(mu_server_t *server, mu_binary_reader_t *r,
+                                                        mu_binary_writer_t *w, size_t *response_length);
+static opcua_statuscode_t handle_browse(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                         size_t *response_length);
-static opcua_statuscode_t handle_browse_next(mu_server_t *server,
-                                             mu_binary_reader_t *r,
-                                             mu_binary_writer_t *w,
+static opcua_statuscode_t handle_browse_next(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                              size_t *response_length);
 #endif
 #ifdef MICRO_OPCUA_SERVICE_READ
-static opcua_statuscode_t handle_read(mu_server_t *server,
-                                      mu_binary_reader_t *r,
-                                      mu_binary_writer_t *w,
+static opcua_statuscode_t handle_read(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                      size_t *response_length);
+#endif
+#if MU_DISPATCH_CALL_ENABLED
+static opcua_statuscode_t handle_call(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                       size_t *response_length);
 #endif
 
 /* Fill a ServerNonce from the entropy adapter (zeros if unavailable). */
 static void fill_server_nonce(mu_server_t *server, opcua_byte_t *nonce, size_t len) {
     if (server->config.entropy_adapter.generate_random != NULL &&
-        server->config.entropy_adapter.generate_random(
-            server->config.entropy_adapter.context, nonce, len) == MU_STATUS_GOOD) {
+        server->config.entropy_adapter.generate_random(server->config.entropy_adapter.context, nonce, len) ==
+            MU_STATUS_GOOD) {
         return;
     }
     memset(nonce, 0, len);
@@ -171,47 +127,52 @@ static void fill_server_nonce(mu_server_t *server, opcua_byte_t *nonce, size_t l
 
 static const mu_service_descriptor_t g_supported_services[] = {
 #ifdef MICRO_OPCUA_SERVICE_DISCOVERY
-    { { MU_ID_FINDSERVERSREQUEST,        MU_ID_FINDSERVERSRESPONSE,        false }, handle_find_servers },
-    { { MU_ID_GETENDPOINTSREQUEST,       MU_ID_GETENDPOINTSRESPONSE,       false }, handle_get_endpoints },
+    {{MU_ID_FINDSERVERSREQUEST, MU_ID_FINDSERVERSRESPONSE, false}, handle_find_servers},
+    {{MU_ID_GETENDPOINTSREQUEST, MU_ID_GETENDPOINTSRESPONSE, false}, handle_get_endpoints},
 #endif
-    { { MU_ID_OPENSECURECHANNELREQUEST,  MU_ID_OPENSECURECHANNELRESPONSE,  false }, handle_open_secure_channel },
-    { { MU_ID_CLOSESECURECHANNELREQUEST, MU_ID_CLOSESECURECHANNELRESPONSE, false }, NULL },
-    { { MU_ID_CREATESESSIONREQUEST,      MU_ID_CREATESESSIONRESPONSE,      false }, handle_create_session }, /* Does not require an activated session */
-    { { MU_ID_ACTIVATESESSIONREQUEST,    MU_ID_ACTIVATESESSIONRESPONSE,    false }, handle_activate_session }, /* Does not require an activated session to activate */
-    { { MU_ID_CLOSESESSIONREQUEST,       MU_ID_CLOSESESSIONRESPONSE,       true  }, handle_close_session },
+    {{MU_ID_OPENSECURECHANNELREQUEST, MU_ID_OPENSECURECHANNELRESPONSE, false}, handle_open_secure_channel},
+    {{MU_ID_CLOSESECURECHANNELREQUEST, MU_ID_CLOSESECURECHANNELRESPONSE, false}, NULL},
+    {{MU_ID_CREATESESSIONREQUEST, MU_ID_CREATESESSIONRESPONSE, false},
+     handle_create_session}, /* Does not require an activated session */
+    {{MU_ID_ACTIVATESESSIONREQUEST, MU_ID_ACTIVATESESSIONRESPONSE, false},
+     handle_activate_session}, /* Does not require an activated session to activate */
+    {{MU_ID_CLOSESESSIONREQUEST, MU_ID_CLOSESESSIONRESPONSE, true}, handle_close_session},
 #ifdef MICRO_OPCUA_SERVICE_REGISTER_NODES
-    { { MU_ID_REGISTERNODESREQUEST,      MU_ID_REGISTERNODESRESPONSE,      true  }, handle_register_nodes },
-    { { MU_ID_UNREGISTERNODESREQUEST,    MU_ID_UNREGISTERNODESRESPONSE,    true  }, handle_unregister_nodes },
+    {{MU_ID_REGISTERNODESREQUEST, MU_ID_REGISTERNODESRESPONSE, true}, handle_register_nodes},
+    {{MU_ID_UNREGISTERNODESREQUEST, MU_ID_UNREGISTERNODESRESPONSE, true}, handle_unregister_nodes},
 #endif
 #ifdef MICRO_OPCUA_SERVICE_BROWSE
-    { { MU_ID_TRANSLATEBROWSEPATHSTONODEIDSREQUEST, MU_ID_TRANSLATEBROWSEPATHSTONODEIDSRESPONSE, true }, handle_translate_browse_paths },
-    { { MU_ID_BROWSEREQUEST,             MU_ID_BROWSERESPONSE,             true  }, handle_browse },
-    { { MU_ID_BROWSENEXTREQUEST,         MU_ID_BROWSENEXTRESPONSE,         true  }, handle_browse_next },
+    {{MU_ID_TRANSLATEBROWSEPATHSTONODEIDSREQUEST, MU_ID_TRANSLATEBROWSEPATHSTONODEIDSRESPONSE, true},
+     handle_translate_browse_paths},
+    {{MU_ID_BROWSEREQUEST, MU_ID_BROWSERESPONSE, true}, handle_browse},
+    {{MU_ID_BROWSENEXTREQUEST, MU_ID_BROWSENEXTRESPONSE, true}, handle_browse_next},
 #endif
 #ifdef MICRO_OPCUA_SERVICE_READ
-    { { MU_ID_READREQUEST,               MU_ID_READRESPONSE,               true  }, handle_read },
+    {{MU_ID_READREQUEST, MU_ID_READRESPONSE, true}, handle_read},
+#endif
+#if MU_DISPATCH_CALL_ENABLED
+    {{MU_ID_CALLREQUEST, MU_ID_CALLRESPONSE, true}, handle_call},
 #endif
 #if MICRO_OPCUA_SUBSCRIPTIONS
-    { { MU_ID_CREATEMONITOREDITEMSREQUEST, MU_ID_CREATEMONITOREDITEMSRESPONSE, true  }, handle_create_monitored_items },
-    { { MU_ID_MODIFYMONITOREDITEMSREQUEST, MU_ID_MODIFYMONITOREDITEMSRESPONSE, true  }, handle_modify_monitored_items },
-    { { MU_ID_SETMONITORINGMODEREQUEST,    MU_ID_SETMONITORINGMODERESPONSE,    true  }, handle_set_monitoring_mode },
+    {{MU_ID_CREATEMONITOREDITEMSREQUEST, MU_ID_CREATEMONITOREDITEMSRESPONSE, true}, handle_create_monitored_items},
+    {{MU_ID_MODIFYMONITOREDITEMSREQUEST, MU_ID_MODIFYMONITOREDITEMSRESPONSE, true}, handle_modify_monitored_items},
+    {{MU_ID_SETMONITORINGMODEREQUEST, MU_ID_SETMONITORINGMODERESPONSE, true}, handle_set_monitoring_mode},
 #if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
-    { { MU_ID_SETTRIGGERINGREQUEST,         MU_ID_SETTRIGGERINGRESPONSE,        true  }, handle_set_triggering },
+    {{MU_ID_SETTRIGGERINGREQUEST, MU_ID_SETTRIGGERINGRESPONSE, true}, handle_set_triggering},
 #endif
-    { { MU_ID_DELETEMONITOREDITEMSREQUEST, MU_ID_DELETEMONITOREDITEMSRESPONSE, true  }, handle_delete_monitored_items },
-    { { MU_ID_CREATESUBSCRIPTIONREQUEST, MU_ID_CREATESUBSCRIPTIONRESPONSE, true  }, handle_create_subscription },
-    { { MU_ID_MODIFYSUBSCRIPTIONREQUEST, MU_ID_MODIFYSUBSCRIPTIONRESPONSE, true }, handle_modify_subscription },
-    { { MU_ID_SETPUBLISHINGMODEREQUEST,  MU_ID_SETPUBLISHINGMODERESPONSE,  true }, handle_set_publishing_mode },
-    { { MU_ID_DELETESUBSCRIPTIONSREQUEST, MU_ID_DELETESUBSCRIPTIONSRESPONSE, true }, handle_delete_subscriptions },
-    { { MU_ID_PUBLISHREQUEST,             MU_ID_PUBLISHRESPONSE,             true  }, handle_publish },
-    { { MU_ID_REPUBLISHREQUEST,           MU_ID_REPUBLISHRESPONSE,           true  }, handle_republish }
+    {{MU_ID_DELETEMONITOREDITEMSREQUEST, MU_ID_DELETEMONITOREDITEMSRESPONSE, true}, handle_delete_monitored_items},
+    {{MU_ID_CREATESUBSCRIPTIONREQUEST, MU_ID_CREATESUBSCRIPTIONRESPONSE, true}, handle_create_subscription},
+    {{MU_ID_MODIFYSUBSCRIPTIONREQUEST, MU_ID_MODIFYSUBSCRIPTIONRESPONSE, true}, handle_modify_subscription},
+    {{MU_ID_SETPUBLISHINGMODEREQUEST, MU_ID_SETPUBLISHINGMODERESPONSE, true}, handle_set_publishing_mode},
+    {{MU_ID_DELETESUBSCRIPTIONSREQUEST, MU_ID_DELETESUBSCRIPTIONSRESPONSE, true}, handle_delete_subscriptions},
+    {{MU_ID_PUBLISHREQUEST, MU_ID_PUBLISHRESPONSE, true}, handle_publish},
+    {{MU_ID_REPUBLISHREQUEST, MU_ID_REPUBLISHRESPONSE, true}, handle_republish}
 #endif
 };
 
 static const size_t g_num_supported_services = sizeof(g_supported_services) / sizeof(g_supported_services[0]);
 
-static const mu_service_descriptor_t *find_service_descriptor(opcua_uint32_t request_id)
-{
+static const mu_service_descriptor_t *find_service_descriptor(opcua_uint32_t request_id) {
     for (size_t i = 0; i < g_num_supported_services; ++i) {
         if (g_supported_services[i].service.request_id == request_id) {
             return &g_supported_services[i];
@@ -224,12 +185,9 @@ static const mu_service_descriptor_t *find_service_descriptor(opcua_uint32_t req
    service dispatch receives only the service body. server.c sets this field
    immediately around OPN dispatch so the handler can validate the requested
    policy without changing the public dispatch signature. */
-void mu_service_dispatch_set_opn_security_policy(mu_server_t *server,
-                                                 const mu_string_t *security_policy);
+void mu_service_dispatch_set_opn_security_policy(mu_server_t *server, const mu_string_t *security_policy);
 
-void mu_service_dispatch_set_opn_security_policy(mu_server_t *server,
-                                                 const mu_string_t *security_policy)
-{
+void mu_service_dispatch_set_opn_security_policy(mu_server_t *server, const mu_string_t *security_policy) {
     if (server == NULL) {
         return;
     }
@@ -243,28 +201,25 @@ void mu_service_dispatch_set_opn_security_policy(mu_server_t *server,
     server->opn_pending_security_policy = *security_policy;
 }
 
-static const mu_string_t *current_opn_security_policy(const mu_server_t *server)
-{
+static const mu_string_t *current_opn_security_policy(const mu_server_t *server) {
     if (server == NULL) {
         return NULL;
     }
     return &server->opn_pending_security_policy;
 }
 
-const mu_service_handler_t* mu_get_service_handler(opcua_uint32_t request_id) {
+const mu_service_handler_t *mu_get_service_handler(opcua_uint32_t request_id) {
     const mu_service_descriptor_t *descriptor = find_service_descriptor(request_id);
     return descriptor != NULL ? &descriptor->service : NULL;
 }
 
 /* Write the common response prefix: response-type NodeId + ResponseHeader. */
-static opcua_statuscode_t write_response_prefix(mu_binary_writer_t *w,
-                                                opcua_uint32_t response_type_id,
-                                                opcua_uint32_t request_handle,
-                                                opcua_statuscode_t service_result)
-{
-    mu_nodeid_t type = { 0, MU_NODEID_NUMERIC, { response_type_id } };
+static opcua_statuscode_t write_response_prefix(mu_binary_writer_t *w, opcua_uint32_t response_type_id,
+                                                opcua_uint32_t request_handle, opcua_statuscode_t service_result) {
+    mu_nodeid_t type = {0, MU_NODEID_NUMERIC, {response_type_id}};
     opcua_statuscode_t s = mu_binary_write_nodeid(w, &type);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     mu_response_header_t rh;
     rh.timestamp = 0;
@@ -273,8 +228,7 @@ static opcua_statuscode_t write_response_prefix(mu_binary_writer_t *w,
     return mu_response_header_encode(w, &rh);
 }
 
-static opcua_statuscode_t skip_extension_object_body(mu_binary_reader_t *r, size_t length)
-{
+static opcua_statuscode_t skip_extension_object_body(mu_binary_reader_t *r, size_t length) {
     if (length > 0u) {
         if (r->position > r->length || length > (r->length - r->position)) {
             return MU_STATUS_BAD_DECODINGERROR;
@@ -284,10 +238,8 @@ static opcua_statuscode_t skip_extension_object_body(mu_binary_reader_t *r, size
     return MU_STATUS_GOOD;
 }
 
-static opcua_statuscode_t ensure_array_items_min_remaining(const mu_binary_reader_t *r,
-                                                           opcua_int32_t count,
-                                                           size_t min_item_size)
-{
+static opcua_statuscode_t ensure_array_items_min_remaining(const mu_binary_reader_t *r, opcua_int32_t count,
+                                                           size_t min_item_size) {
     if (count < -1) {
         return MU_STATUS_BAD_DECODINGERROR;
     }
@@ -303,10 +255,8 @@ static opcua_statuscode_t ensure_array_items_min_remaining(const mu_binary_reade
     return MU_STATUS_GOOD;
 }
 
-static opcua_statuscode_t read_auth_token_from_request(const opcua_byte_t *request_body,
-                                                       size_t request_length,
-                                                       opcua_uint32_t *auth_token)
-{
+static opcua_statuscode_t read_auth_token_from_request(const opcua_byte_t *request_body, size_t request_length,
+                                                       opcua_uint32_t *auth_token) {
     mu_binary_reader_t reader;
     mu_nodeid_t token;
     opcua_statuscode_t s;
@@ -321,8 +271,7 @@ static opcua_statuscode_t read_auth_token_from_request(const opcua_byte_t *reque
        OPC-10000-4 §7.38.2 defines authenticationToken as a NodeId. A token
        outside this server's ns=0 numeric token space is a non-match, not a
        malformed service body for the session-state gate. */
-    if (token.identifier_type != MU_NODEID_NUMERIC ||
-        token.namespace_index != 0u) {
+    if (token.identifier_type != MU_NODEID_NUMERIC || token.namespace_index != 0u) {
         return MU_STATUS_GOOD;
     }
 
@@ -330,25 +279,26 @@ static opcua_statuscode_t read_auth_token_from_request(const opcua_byte_t *reque
     return MU_STATUS_GOOD;
 }
 
-opcua_statuscode_t mu_write_service_fault(opcua_byte_t *buffer, size_t *length,
-                                          opcua_uint32_t request_handle,
-                                          opcua_statuscode_t service_result)
-{
-    if (!buffer || !length) return MU_STATUS_BAD_INTERNALERROR;
+opcua_statuscode_t mu_write_service_fault(opcua_byte_t *buffer, size_t *length, opcua_uint32_t request_handle,
+                                          opcua_statuscode_t service_result) {
+    if (!buffer || !length)
+        return MU_STATUS_BAD_INTERNALERROR;
 
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, buffer, *length);
 
-    mu_nodeid_t type = { 0, MU_NODEID_NUMERIC, { MU_ID_SERVICEFAULT } };
+    mu_nodeid_t type = {0, MU_NODEID_NUMERIC, {MU_ID_SERVICEFAULT}};
     opcua_statuscode_t s = mu_binary_write_nodeid(&w, &type);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     mu_response_header_t rh;
     rh.timestamp = 0;
     rh.request_handle = request_handle;
     rh.service_result = service_result;
     s = mu_response_header_encode(&w, &rh);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     *length = w.position;
     return MU_STATUS_GOOD;
@@ -356,50 +306,55 @@ opcua_statuscode_t mu_write_service_fault(opcua_byte_t *buffer, size_t *length,
 
 /* OpenSecureChannel (OPC 10000-4 5.6.2.2): decode the request, open/renew the
    channel, and encode OpenSecureChannelResponse (ChannelSecurityToken + nonce). */
-static opcua_statuscode_t handle_open_secure_channel(mu_server_t *server,
-                                                     mu_binary_reader_t *r,
-                                                     mu_binary_writer_t *w,
-                                                     size_t *response_length)
-{
+static opcua_statuscode_t handle_open_secure_channel(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                                     size_t *response_length) {
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     opcua_uint32_t client_proto, request_type, security_mode, requested_lifetime;
     mu_bytestring_t client_nonce;
     mu_binary_read_uint32(r, &client_proto);
     mu_binary_read_uint32(r, &request_type);
     mu_binary_read_uint32(r, &security_mode);
-    if (r->status != MU_STATUS_GOOD) return r->status;
-    s = mu_binary_read_bytestring(r, &client_nonce);   if (s != MU_STATUS_GOOD) return s;
+    if (r->status != MU_STATUS_GOOD)
+        return r->status;
+    s = mu_binary_read_bytestring(r, &client_nonce);
+    if (s != MU_STATUS_GOOD)
+        return s;
     mu_binary_read_uint32(r, &requested_lifetime);
-    if (r->status != MU_STATUS_GOOD) return r->status;
+    if (r->status != MU_STATUS_GOOD)
+        return r->status;
 
     opcua_uint32_t revised = 0;
-    s = mu_secure_channel_open(&server->secure_channel,
-                               current_opn_security_policy(server),
-                               (mu_message_security_mode_t)security_mode,
-                               requested_lifetime,
-                               &revised);
-    if (s != MU_STATUS_GOOD) return s;
+    s = mu_secure_channel_open(&server->secure_channel, current_opn_security_policy(server),
+                               (mu_message_security_mode_t)security_mode, requested_lifetime, &revised);
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     s = write_response_prefix(w, MU_ID_OPENSECURECHANNELRESPONSE, req.request_handle, MU_STATUS_GOOD);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     opcua_datetime_t now = server->config.time_adapter.get_time
-        ? server->config.time_adapter.get_time(server->config.time_adapter.context) : 0;
+                               ? server->config.time_adapter.get_time(server->config.time_adapter.context)
+                               : 0;
 
     mu_binary_write_uint32(w, 0);                                 /* ServerProtocolVersion */
     mu_binary_write_uint32(w, server->secure_channel.channel_id); /* SecurityToken.ChannelId */
     mu_binary_write_uint32(w, server->secure_channel.token_id);   /* SecurityToken.TokenId */
     mu_binary_write_int64(w, now);                                /* SecurityToken.CreatedAt */
     mu_binary_write_uint32(w, revised);                           /* SecurityToken.RevisedLifetime */
-    if (w->status != MU_STATUS_GOOD) return w->status;
+    if (w->status != MU_STATUS_GOOD)
+        return w->status;
 
     opcua_byte_t nonce_buf[MU_SERVER_NONCE_LENGTH];
     fill_server_nonce(server, nonce_buf, sizeof(nonce_buf));
-    mu_bytestring_t server_nonce = { (opcua_int32_t)sizeof(nonce_buf), nonce_buf };
-    s = mu_binary_write_bytestring(w, &server_nonce);             if (s != MU_STATUS_GOOD) return s;
+    mu_bytestring_t server_nonce = {(opcua_int32_t)sizeof(nonce_buf), nonce_buf};
+    s = mu_binary_write_bytestring(w, &server_nonce);
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     /* Record the negotiated MessageSecurityMode and, for a secured channel,
        derive the symmetric key sets from the nonces (OPC 10000-6 6.7.5). */
@@ -409,14 +364,17 @@ static opcua_statuscode_t handle_open_secure_channel(mu_server_t *server,
         server->config.crypto_adapter != NULL) {
         const mu_crypto_adapter_t *cr = server->config.crypto_adapter;
         size_t cn_len = client_nonce.length > 0 ? (size_t)client_nonce.length : 0;
-        if (cn_len == 0) return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+        if (cn_len == 0)
+            return MU_STATUS_BAD_SECURITYCHECKSFAILED;
         /* Inbound (client->server) keys use ServerNonce as secret; outbound the reverse. */
         s = mu_sym_keys_derive(cr, nonce_buf, sizeof(nonce_buf), client_nonce.data, cn_len,
                                &server->secure_channel.client_keys);
-        if (s != MU_STATUS_GOOD) return s;
+        if (s != MU_STATUS_GOOD)
+            return s;
         s = mu_sym_keys_derive(cr, client_nonce.data, cn_len, nonce_buf, sizeof(nonce_buf),
                                &server->secure_channel.server_keys);
-        if (s != MU_STATUS_GOOD) return s;
+        if (s != MU_STATUS_GOOD)
+            return s;
         server->secure_channel.keys_valid = true;
         mu_sym_keys_prepare_cipher(&server->secure_channel.client_keys, cr);
         mu_sym_keys_prepare_cipher(&server->secure_channel.server_keys, cr);
@@ -441,26 +399,43 @@ static void read_create_session_request(mu_binary_reader_t *r, opcua_uint64_t *t
     opcua_byte_t mask;
 
     *timeout_bits = 0; /* below the minimum -> clamped up */
-    client_nonce->length = -1; client_nonce->data = NULL;
-    client_cert->length = -1;  client_cert->data = NULL;
+    client_nonce->length = -1;
+    client_nonce->data = NULL;
+    client_cert->length = -1;
+    client_cert->data = NULL;
 
-    if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD) return;      /* ClientDescription.applicationUri */
-    if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD) return;      /* productUri */
-    if (mu_binary_read_byte(r, &mask) != MU_STATUS_GOOD) return;       /* applicationName LocalizedText mask */
-    if ((mask & 0x01) && (mu_binary_read_string(r, &str) != MU_STATUS_GOOD)) return; /* locale */
-    if ((mask & 0x02) && (mu_binary_read_string(r, &str) != MU_STATUS_GOOD)) return; /* text */
-    if (mu_binary_read_uint32(r, &u) != MU_STATUS_GOOD) return;        /* applicationType */
-    if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD) return;      /* gatewayServerUri */
-    if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD) return;      /* discoveryProfileUri */
-    if (mu_binary_read_int32(r, &n) != MU_STATUS_GOOD) return;         /* discoveryUrls count */
+    if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD)
+        return; /* ClientDescription.applicationUri */
+    if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD)
+        return; /* productUri */
+    if (mu_binary_read_byte(r, &mask) != MU_STATUS_GOOD)
+        return; /* applicationName LocalizedText mask */
+    if ((mask & 0x01) && (mu_binary_read_string(r, &str) != MU_STATUS_GOOD))
+        return; /* locale */
+    if ((mask & 0x02) && (mu_binary_read_string(r, &str) != MU_STATUS_GOOD))
+        return; /* text */
+    if (mu_binary_read_uint32(r, &u) != MU_STATUS_GOOD)
+        return; /* applicationType */
+    if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD)
+        return; /* gatewayServerUri */
+    if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD)
+        return; /* discoveryProfileUri */
+    if (mu_binary_read_int32(r, &n) != MU_STATUS_GOOD)
+        return; /* discoveryUrls count */
     for (opcua_int32_t i = 0; i < n; ++i) {
-        if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD) return;
+        if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD)
+            return;
     }
-    if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD) return;      /* ServerUri */
-    if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD) return;      /* EndpointUrl */
-    if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD) return;      /* SessionName */
-    if (mu_binary_read_bytestring(r, client_nonce) != MU_STATUS_GOOD) return;  /* ClientNonce */
-    if (mu_binary_read_bytestring(r, client_cert) != MU_STATUS_GOOD) return;   /* ClientCertificate */
+    if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD)
+        return; /* ServerUri */
+    if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD)
+        return; /* EndpointUrl */
+    if (mu_binary_read_string(r, &str) != MU_STATUS_GOOD)
+        return; /* SessionName */
+    if (mu_binary_read_bytestring(r, client_nonce) != MU_STATUS_GOOD)
+        return; /* ClientNonce */
+    if (mu_binary_read_bytestring(r, client_cert) != MU_STATUS_GOOD)
+        return; /* ClientCertificate */
     {
         /* RequestedSessionTimeout is a Duration (Double); keep its raw bits and
            clamp by integer compare to avoid soft-float on the no-FPU target. */
@@ -475,17 +450,15 @@ static void read_create_session_request(mu_binary_reader_t *r, opcua_uint64_t *t
    the session, and emit a structurally valid CreateSessionResponse. Request params
    (ClientDescription, RequestedSessionTimeout, ...) and the heavy ServerEndpoints
    array are not yet populated. */
-static opcua_statuscode_t handle_create_session(mu_server_t *server,
-                                                mu_binary_reader_t *r,
-                                                mu_binary_writer_t *w,
-                                                size_t *response_length)
-{
+static opcua_statuscode_t handle_create_session(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                                size_t *response_length) {
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     opcua_uint64_t requested_bits = 0;
-    mu_bytestring_t client_nonce = { -1, NULL }, client_cert = { -1, NULL };
+    mu_bytestring_t client_nonce = {-1, NULL}, client_cert = {-1, NULL};
     read_create_session_request(r, &requested_bits, &client_nonce, &client_cert);
 
     opcua_uint64_t revised_bits = 0;
@@ -496,42 +469,54 @@ static opcua_statuscode_t handle_create_session(mu_server_t *server,
     }
 
     s = mu_session_create(slot, requested_bits, &revised_bits, &session_id, &auth_token);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     size_t idx = (size_t)(slot - server->sessions);
     slot->session_id = (opcua_uint32_t)(idx + 1u);
     slot->auth_token = (opcua_uint32_t)(12345u + idx);
 
     s = write_response_prefix(w, MU_ID_CREATESESSIONRESPONSE, req.request_handle, MU_STATUS_GOOD);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
-    mu_nodeid_t sid = { 0, MU_NODEID_NUMERIC, { slot->session_id } };
-    mu_nodeid_t tok = { 0, MU_NODEID_NUMERIC, { slot->auth_token } };
-    mu_bytestring_t null_bs = { -1, NULL };
-    mu_string_t null_str = { -1, NULL };
+    mu_nodeid_t sid = {0, MU_NODEID_NUMERIC, {slot->session_id}};
+    mu_nodeid_t tok = {0, MU_NODEID_NUMERIC, {slot->auth_token}};
+    mu_bytestring_t null_bs = {-1, NULL};
+    mu_string_t null_str = {-1, NULL};
 
     opcua_byte_t nonce_buf[MU_SERVER_NONCE_LENGTH];
     fill_server_nonce(server, nonce_buf, sizeof(nonce_buf));
-    mu_bytestring_t server_nonce = { (opcua_int32_t)sizeof(nonce_buf), nonce_buf };
+    mu_bytestring_t server_nonce = {(opcua_int32_t)sizeof(nonce_buf), nonce_buf};
 
-    s = mu_binary_write_nodeid(w, &sid);              if (s != MU_STATUS_GOOD) return s; /* SessionId */
-    s = mu_binary_write_nodeid(w, &tok);              if (s != MU_STATUS_GOOD) return s; /* AuthenticationToken */
-    s = mu_binary_write_uint64(w, revised_bits);      if (s != MU_STATUS_GOOD) return s; /* RevisedSessionTimeout (Double bits) */
-    s = mu_binary_write_bytestring(w, &server_nonce); if (s != MU_STATUS_GOOD) return s; /* ServerNonce */
+    s = mu_binary_write_nodeid(w, &sid);
+    if (s != MU_STATUS_GOOD)
+        return s; /* SessionId */
+    s = mu_binary_write_nodeid(w, &tok);
+    if (s != MU_STATUS_GOOD)
+        return s; /* AuthenticationToken */
+    s = mu_binary_write_uint64(w, revised_bits);
+    if (s != MU_STATUS_GOOD)
+        return s; /* RevisedSessionTimeout (Double bits) */
+    s = mu_binary_write_bytestring(w, &server_nonce);
+    if (s != MU_STATUS_GOOD)
+        return s; /* ServerNonce */
 
     /* ServerCertificate: the server's own cert when a crypto adapter is present. */
     {
         mu_bytestring_t server_cert = null_bs;
-        if (server->config.crypto_adapter != NULL &&
-            server->config.crypto_adapter->get_own_certificate != NULL) {
-            const opcua_byte_t *c = NULL; size_t clen = 0;
-            if (server->config.crypto_adapter->get_own_certificate(
-                    server->config.crypto_adapter->context, &c, &clen) == MU_STATUS_GOOD) {
+        if (server->config.crypto_adapter != NULL && server->config.crypto_adapter->get_own_certificate != NULL) {
+            const opcua_byte_t *c = NULL;
+            size_t clen = 0;
+            if (server->config.crypto_adapter->get_own_certificate(server->config.crypto_adapter->context, &c, &clen) ==
+                MU_STATUS_GOOD) {
                 server_cert.length = (opcua_int32_t)clen;
                 server_cert.data = c;
             }
         }
-        s = mu_binary_write_bytestring(w, &server_cert); if (s != MU_STATUS_GOOD) return s;
+        s = mu_binary_write_bytestring(w, &server_cert);
+        if (s != MU_STATUS_GOOD)
+            return s;
     }
 
     /* ServerEndpoints: the same set a Client would get from GetEndpoints. */
@@ -539,14 +524,21 @@ static opcua_statuscode_t handle_create_session(mu_server_t *server,
         mu_endpoint_description_t eps[MU_DISCOVERY_MAX_ENDPOINTS];
         size_t count = 0;
         s = mu_discovery_get_endpoints(&server->config, eps, MU_DISCOVERY_MAX_ENDPOINTS, &count);
-        if (s != MU_STATUS_GOOD) return s;
-        s = mu_binary_write_int32(w, (opcua_int32_t)count); if (s != MU_STATUS_GOOD) return s; /* ServerEndpoints[] */
+        if (s != MU_STATUS_GOOD)
+            return s;
+        s = mu_binary_write_int32(w, (opcua_int32_t)count);
+        if (s != MU_STATUS_GOOD)
+            return s; /* ServerEndpoints[] */
         for (size_t i = 0; i < count; ++i) {
-            s = mu_endpoint_description_encode(w, &eps[i]); if (s != MU_STATUS_GOOD) return s;
+            s = mu_endpoint_description_encode(w, &eps[i]);
+            if (s != MU_STATUS_GOOD)
+                return s;
         }
     }
 
-    s = mu_binary_write_int32(w, 0);              if (s != MU_STATUS_GOOD) return s; /* ServerSoftwareCertificates[] */
+    s = mu_binary_write_int32(w, 0);
+    if (s != MU_STATUS_GOOD)
+        return s; /* ServerSoftwareCertificates[] */
 
     /* ServerSignature: on a secured channel, sign ClientCertificate || ClientNonce
        with the server's private key (RSA-PKCS1.5-SHA256). This proves the server
@@ -557,8 +549,7 @@ static opcua_statuscode_t handle_create_session(mu_server_t *server,
 #ifdef MICRO_OPCUA_SECURITY
         static const char SIG_URI[] = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256";
         if (server->secure_channel.policy == MU_SECURITY_POLICY_BASIC256SHA256_ID &&
-            server->config.crypto_adapter != NULL &&
-            server->config.crypto_adapter->rsa_sha256_sign != NULL &&
+            server->config.crypto_adapter != NULL && server->config.crypto_adapter->rsa_sha256_sign != NULL &&
             client_cert.length > 0) {
             const mu_crypto_adapter_t *cr = server->config.crypto_adapter;
             size_t cc = (size_t)client_cert.length;
@@ -566,26 +557,37 @@ static opcua_statuscode_t handle_create_session(mu_server_t *server,
             opcua_byte_t to_sign[1536];
             if (cc + cn <= sizeof(to_sign)) {
                 memcpy(to_sign, client_cert.data, cc);
-                if (cn > 0) memcpy(to_sign + cc, client_nonce.data, cn);
+                if (cn > 0)
+                    memcpy(to_sign + cc, client_nonce.data, cn);
                 opcua_byte_t sig[512];
                 size_t sig_len = sizeof(sig);
                 if (cr->rsa_sha256_sign(cr->context, to_sign, cc + cn, sig, &sig_len) == MU_STATUS_GOOD) {
-                    mu_string_t alg = { (opcua_int32_t)(sizeof(SIG_URI) - 1), (const opcua_byte_t *)SIG_URI };
-                    mu_bytestring_t sig_bs = { (opcua_int32_t)sig_len, sig };
-                    s = mu_binary_write_string(w, &alg);     if (s != MU_STATUS_GOOD) return s;
-                    s = mu_binary_write_bytestring(w, &sig_bs); if (s != MU_STATUS_GOOD) return s;
+                    mu_string_t alg = {(opcua_int32_t)(sizeof(SIG_URI) - 1), (const opcua_byte_t *)SIG_URI};
+                    mu_bytestring_t sig_bs = {(opcua_int32_t)sig_len, sig};
+                    s = mu_binary_write_string(w, &alg);
+                    if (s != MU_STATUS_GOOD)
+                        return s;
+                    s = mu_binary_write_bytestring(w, &sig_bs);
+                    if (s != MU_STATUS_GOOD)
+                        return s;
                     wrote_sig = true;
                 }
             }
         }
 #endif
         if (!wrote_sig) {
-            s = mu_binary_write_string(w, &null_str);    if (s != MU_STATUS_GOOD) return s; /* ServerSignature.algorithm */
-            s = mu_binary_write_bytestring(w, &null_bs); if (s != MU_STATUS_GOOD) return s; /* ServerSignature.signature */
+            s = mu_binary_write_string(w, &null_str);
+            if (s != MU_STATUS_GOOD)
+                return s; /* ServerSignature.algorithm */
+            s = mu_binary_write_bytestring(w, &null_bs);
+            if (s != MU_STATUS_GOOD)
+                return s; /* ServerSignature.signature */
         }
     }
 
-    s = mu_binary_write_uint32(w, 0);             if (s != MU_STATUS_GOOD) return s; /* MaxRequestMessageSize */
+    s = mu_binary_write_uint32(w, 0);
+    if (s != MU_STATUS_GOOD)
+        return s; /* MaxRequestMessageSize */
 
     *response_length = w->position;
     return MU_STATUS_GOOD;
@@ -594,40 +596,56 @@ static opcua_statuscode_t handle_create_session(mu_server_t *server,
 /* ActivateSession (OPC-10000-4 §5.7.3.2). The UserIdentityToken's ExtensionObject
    typeId identifies the token type; only Anonymous (i=321) is accepted. A service
    failure is reported in the ResponseHeader.serviceResult, not as a transport error. */
-static opcua_statuscode_t handle_activate_session(mu_server_t *server,
-                                                  mu_binary_reader_t *r,
-                                                  mu_binary_writer_t *w,
-                                                  size_t *response_length)
-{
+static opcua_statuscode_t handle_activate_session(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                                  size_t *response_length) {
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     /* ClientSignature: SignatureData { algorithm(String), signature(ByteString) } */
     mu_string_t algorithm;
     mu_bytestring_t signature;
-    s = mu_binary_read_string(r, &algorithm);    if (s != MU_STATUS_GOOD) return s;
-    s = mu_binary_read_bytestring(r, &signature); if (s != MU_STATUS_GOOD) return s;
+    s = mu_binary_read_string(r, &algorithm);
+    if (s != MU_STATUS_GOOD)
+        return s;
+    s = mu_binary_read_bytestring(r, &signature);
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     /* OPC-10000-4 §5.7.3.2: clientSoftwareCertificates[] is reserved for
        future use, but every SignedSoftwareCertificate must still be consumed. */
     opcua_int32_t cert_count;
-    s = mu_binary_read_int32(r, &cert_count);    if (s != MU_STATUS_GOOD) return s;
-    s = ensure_array_items_min_remaining(r, cert_count, 8u); if (s != MU_STATUS_GOOD) return s;
+    s = mu_binary_read_int32(r, &cert_count);
+    if (s != MU_STATUS_GOOD)
+        return s;
+    s = ensure_array_items_min_remaining(r, cert_count, 8u);
+    if (s != MU_STATUS_GOOD)
+        return s;
     for (opcua_int32_t i = 0; i < cert_count; ++i) {
         mu_bytestring_t certificate_data;
         mu_bytestring_t certificate_signature;
-        s = mu_binary_read_bytestring(r, &certificate_data);      if (s != MU_STATUS_GOOD) return s;
-        s = mu_binary_read_bytestring(r, &certificate_signature); if (s != MU_STATUS_GOOD) return s;
+        s = mu_binary_read_bytestring(r, &certificate_data);
+        if (s != MU_STATUS_GOOD)
+            return s;
+        s = mu_binary_read_bytestring(r, &certificate_signature);
+        if (s != MU_STATUS_GOOD)
+            return s;
     }
 
     /* OPC-10000-4 §5.7.3.2: localeIds[] follows clientSoftwareCertificates[]. */
     opcua_int32_t locale_count;
-    s = mu_binary_read_int32(r, &locale_count);  if (s != MU_STATUS_GOOD) return s;
-    s = ensure_array_items_min_remaining(r, locale_count, 4u); if (s != MU_STATUS_GOOD) return s;
+    s = mu_binary_read_int32(r, &locale_count);
+    if (s != MU_STATUS_GOOD)
+        return s;
+    s = ensure_array_items_min_remaining(r, locale_count, 4u);
+    if (s != MU_STATUS_GOOD)
+        return s;
     for (opcua_int32_t i = 0; i < locale_count; ++i) {
         mu_string_t locale;
-        s = mu_binary_read_string(r, &locale);   if (s != MU_STATUS_GOOD) return s;
+        s = mu_binary_read_string(r, &locale);
+        if (s != MU_STATUS_GOOD)
+            return s;
     }
 
     /* OPC-10000-4 §5.7.3.2: userIdentityToken ExtensionObject precedes
@@ -635,14 +653,15 @@ static opcua_statuscode_t handle_activate_session(mu_server_t *server,
     mu_nodeid_t token_type;
     size_t token_body_len;
     s = mu_binary_read_extension_object_header(r, &token_type, &token_body_len);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
     /* OPC-10000-6 §5.2.2.9 encodes NodeId identifiers as a discriminated union;
        OPC-10000-4 §7.38.2 user token typeIds are namespace 0 numeric NodeIds. */
     bool token_type_is_ns0_numeric =
-        token_type.identifier_type == MU_NODEID_NUMERIC &&
-        token_type.namespace_index == 0u;
+        token_type.identifier_type == MU_NODEID_NUMERIC && token_type.namespace_index == 0u;
     s = skip_extension_object_body(r, token_body_len);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     /* UserTokenSignature: SignatureData { algorithm(String), signature(ByteString) }.
        OPC-10000-4 §5.7.3.2 places it last, so omitted trailing bytes do not
@@ -650,8 +669,12 @@ static opcua_statuscode_t handle_activate_session(mu_server_t *server,
     if (r->position < r->length) {
         mu_string_t user_token_algorithm;
         mu_bytestring_t user_token_signature;
-        s = mu_binary_read_string(r, &user_token_algorithm);     if (s != MU_STATUS_GOOD) return s;
-        s = mu_binary_read_bytestring(r, &user_token_signature); if (s != MU_STATUS_GOOD) return s;
+        s = mu_binary_read_string(r, &user_token_algorithm);
+        if (s != MU_STATUS_GOOD)
+            return s;
+        s = mu_binary_read_bytestring(r, &user_token_signature);
+        if (s != MU_STATUS_GOOD)
+            return s;
     }
 
     opcua_uint32_t auth_token = 0u;
@@ -659,55 +682,52 @@ static opcua_statuscode_t handle_activate_session(mu_server_t *server,
     if (req.authentication_token.identifier_type == MU_NODEID_NUMERIC &&
         req.authentication_token.namespace_index == 0u) {
         auth_token = req.authentication_token.identifier.numeric;
-        mu_session_t *slot =
-            mu_session_find_by_token(server->sessions, MU_MAX_SESSIONS, auth_token);
+        mu_session_t *slot = mu_session_find_by_token(server->sessions, MU_MAX_SESSIONS, auth_token);
         if (slot != NULL) {
             if (!token_type_is_ns0_numeric) {
                 activate_result = MU_STATUS_BAD_IDENTITYTOKENINVALID;
             } else {
-                activate_result = mu_session_activate(slot,
-                                                      auth_token,
-                                                      token_type.identifier.numeric);
+                activate_result = mu_session_activate(slot, auth_token, token_type.identifier.numeric);
             }
         }
     }
 
     s = write_response_prefix(w, MU_ID_ACTIVATESESSIONRESPONSE, req.request_handle, activate_result);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     opcua_byte_t nonce_buf[MU_SERVER_NONCE_LENGTH];
     fill_server_nonce(server, nonce_buf, sizeof(nonce_buf));
-    mu_bytestring_t server_nonce = { (opcua_int32_t)sizeof(nonce_buf), nonce_buf };
-    s = mu_binary_write_bytestring(w, &server_nonce); if (s != MU_STATUS_GOOD) return s; /* ServerNonce */
-    mu_binary_write_int32(w, 0);                  /* Results[] */
-    mu_binary_write_int32(w, 0);                  /* DiagnosticInfos[] */
-    if (w->status != MU_STATUS_GOOD) return w->status;
+    mu_bytestring_t server_nonce = {(opcua_int32_t)sizeof(nonce_buf), nonce_buf};
+    s = mu_binary_write_bytestring(w, &server_nonce);
+    if (s != MU_STATUS_GOOD)
+        return s;                /* ServerNonce */
+    mu_binary_write_int32(w, 0); /* Results[] */
+    mu_binary_write_int32(w, 0); /* DiagnosticInfos[] */
+    if (w->status != MU_STATUS_GOOD)
+        return w->status;
 
     *response_length = w->position;
     return MU_STATUS_GOOD;
 }
 
 /* CloseSession (OPC 10000-4 5.7.4.2). */
-static opcua_statuscode_t handle_close_session(mu_server_t *server,
-                                               mu_binary_reader_t *r,
-                                               mu_binary_writer_t *w,
-                                               size_t *response_length)
-{
+static opcua_statuscode_t handle_close_session(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                               size_t *response_length) {
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     opcua_boolean_t delete_subscriptions;
     s = mu_binary_read_boolean(r, &delete_subscriptions);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     opcua_statuscode_t close_result = MU_STATUS_BAD_SESSIONIDINVALID;
-    if (server->active_session != NULL &&
-        req.authentication_token.identifier_type == MU_NODEID_NUMERIC) {
+    if (server->active_session != NULL && req.authentication_token.identifier_type == MU_NODEID_NUMERIC) {
         close_result =
-            mu_session_close(server->active_session,
-                             req.authentication_token.identifier.numeric,
-                             delete_subscriptions);
+            mu_session_close(server->active_session, req.authentication_token.identifier.numeric, delete_subscriptions);
 #if MICRO_OPCUA_SUBSCRIPTIONS
         if (close_result == MU_STATUS_GOOD) {
             opcua_uint32_t session_id = server->active_session->session_id;
@@ -725,7 +745,8 @@ static opcua_statuscode_t handle_close_session(mu_server_t *server,
     }
 
     s = write_response_prefix(w, MU_ID_CLOSESESSIONRESPONSE, req.request_handle, close_result);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     *response_length = w->position;
     return MU_STATUS_GOOD;
@@ -734,27 +755,29 @@ static opcua_statuscode_t handle_close_session(mu_server_t *server,
 #ifdef MICRO_OPCUA_SERVICE_DISCOVERY
 /* GetEndpoints (OPC 10000-4 5.5.2): return the server's single endpoint. The
    request's EndpointUrl/LocaleIds/ProfileUris filters are not applied (thin path). */
-static opcua_statuscode_t handle_get_endpoints(mu_server_t *server,
-                                               mu_binary_reader_t *r,
-                                               mu_binary_writer_t *w,
-                                               size_t *response_length)
-{
+static opcua_statuscode_t handle_get_endpoints(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                               size_t *response_length) {
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     mu_endpoint_description_t eps[MU_DISCOVERY_MAX_ENDPOINTS];
     size_t count = 0;
     s = mu_discovery_get_endpoints(&server->config, eps, MU_DISCOVERY_MAX_ENDPOINTS, &count);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     s = write_response_prefix(w, MU_ID_GETENDPOINTSRESPONSE, req.request_handle, MU_STATUS_GOOD);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
     s = mu_binary_write_int32(w, (opcua_int32_t)count); /* Endpoints[] */
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
     for (size_t i = 0; i < count; ++i) {
         s = mu_endpoint_description_encode(w, &eps[i]);
-        if (s != MU_STATUS_GOOD) return s;
+        if (s != MU_STATUS_GOOD)
+            return s;
     }
 
     *response_length = w->position;
@@ -762,25 +785,27 @@ static opcua_statuscode_t handle_get_endpoints(mu_server_t *server,
 }
 
 /* FindServers (OPC 10000-4 5.5.2): return this server's ApplicationDescription. */
-static opcua_statuscode_t handle_find_servers(mu_server_t *server,
-                                              mu_binary_reader_t *r,
-                                              mu_binary_writer_t *w,
-                                              size_t *response_length)
-{
+static opcua_statuscode_t handle_find_servers(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                              size_t *response_length) {
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     mu_application_description_t app;
     s = mu_discovery_get_application_description(&server->config, &app);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     s = write_response_prefix(w, MU_ID_FINDSERVERSRESPONSE, req.request_handle, MU_STATUS_GOOD);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
     s = mu_binary_write_int32(w, 1); /* Servers[] */
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
     s = mu_application_description_encode(w, &app);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     *response_length = w->position;
     return MU_STATUS_GOOD;
@@ -793,14 +818,16 @@ static opcua_statuscode_t handle_find_servers(mu_server_t *server,
    ServerCapabilities/OperationLimits properties at once) are accepted rather than
    rejected with Bad_TooManyOperations; missing nodes return per-node
    Bad_NodeIdUnknown, which clients tolerate. */
-#define MU_DISPATCH_MAX_READ_NODES   32
+#define MU_DISPATCH_MAX_READ_NODES 32
 #define MU_DISPATCH_MAX_BROWSE_NODES 8
-#define MU_DISPATCH_MAX_BROWSE_REFS  32
+#define MU_DISPATCH_MAX_BROWSE_REFS 32
 #define MU_DISPATCH_MAX_BROWSE_CONTINUATION_POINTS 32
 #define MU_DISPATCH_MAX_REGISTER_NODES 32
 #define MU_DISPATCH_MAX_TRANSLATE_BROWSE_PATHS 16
 #define MU_DISPATCH_MAX_TRANSLATE_ELEMENTS 8
 #define MU_DISPATCH_MAX_SUBSCRIPTION_OPERATIONS 32
+#define MU_DISPATCH_MAX_CALL_METHODS 8
+#define MU_DISPATCH_MAX_CALL_INPUT_ARGUMENTS 4
 
 #if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
 #ifndef MU_ID_SETTRIGGERINGREQUEST
@@ -814,8 +841,8 @@ static opcua_statuscode_t handle_find_servers(mu_server_t *server,
 #if MICRO_OPCUA_SUBSCRIPTIONS
 #define MU_DISPATCH_MAX_PUBLISH_ACKS MU_MAX_PUBLISH_ACKS
 #define MU_DOUBLE_SIGN_BIT 0x8000000000000000ULL
-#define MU_PUBLISHING_INTERVAL_MIN_BITS 0x4049000000000000ULL  /* 50.0 */
-#define MU_PUBLISHING_INTERVAL_MAX_BITS 0x40ed4c0000000000ULL  /* 60000.0 */
+#define MU_PUBLISHING_INTERVAL_MIN_BITS 0x4049000000000000ULL /* 50.0 */
+#define MU_PUBLISHING_INTERVAL_MAX_BITS 0x40ed4c0000000000ULL /* 60000.0 */
 #define MU_MONITORED_VALUE_ATTRIBUTE_ID 13u
 #if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
 /* OPC-10000-4 §7.22.2 DataChangeFilter binary encoding NodeId. */
@@ -824,6 +851,12 @@ static opcua_statuscode_t handle_find_servers(mu_server_t *server,
 /* OPC-10000-4 §5.13.2.4 / §7.38.2. */
 #define MU_STATUS_BAD_MONITOREDITEMFILTERUNSUPPORTED ((opcua_statuscode_t)0x80440000)
 #endif
+#endif
+
+#if MU_DISPATCH_CALL_ENABLED
+#define MU_ID_SERVER_OBJECT 2253u
+#define MU_ID_SERVER_GETMONITOREDITEMS 11492u
+#define MU_ID_SERVER_RESENDDATA 12873u
 #endif
 
 typedef struct {
@@ -842,10 +875,7 @@ typedef struct {
     opcua_boolean_t discard_oldest;
 } mu_monitored_item_create_body_t;
 
-typedef opcua_statuscode_t (*mu_subscription_id_result_fn)(
-    mu_server_t *server,
-    opcua_uint32_t id,
-    void *context);
+typedef opcua_statuscode_t (*mu_subscription_id_result_fn)(mu_server_t *server, opcua_uint32_t id, void *context);
 
 typedef struct {
     opcua_boolean_t publishing_enabled;
@@ -860,8 +890,7 @@ typedef struct {
     opcua_uint32_t subscription_id;
 } mu_monitored_item_id_context_t;
 
-static opcua_uint32_t publishing_interval_bits_to_ms(opcua_uint64_t bits)
-{
+static opcua_uint32_t publishing_interval_bits_to_ms(opcua_uint64_t bits) {
     if ((bits & MU_DOUBLE_SIGN_BIT) != 0u || bits < MU_PUBLISHING_INTERVAL_MIN_BITS) {
         return MU_MIN_PUBLISHING_INTERVAL_MS;
     }
@@ -880,8 +909,7 @@ static opcua_uint32_t publishing_interval_bits_to_ms(opcua_uint64_t bits)
     return (opcua_uint32_t)(mantissa >> (52u - unbiased));
 }
 
-static opcua_uint64_t publishing_interval_ms_to_bits(opcua_uint32_t interval_ms)
-{
+static opcua_uint64_t publishing_interval_ms_to_bits(opcua_uint32_t interval_ms) {
     opcua_uint32_t value = interval_ms;
     opcua_uint32_t exponent = 0u;
     while ((value >> 1u) != 0u) {
@@ -895,34 +923,30 @@ static opcua_uint64_t publishing_interval_ms_to_bits(opcua_uint32_t interval_ms)
 }
 
 #if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
-static bool is_datachange_filter_binary_type(const mu_nodeid_t *type_id)
-{
-    return type_id->identifier_type == MU_NODEID_NUMERIC &&
-           type_id->namespace_index == 0u &&
+static bool is_datachange_filter_binary_type(const mu_nodeid_t *type_id) {
+    return type_id->identifier_type == MU_NODEID_NUMERIC && type_id->namespace_index == 0u &&
            type_id->identifier.numeric == MU_ID_DATACHANGEFILTER_ENCODING_DEFAULTBINARY;
 }
 
-static bool is_numeric_variant_type(mu_builtin_type_t type)
-{
+static bool is_numeric_variant_type(mu_builtin_type_t type) {
     switch (type) {
-        case MU_TYPE_SBYTE:
-        case MU_TYPE_BYTE:
-        case MU_TYPE_INT16:
-        case MU_TYPE_UINT16:
-        case MU_TYPE_INT32:
-        case MU_TYPE_UINT32:
-        case MU_TYPE_INT64:
-        case MU_TYPE_UINT64:
-        case MU_TYPE_FLOAT:
-        case MU_TYPE_DOUBLE:
-            return true;
-        default:
-            return false;
+    case MU_TYPE_SBYTE:
+    case MU_TYPE_BYTE:
+    case MU_TYPE_INT16:
+    case MU_TYPE_UINT16:
+    case MU_TYPE_INT32:
+    case MU_TYPE_UINT32:
+    case MU_TYPE_INT64:
+    case MU_TYPE_UINT64:
+    case MU_TYPE_FLOAT:
+    case MU_TYPE_DOUBLE:
+        return true;
+    default:
+        return false;
     }
 }
 
-static bool monitored_node_has_numeric_static_value(const mu_node_t *node)
-{
+static bool monitored_node_has_numeric_static_value(const mu_node_t *node) {
     if (node == NULL || node->value == NULL) {
         return false;
     }
@@ -937,29 +961,25 @@ static bool monitored_node_has_numeric_static_value(const mu_node_t *node)
     return is_numeric_variant_type(node->value->data.static_value.type);
 }
 
-static void set_datachange_trigger_from_wire(mu_monitored_item_create_body_t *body,
-                                             opcua_uint32_t trigger)
-{
+static void set_datachange_trigger_from_wire(mu_monitored_item_create_body_t *body, opcua_uint32_t trigger) {
     switch (trigger) {
-        case 0u:
-            body->trigger = MU_DATACHANGE_TRIGGER_STATUS;
-            break;
-        case 1u:
-            body->trigger = MU_DATACHANGE_TRIGGER_STATUS_VALUE;
-            break;
-        case 2u:
-            body->trigger = MU_DATACHANGE_TRIGGER_STATUS_VALUE_TIMESTAMP;
-            break;
-        default:
-            body->filter_result = MU_STATUS_BAD_MONITOREDITEMFILTERUNSUPPORTED;
-            break;
+    case 0u:
+        body->trigger = MU_DATACHANGE_TRIGGER_STATUS;
+        break;
+    case 1u:
+        body->trigger = MU_DATACHANGE_TRIGGER_STATUS_VALUE;
+        break;
+    case 2u:
+        body->trigger = MU_DATACHANGE_TRIGGER_STATUS_VALUE_TIMESTAMP;
+        break;
+    default:
+        body->filter_result = MU_STATUS_BAD_MONITOREDITEMFILTERUNSUPPORTED;
+        break;
     }
 }
 
-static opcua_statuscode_t read_datachange_filter_body(mu_binary_reader_t *r,
-                                                      size_t filter_length,
-                                                      mu_monitored_item_create_body_t *body)
-{
+static opcua_statuscode_t read_datachange_filter_body(mu_binary_reader_t *r, size_t filter_length,
+                                                      mu_monitored_item_create_body_t *body) {
     opcua_uint32_t trigger;
     opcua_uint32_t deadband_type;
     opcua_double_t deadband_value;
@@ -985,32 +1005,30 @@ static opcua_statuscode_t read_datachange_filter_body(mu_binary_reader_t *r,
 
     set_datachange_trigger_from_wire(body, trigger);
     switch (deadband_type) {
-        case 0u:
-            body->deadband_type = MU_DEADBAND_TYPE_NONE;
-            body->deadband_value = 0.0;
-            break;
-        case 1u:
-            body->deadband_type = MU_DEADBAND_TYPE_ABSOLUTE;
-            body->deadband_value = deadband_value;
-            break;
-        case 2u:
-            body->deadband_type = MU_DEADBAND_TYPE_PERCENT;
-            body->deadband_value = deadband_value;
-            body->filter_result = MU_STATUS_BAD_MONITOREDITEMFILTERUNSUPPORTED;
-            break;
-        default:
-            body->filter_result = MU_STATUS_BAD_MONITOREDITEMFILTERUNSUPPORTED;
-            break;
+    case 0u:
+        body->deadband_type = MU_DEADBAND_TYPE_NONE;
+        body->deadband_value = 0.0;
+        break;
+    case 1u:
+        body->deadband_type = MU_DEADBAND_TYPE_ABSOLUTE;
+        body->deadband_value = deadband_value;
+        break;
+    case 2u:
+        body->deadband_type = MU_DEADBAND_TYPE_PERCENT;
+        body->deadband_value = deadband_value;
+        body->filter_result = MU_STATUS_BAD_MONITOREDITEMFILTERUNSUPPORTED;
+        break;
+    default:
+        body->filter_result = MU_STATUS_BAD_MONITOREDITEMFILTERUNSUPPORTED;
+        break;
     }
 
     return MU_STATUS_GOOD;
 }
 #endif
 
-static opcua_statuscode_t read_monitored_item_create_body(
-    mu_binary_reader_t *r,
-    mu_monitored_item_create_body_t *body)
-{
+static opcua_statuscode_t read_monitored_item_create_body(mu_binary_reader_t *r,
+                                                          mu_monitored_item_create_body_t *body) {
     opcua_statuscode_t s;
     mu_string_t index_range;
     opcua_uint16_t data_encoding_namespace_index;
@@ -1025,36 +1043,50 @@ static opcua_statuscode_t read_monitored_item_create_body(
     body->filter_result = MU_STATUS_GOOD;
 #endif
 
-    s = mu_binary_read_nodeid(r, &body->node_id); if (s != MU_STATUS_GOOD) return s;
+    s = mu_binary_read_nodeid(r, &body->node_id);
+    if (s != MU_STATUS_GOOD)
+        return s;
     mu_binary_read_uint32(r, &body->attribute_id);
-    if (r->status != MU_STATUS_GOOD) return r->status;
-    s = mu_binary_read_string(r, &index_range); if (s != MU_STATUS_GOOD) return s;
+    if (r->status != MU_STATUS_GOOD)
+        return r->status;
+    s = mu_binary_read_string(r, &index_range);
+    if (s != MU_STATUS_GOOD)
+        return s;
     mu_binary_read_uint16(r, &data_encoding_namespace_index);
-    if (r->status != MU_STATUS_GOOD) return r->status;
-    s = mu_binary_read_string(r, &data_encoding_name); if (s != MU_STATUS_GOOD) return s;
+    if (r->status != MU_STATUS_GOOD)
+        return r->status;
+    s = mu_binary_read_string(r, &data_encoding_name);
+    if (s != MU_STATUS_GOOD)
+        return s;
     mu_binary_read_uint32(r, &body->monitoring_mode);
     mu_binary_read_uint32(r, &body->client_handle);
     mu_binary_read_uint64(r, &body->sampling_interval_bits);
-    if (r->status != MU_STATUS_GOOD) return r->status;
+    if (r->status != MU_STATUS_GOOD)
+        return r->status;
     s = mu_binary_read_extension_object_header(r, &filter_type, &filter_length);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 #if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
     if (is_datachange_filter_binary_type(&filter_type)) {
         s = read_datachange_filter_body(r, filter_length, body);
-        if (s != MU_STATUS_GOOD) return s;
+        if (s != MU_STATUS_GOOD)
+            return s;
     } else {
-        s = skip_extension_object_body(r, filter_length); if (s != MU_STATUS_GOOD) return s;
+        s = skip_extension_object_body(r, filter_length);
+        if (s != MU_STATUS_GOOD)
+            return s;
     }
 #else
-    s = skip_extension_object_body(r, filter_length); if (s != MU_STATUS_GOOD) return s;
+    s = skip_extension_object_body(r, filter_length);
+    if (s != MU_STATUS_GOOD)
+        return s;
 #endif
     mu_binary_read_uint32(r, &body->queue_size);
     mu_binary_read_boolean(r, &body->discard_oldest);
     return r->status;
 }
 
-static void copy_monitored_node_id(mu_monitored_item_t *item, const mu_nodeid_t *node_id)
-{
+static void copy_monitored_node_id(mu_monitored_item_t *item, const mu_nodeid_t *node_id) {
     item->node_id = *node_id;
     if (node_id->identifier_type == MU_NODEID_STRING) {
         opcua_int32_t length = node_id->identifier.string.length;
@@ -1071,19 +1103,15 @@ static void copy_monitored_node_id(mu_monitored_item_t *item, const mu_nodeid_t 
     }
 }
 
-static opcua_statuscode_t write_null_extension_object(mu_binary_writer_t *w)
-{
-    mu_nodeid_t null_id = { 0, MU_NODEID_NUMERIC, { 0 } };
+static opcua_statuscode_t write_null_extension_object(mu_binary_writer_t *w) {
+    mu_nodeid_t null_id = {0, MU_NODEID_NUMERIC, {0}};
     return mu_binary_write_extension_object_header(w, &null_id, 0);
 }
 
-static opcua_statuscode_t write_monitored_item_create_result(
-    mu_binary_writer_t *w,
-    opcua_statuscode_t result,
-    opcua_uint32_t monitored_item_id,
-    opcua_uint32_t sampling_interval_ms,
-    opcua_uint32_t revised_queue_size)
-{
+static opcua_statuscode_t write_monitored_item_create_result(mu_binary_writer_t *w, opcua_statuscode_t result,
+                                                             opcua_uint32_t monitored_item_id,
+                                                             opcua_uint32_t sampling_interval_ms,
+                                                             opcua_uint32_t revised_queue_size) {
     opcua_uint64_t sampling_bits = 0u;
     mu_binary_write_statuscode(w, result);
     mu_binary_write_uint32(w, monitored_item_id);
@@ -1092,19 +1120,16 @@ static opcua_statuscode_t write_monitored_item_create_result(
     }
     mu_binary_write_uint64(w, sampling_bits);
     mu_binary_write_uint32(w, revised_queue_size);
-    if (w->status != MU_STATUS_GOOD) return w->status;
+    if (w->status != MU_STATUS_GOOD)
+        return w->status;
     return write_null_extension_object(w);
 }
 
-static mu_monitored_item_t *find_monitored_item(mu_server_t *server,
-                                                opcua_uint32_t subscription_id,
-                                                opcua_uint32_t monitored_item_id)
-{
+static mu_monitored_item_t *find_monitored_item(mu_server_t *server, opcua_uint32_t subscription_id,
+                                                opcua_uint32_t monitored_item_id) {
     for (size_t i = 0; i < MU_MAX_MONITORED_ITEMS; ++i) {
         mu_monitored_item_t *item = &server->subs.monitored_items[i];
-        if (item->in_use &&
-            item->subscription_id == subscription_id &&
-            item->monitored_item_id == monitored_item_id) {
+        if (item->in_use && item->subscription_id == subscription_id && item->monitored_item_id == monitored_item_id) {
             return item;
         }
     }
@@ -1113,20 +1138,13 @@ static mu_monitored_item_t *find_monitored_item(mu_server_t *server,
 }
 
 static opcua_statuscode_t drive_subscription_id_status_array(
-    mu_server_t *server,
-    mu_binary_reader_t *r,
-    mu_binary_writer_t *w,
-    size_t *response_length,
-    opcua_uint32_t response_type_id,
-    opcua_uint32_t request_handle,
-    bool validate_subscription_id,
-    opcua_uint32_t subscription_id,
-    mu_subscription_id_result_fn item_result,
-    void *context)
-{
+    mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w, size_t *response_length,
+    opcua_uint32_t response_type_id, opcua_uint32_t request_handle, bool validate_subscription_id,
+    opcua_uint32_t subscription_id, mu_subscription_id_result_fn item_result, void *context) {
     opcua_int32_t count;
     opcua_statuscode_t s = mu_binary_read_int32(r, &count);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     if (count > 0 && (size_t)count > MU_DISPATCH_MAX_SUBSCRIPTION_OPERATIONS) {
         return MU_STATUS_BAD_TOOMANYOPERATIONS;
@@ -1134,9 +1152,7 @@ static opcua_statuscode_t drive_subscription_id_status_array(
 
     if (validate_subscription_id) {
         mu_subscription_t *sub =
-            mu_subscription_find(&server->subs,
-                                 server->active_session->session_id,
-                                 subscription_id);
+            mu_subscription_find(&server->subs, server->active_session->session_id, subscription_id);
         if (sub == NULL) {
             return MU_STATUS_BAD_SUBSCRIPTIONIDINVALID;
         }
@@ -1147,36 +1163,35 @@ static opcua_statuscode_t drive_subscription_id_status_array(
     }
 
     s = write_response_prefix(w, response_type_id, request_handle, MU_STATUS_GOOD);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
     s = mu_binary_write_int32(w, count);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     for (opcua_int32_t i = 0; i < count; ++i) {
         opcua_uint32_t id;
         s = mu_binary_read_uint32(r, &id);
-        if (s != MU_STATUS_GOOD) return s;
+        if (s != MU_STATUS_GOOD)
+            return s;
 
         s = mu_binary_write_statuscode(w, item_result(server, id, context));
-        if (s != MU_STATUS_GOOD) return s;
+        if (s != MU_STATUS_GOOD)
+            return s;
     }
 
     s = mu_binary_write_int32(w, 0);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     *response_length = w->position;
     return MU_STATUS_GOOD;
 }
 
-static opcua_statuscode_t set_publishing_mode_result(mu_server_t *server,
-                                                     opcua_uint32_t subscription_id,
-                                                     void *context)
-{
-    const mu_set_publishing_mode_context_t *mode =
-        (const mu_set_publishing_mode_context_t *)context;
-    mu_subscription_t *sub =
-        mu_subscription_find(&server->subs,
-                             server->active_session->session_id,
-                             subscription_id);
+static opcua_statuscode_t set_publishing_mode_result(mu_server_t *server, opcua_uint32_t subscription_id,
+                                                     void *context) {
+    const mu_set_publishing_mode_context_t *mode = (const mu_set_publishing_mode_context_t *)context;
+    mu_subscription_t *sub = mu_subscription_find(&server->subs, server->active_session->session_id, subscription_id);
     if (sub == NULL) {
         return MU_STATUS_BAD_SUBSCRIPTIONIDINVALID;
     }
@@ -1185,14 +1200,10 @@ static opcua_statuscode_t set_publishing_mode_result(mu_server_t *server,
     return MU_STATUS_GOOD;
 }
 
-static opcua_statuscode_t set_monitoring_mode_result(mu_server_t *server,
-                                                     opcua_uint32_t monitored_item_id,
-                                                     void *context)
-{
-    const mu_set_monitoring_mode_context_t *mode =
-        (const mu_set_monitoring_mode_context_t *)context;
-    mu_monitored_item_t *item =
-        find_monitored_item(server, mode->subscription_id, monitored_item_id);
+static opcua_statuscode_t set_monitoring_mode_result(mu_server_t *server, opcua_uint32_t monitored_item_id,
+                                                     void *context) {
+    const mu_set_monitoring_mode_context_t *mode = (const mu_set_monitoring_mode_context_t *)context;
+    mu_monitored_item_t *item = find_monitored_item(server, mode->subscription_id, monitored_item_id);
     if (item == NULL) {
         return MU_STATUS_BAD_MONITOREDITEMIDINVALID;
     }
@@ -1201,37 +1212,26 @@ static opcua_statuscode_t set_monitoring_mode_result(mu_server_t *server,
     return MU_STATUS_GOOD;
 }
 
-static opcua_statuscode_t delete_monitored_item_result(mu_server_t *server,
-                                                       opcua_uint32_t monitored_item_id,
-                                                       void *context)
-{
-    const mu_monitored_item_id_context_t *item_context =
-        (const mu_monitored_item_id_context_t *)context;
-    return mu_monitored_item_delete(&server->subs,
-                                    item_context->subscription_id,
-                                    monitored_item_id);
+static opcua_statuscode_t delete_monitored_item_result(mu_server_t *server, opcua_uint32_t monitored_item_id,
+                                                       void *context) {
+    const mu_monitored_item_id_context_t *item_context = (const mu_monitored_item_id_context_t *)context;
+    return mu_monitored_item_delete(&server->subs, item_context->subscription_id, monitored_item_id);
 }
 
-static opcua_statuscode_t delete_subscription_result(mu_server_t *server,
-                                                    opcua_uint32_t subscription_id,
-                                                    void *context)
-{
+static opcua_statuscode_t delete_subscription_result(mu_server_t *server, opcua_uint32_t subscription_id,
+                                                     void *context) {
     (void)context;
-    return mu_subscription_delete(&server->subs,
-                                  server->active_session->session_id,
-                                  subscription_id);
+    return mu_subscription_delete(&server->subs, server->active_session->session_id, subscription_id);
 }
 
 /* CreateSubscription (OPC 10000-4 5.14.2): decode the request parameters, let the
    fixed-size engine revise counts, and echo the revised values. */
-static opcua_statuscode_t handle_create_subscription(mu_server_t *server,
-                                                     mu_binary_reader_t *r,
-                                                     mu_binary_writer_t *w,
-                                                     size_t *response_length)
-{
+static opcua_statuscode_t handle_create_subscription(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                                     size_t *response_length) {
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     opcua_uint64_t requested_interval_bits;
     opcua_uint32_t requested_lifetime_count;
@@ -1246,33 +1246,28 @@ static opcua_statuscode_t handle_create_subscription(mu_server_t *server,
     mu_binary_read_uint32(r, &max_notifications_per_publish);
     mu_binary_read_boolean(r, &publishing_enabled);
     mu_binary_read_byte(r, &priority);
-    if (r->status != MU_STATUS_GOOD) return r->status;
+    if (r->status != MU_STATUS_GOOD)
+        return r->status;
 
-    opcua_uint32_t publishing_interval_ms =
-        publishing_interval_bits_to_ms(requested_interval_bits);
+    opcua_uint32_t publishing_interval_ms = publishing_interval_bits_to_ms(requested_interval_bits);
     opcua_uint64_t now_ms = server->config.time_adapter.get_tick_ms(server->config.time_adapter.context);
 
     mu_subscription_t *sub = NULL;
-    s = mu_subscription_create(&server->subs,
-                               server->active_session->session_id,
-                               publishing_interval_ms,
-                               requested_lifetime_count,
-                               requested_max_keep_alive_count,
-                               max_notifications_per_publish,
-                               priority,
-                               publishing_enabled,
-                               now_ms,
-                               &sub);
-    if (s != MU_STATUS_GOOD) return s;
+    s = mu_subscription_create(&server->subs, server->active_session->session_id, publishing_interval_ms,
+                               requested_lifetime_count, requested_max_keep_alive_count, max_notifications_per_publish,
+                               priority, publishing_enabled, now_ms, &sub);
+    if (s != MU_STATUS_GOOD)
+        return s;
 
-    s = write_response_prefix(w, MU_ID_CREATESUBSCRIPTIONRESPONSE,
-                              req.request_handle, MU_STATUS_GOOD);
-    if (s != MU_STATUS_GOOD) return s;
+    s = write_response_prefix(w, MU_ID_CREATESUBSCRIPTIONRESPONSE, req.request_handle, MU_STATUS_GOOD);
+    if (s != MU_STATUS_GOOD)
+        return s;
     mu_binary_write_uint32(w, sub->subscription_id);
     mu_binary_write_uint64(w, publishing_interval_ms_to_bits(sub->publishing_interval_ms));
     mu_binary_write_uint32(w, sub->lifetime_count);
     mu_binary_write_uint32(w, sub->max_keep_alive_count);
-    if (w->status != MU_STATUS_GOOD) return w->status;
+    if (w->status != MU_STATUS_GOOD)
+        return w->status;
 
     *response_length = w->position;
     return MU_STATUS_GOOD;
@@ -1280,14 +1275,12 @@ static opcua_statuscode_t handle_create_subscription(mu_server_t *server,
 
 /* ModifySubscription (OPC 10000-4 5.14.3): update a session-owned Subscription and
    return the revised interval/lifetime/keep-alive values. */
-static opcua_statuscode_t handle_modify_subscription(mu_server_t *server,
-                                                     mu_binary_reader_t *r,
-                                                     mu_binary_writer_t *w,
-                                                     size_t *response_length)
-{
+static opcua_statuscode_t handle_modify_subscription(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                                     size_t *response_length) {
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     opcua_uint32_t subscription_id;
     opcua_uint64_t requested_interval_bits;
@@ -1302,28 +1295,26 @@ static opcua_statuscode_t handle_modify_subscription(mu_server_t *server,
     mu_binary_read_uint32(r, &requested_max_keep_alive_count);
     mu_binary_read_uint32(r, &max_notifications_per_publish);
     mu_binary_read_byte(r, &priority);
-    if (r->status != MU_STATUS_GOOD) return r->status;
+    if (r->status != MU_STATUS_GOOD)
+        return r->status;
 
-    mu_subscription_t *sub =
-        mu_subscription_find(&server->subs, server->active_session->session_id, subscription_id);
+    mu_subscription_t *sub = mu_subscription_find(&server->subs, server->active_session->session_id, subscription_id);
     if (sub == NULL) {
         return MU_STATUS_BAD_SUBSCRIPTIONIDINVALID;
     }
 
-    mu_subscription_apply_parameters(sub,
-                                     publishing_interval_bits_to_ms(requested_interval_bits),
-                                     requested_lifetime_count,
-                                     requested_max_keep_alive_count,
-                                     max_notifications_per_publish,
-                                     priority);
+    mu_subscription_apply_parameters(sub, publishing_interval_bits_to_ms(requested_interval_bits),
+                                     requested_lifetime_count, requested_max_keep_alive_count,
+                                     max_notifications_per_publish, priority);
 
-    s = write_response_prefix(w, MU_ID_MODIFYSUBSCRIPTIONRESPONSE,
-                              req.request_handle, MU_STATUS_GOOD);
-    if (s != MU_STATUS_GOOD) return s;
+    s = write_response_prefix(w, MU_ID_MODIFYSUBSCRIPTIONRESPONSE, req.request_handle, MU_STATUS_GOOD);
+    if (s != MU_STATUS_GOOD)
+        return s;
     mu_binary_write_uint64(w, publishing_interval_ms_to_bits(sub->publishing_interval_ms));
     mu_binary_write_uint32(w, sub->lifetime_count);
     mu_binary_write_uint32(w, sub->max_keep_alive_count);
-    if (w->status != MU_STATUS_GOOD) return w->status;
+    if (w->status != MU_STATUS_GOOD)
+        return w->status;
 
     *response_length = w->position;
     return MU_STATUS_GOOD;
@@ -1331,40 +1322,28 @@ static opcua_statuscode_t handle_modify_subscription(mu_server_t *server,
 
 /* SetPublishingMode (OPC 10000-4 5.14.4): toggle publishing per Subscription id and
    report per-id StatusCode results. */
-static opcua_statuscode_t handle_set_publishing_mode(mu_server_t *server,
-                                                     mu_binary_reader_t *r,
-                                                     mu_binary_writer_t *w,
-                                                     size_t *response_length)
-{
+static opcua_statuscode_t handle_set_publishing_mode(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                                     size_t *response_length) {
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
-    mu_set_publishing_mode_context_t context = { false };
+    mu_set_publishing_mode_context_t context = {false};
     mu_binary_read_boolean(r, &context.publishing_enabled);
 
-    return drive_subscription_id_status_array(server,
-                                              r,
-                                              w,
-                                              response_length,
-                                              MU_ID_SETPUBLISHINGMODERESPONSE,
-                                              req.request_handle,
-                                              false,
-                                              0u,
-                                              set_publishing_mode_result,
-                                              &context);
+    return drive_subscription_id_status_array(server, r, w, response_length, MU_ID_SETPUBLISHINGMODERESPONSE,
+                                              req.request_handle, false, 0u, set_publishing_mode_result, &context);
 }
 
 /* CreateMonitoredItems (OPC 10000-4 5.13.2): data-change monitoring for Value
    Attributes only, backed by the fixed-size subscription engine. */
-static opcua_statuscode_t handle_create_monitored_items(mu_server_t *server,
-                                                        mu_binary_reader_t *r,
-                                                        mu_binary_writer_t *w,
-                                                        size_t *response_length)
-{
+static opcua_statuscode_t handle_create_monitored_items(mu_server_t *server, mu_binary_reader_t *r,
+                                                        mu_binary_writer_t *w, size_t *response_length) {
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     opcua_uint32_t subscription_id;
     opcua_uint32_t timestamps_to_return;
@@ -1372,16 +1351,15 @@ static opcua_statuscode_t handle_create_monitored_items(mu_server_t *server,
     mu_binary_read_uint32(r, &subscription_id);
     mu_binary_read_uint32(r, &timestamps_to_return);
     mu_binary_read_int32(r, &items_to_create);
-    if (r->status != MU_STATUS_GOOD) return r->status;
+    if (r->status != MU_STATUS_GOOD)
+        return r->status;
     (void)timestamps_to_return;
 
-    if (items_to_create > 0 &&
-        (size_t)items_to_create > MU_DISPATCH_MAX_SUBSCRIPTION_OPERATIONS) {
+    if (items_to_create > 0 && (size_t)items_to_create > MU_DISPATCH_MAX_SUBSCRIPTION_OPERATIONS) {
         return MU_STATUS_BAD_TOOMANYOPERATIONS;
     }
 
-    mu_subscription_t *sub =
-        mu_subscription_find(&server->subs, server->active_session->session_id, subscription_id);
+    mu_subscription_t *sub = mu_subscription_find(&server->subs, server->active_session->session_id, subscription_id);
     if (sub == NULL) {
         return MU_STATUS_BAD_SUBSCRIPTIONIDINVALID;
     }
@@ -1391,56 +1369,58 @@ static opcua_statuscode_t handle_create_monitored_items(mu_server_t *server,
         return MU_STATUS_BAD_NOTHINGTODO;
     }
 
-    s = write_response_prefix(w, MU_ID_CREATEMONITOREDITEMSRESPONSE,
-                              req.request_handle, MU_STATUS_GOOD);
-    if (s != MU_STATUS_GOOD) return s;
+    s = write_response_prefix(w, MU_ID_CREATEMONITOREDITEMSRESPONSE, req.request_handle, MU_STATUS_GOOD);
+    if (s != MU_STATUS_GOOD)
+        return s;
     s = mu_binary_write_int32(w, items_to_create);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
-    opcua_uint64_t now_ms =
-        server->config.time_adapter.get_tick_ms(server->config.time_adapter.context);
+    opcua_uint64_t now_ms = server->config.time_adapter.get_tick_ms(server->config.time_adapter.context);
 
     for (opcua_int32_t i = 0; i < items_to_create; ++i) {
         mu_monitored_item_create_body_t body;
         s = read_monitored_item_create_body(r, &body);
-        if (s != MU_STATUS_GOOD) return s;
+        if (s != MU_STATUS_GOOD)
+            return s;
 
-        const mu_node_t *node =
-            mu_resolve_node(server->config.address_space, &server->user_address_space_index,
-                            &server->runtime_base.space, &body.node_id);
+        const mu_node_t *node = mu_resolve_node(server->config.address_space, &server->user_address_space_index,
+                                                &server->runtime_base.space, &body.node_id);
         if (node == NULL) {
             s = write_monitored_item_create_result(w, MU_STATUS_BAD_NODEIDUNKNOWN, 0u, 0u, 0u);
-            if (s != MU_STATUS_GOOD) return s;
+            if (s != MU_STATUS_GOOD)
+                return s;
             continue;
         }
 
         if (body.attribute_id != MU_MONITORED_VALUE_ATTRIBUTE_ID) {
             s = write_monitored_item_create_result(w, MU_STATUS_BAD_ATTRIBUTEIDINVALID, 0u, 0u, 0u);
-            if (s != MU_STATUS_GOOD) return s;
+            if (s != MU_STATUS_GOOD)
+                return s;
             continue;
         }
 
 #if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
         if (body.filter_result != MU_STATUS_GOOD) {
             s = write_monitored_item_create_result(w, body.filter_result, 0u, 0u, 0u);
-            if (s != MU_STATUS_GOOD) return s;
+            if (s != MU_STATUS_GOOD)
+                return s;
             continue;
         }
-        if (body.deadband_type == MU_DEADBAND_TYPE_ABSOLUTE &&
-            !monitored_node_has_numeric_static_value(node)) {
-            s = write_monitored_item_create_result(
-                w, MU_STATUS_BAD_MONITOREDITEMFILTERUNSUPPORTED, 0u, 0u, 0u);
-            if (s != MU_STATUS_GOOD) return s;
+        if (body.deadband_type == MU_DEADBAND_TYPE_ABSOLUTE && !monitored_node_has_numeric_static_value(node)) {
+            s = write_monitored_item_create_result(w, MU_STATUS_BAD_MONITOREDITEMFILTERUNSUPPORTED, 0u, 0u, 0u);
+            if (s != MU_STATUS_GOOD)
+                return s;
             continue;
         }
 #endif
 
         mu_monitored_item_t *item = NULL;
-        opcua_statuscode_t result =
-            mu_monitored_item_alloc(&server->subs, subscription_id, &item);
+        opcua_statuscode_t result = mu_monitored_item_alloc(&server->subs, subscription_id, &item);
         if (result != MU_STATUS_GOOD) {
             s = write_monitored_item_create_result(w, result, 0u, 0u, 0u);
-            if (s != MU_STATUS_GOOD) return s;
+            if (s != MU_STATUS_GOOD)
+                return s;
             continue;
         }
 
@@ -1481,25 +1461,22 @@ static opcua_statuscode_t handle_create_monitored_items(mu_server_t *server,
         (void)body.queue_size;
         (void)body.discard_oldest;
 
-        s = write_monitored_item_create_result(w, MU_STATUS_GOOD,
-                                               item->monitored_item_id,
-                                               item->sampling_interval_ms,
+        s = write_monitored_item_create_result(w, MU_STATUS_GOOD, item->monitored_item_id, item->sampling_interval_ms,
                                                1u);
-        if (s != MU_STATUS_GOOD) return s;
+        if (s != MU_STATUS_GOOD)
+            return s;
     }
 
     s = mu_binary_write_int32(w, 0);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     *response_length = w->position;
     return MU_STATUS_GOOD;
 }
 
-static opcua_statuscode_t write_monitored_item_modify_result(
-    mu_binary_writer_t *w,
-    opcua_statuscode_t result,
-    opcua_uint32_t revised_sampling_interval_ms)
-{
+static opcua_statuscode_t write_monitored_item_modify_result(mu_binary_writer_t *w, opcua_statuscode_t result,
+                                                             opcua_uint32_t revised_sampling_interval_ms) {
     opcua_uint64_t sampling_bits = 0u;
     mu_binary_write_statuscode(w, result);
     if (result == MU_STATUS_GOOD) {
@@ -1507,20 +1484,19 @@ static opcua_statuscode_t write_monitored_item_modify_result(
     }
     mu_binary_write_uint64(w, sampling_bits);
     mu_binary_write_uint32(w, 1u);
-    if (w->status != MU_STATUS_GOOD) return w->status;
+    if (w->status != MU_STATUS_GOOD)
+        return w->status;
     return write_null_extension_object(w);
 }
 
 /* ModifyMonitoredItems (OPC 10000-4 5.13.3): update sampling interval/client handle
    for each MonitoredItem under the session-owned Subscription. */
-static opcua_statuscode_t handle_modify_monitored_items(mu_server_t *server,
-                                                        mu_binary_reader_t *r,
-                                                        mu_binary_writer_t *w,
-                                                        size_t *response_length)
-{
+static opcua_statuscode_t handle_modify_monitored_items(mu_server_t *server, mu_binary_reader_t *r,
+                                                        mu_binary_writer_t *w, size_t *response_length) {
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     opcua_uint32_t subscription_id;
     opcua_uint32_t timestamps_to_return;
@@ -1528,15 +1504,15 @@ static opcua_statuscode_t handle_modify_monitored_items(mu_server_t *server,
     mu_binary_read_uint32(r, &subscription_id);
     mu_binary_read_uint32(r, &timestamps_to_return);
     mu_binary_read_int32(r, &count);
-    if (r->status != MU_STATUS_GOOD) return r->status;
+    if (r->status != MU_STATUS_GOOD)
+        return r->status;
     (void)timestamps_to_return;
 
     if (count > 0 && (size_t)count > MU_DISPATCH_MAX_SUBSCRIPTION_OPERATIONS) {
         return MU_STATUS_BAD_TOOMANYOPERATIONS;
     }
 
-    mu_subscription_t *sub =
-        mu_subscription_find(&server->subs, server->active_session->session_id, subscription_id);
+    mu_subscription_t *sub = mu_subscription_find(&server->subs, server->active_session->session_id, subscription_id);
     if (sub == NULL) {
         return MU_STATUS_BAD_SUBSCRIPTIONIDINVALID;
     }
@@ -1546,11 +1522,12 @@ static opcua_statuscode_t handle_modify_monitored_items(mu_server_t *server,
         return MU_STATUS_BAD_NOTHINGTODO;
     }
 
-    s = write_response_prefix(w, MU_ID_MODIFYMONITOREDITEMSRESPONSE,
-                              req.request_handle, MU_STATUS_GOOD);
-    if (s != MU_STATUS_GOOD) return s;
+    s = write_response_prefix(w, MU_ID_MODIFYMONITOREDITEMSRESPONSE, req.request_handle, MU_STATUS_GOOD);
+    if (s != MU_STATUS_GOOD)
+        return s;
     s = mu_binary_write_int32(w, count);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     for (opcua_int32_t i = 0; i < count; ++i) {
         opcua_uint32_t monitored_item_id;
@@ -1564,35 +1541,40 @@ static opcua_statuscode_t handle_modify_monitored_items(mu_server_t *server,
         mu_binary_read_uint32(r, &monitored_item_id);
         mu_binary_read_uint32(r, &client_handle);
         mu_binary_read_uint64(r, &sampling_interval_bits);
-        if (r->status != MU_STATUS_GOOD) return r->status;
+        if (r->status != MU_STATUS_GOOD)
+            return r->status;
         s = mu_binary_read_extension_object_header(r, &filter_type, &filter_length);
-        if (s != MU_STATUS_GOOD) return s;
-        s = skip_extension_object_body(r, filter_length); if (s != MU_STATUS_GOOD) return s;
+        if (s != MU_STATUS_GOOD)
+            return s;
+        s = skip_extension_object_body(r, filter_length);
+        if (s != MU_STATUS_GOOD)
+            return s;
         mu_binary_read_uint32(r, &queue_size);
         mu_binary_read_boolean(r, &discard_oldest);
-        if (r->status != MU_STATUS_GOOD) return r->status;
+        if (r->status != MU_STATUS_GOOD)
+            return r->status;
         (void)filter_type;
         (void)queue_size;
         (void)discard_oldest;
 
-        mu_monitored_item_t *item =
-            find_monitored_item(server, subscription_id, monitored_item_id);
+        mu_monitored_item_t *item = find_monitored_item(server, subscription_id, monitored_item_id);
         opcua_statuscode_t result = MU_STATUS_BAD_MONITOREDITEMIDINVALID;
         opcua_uint32_t revised_sampling_interval_ms = 0u;
         if (item != NULL) {
-            revised_sampling_interval_ms =
-                publishing_interval_bits_to_ms(sampling_interval_bits);
+            revised_sampling_interval_ms = publishing_interval_bits_to_ms(sampling_interval_bits);
             item->sampling_interval_ms = revised_sampling_interval_ms;
             item->client_handle = client_handle;
             result = MU_STATUS_GOOD;
         }
 
         s = write_monitored_item_modify_result(w, result, revised_sampling_interval_ms);
-        if (s != MU_STATUS_GOOD) return s;
+        if (s != MU_STATUS_GOOD)
+            return s;
     }
 
     s = mu_binary_write_int32(w, 0);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     *response_length = w->position;
     return MU_STATUS_GOOD;
@@ -1600,50 +1582,39 @@ static opcua_statuscode_t handle_modify_monitored_items(mu_server_t *server,
 
 /* SetMonitoringMode (OPC 10000-4 5.13.4): update MonitoringMode per MonitoredItem id
    and report per-id StatusCode results. */
-static opcua_statuscode_t handle_set_monitoring_mode(mu_server_t *server,
-                                                     mu_binary_reader_t *r,
-                                                     mu_binary_writer_t *w,
-                                                     size_t *response_length)
-{
+static opcua_statuscode_t handle_set_monitoring_mode(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                                     size_t *response_length) {
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
-    mu_set_monitoring_mode_context_t context = { 0u, 0u };
+    mu_set_monitoring_mode_context_t context = {0u, 0u};
     mu_binary_read_uint32(r, &context.subscription_id);
     mu_binary_read_uint32(r, &context.monitoring_mode);
 
-    return drive_subscription_id_status_array(server,
-                                              r,
-                                              w,
-                                              response_length,
-                                              MU_ID_SETMONITORINGMODERESPONSE,
-                                              req.request_handle,
-                                              true,
-                                              context.subscription_id,
-                                              set_monitoring_mode_result,
-                                              &context);
+    return drive_subscription_id_status_array(server, r, w, response_length, MU_ID_SETMONITORINGMODERESPONSE,
+                                              req.request_handle, true, context.subscription_id,
+                                              set_monitoring_mode_result, &context);
 }
 
 #if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
-static opcua_statuscode_t read_set_triggering_uint32_array(
-    mu_binary_reader_t *r,
-    opcua_uint32_t *items,
-    opcua_int32_t *count)
-{
+static opcua_statuscode_t read_set_triggering_uint32_array(mu_binary_reader_t *r, opcua_uint32_t *items,
+                                                           opcua_int32_t *count) {
     opcua_int32_t decoded_count;
     opcua_statuscode_t s = mu_binary_read_int32(r, &decoded_count);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
     if (decoded_count < -1) {
         return MU_STATUS_BAD_DECODINGERROR;
     }
-    if (decoded_count > 0 &&
-        (size_t)decoded_count > MU_DISPATCH_MAX_SUBSCRIPTION_OPERATIONS) {
+    if (decoded_count > 0 && (size_t)decoded_count > MU_DISPATCH_MAX_SUBSCRIPTION_OPERATIONS) {
         return MU_STATUS_BAD_TOOMANYOPERATIONS;
     }
 
     s = ensure_array_items_min_remaining(r, decoded_count, 4u);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
     if (decoded_count <= 0) {
         *count = 0;
         return MU_STATUS_GOOD;
@@ -1651,7 +1622,8 @@ static opcua_statuscode_t read_set_triggering_uint32_array(
 
     for (opcua_int32_t i = 0; i < decoded_count; ++i) {
         s = mu_binary_read_uint32(r, &items[i]);
-        if (s != MU_STATUS_GOOD) return s;
+        if (s != MU_STATUS_GOOD)
+            return s;
     }
 
     *count = decoded_count;
@@ -1660,14 +1632,12 @@ static opcua_statuscode_t read_set_triggering_uint32_array(
 
 /* SetTriggering (OPC-10000-4 5.13.5): add/remove triggering links for one
    triggering MonitoredItem and report per-link StatusCode results. */
-static opcua_statuscode_t handle_set_triggering(mu_server_t *server,
-                                                mu_binary_reader_t *r,
-                                                mu_binary_writer_t *w,
-                                                size_t *response_length)
-{
+static opcua_statuscode_t handle_set_triggering(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                                size_t *response_length) {
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     opcua_uint32_t subscription_id;
     opcua_uint32_t triggering_item_id;
@@ -1680,19 +1650,20 @@ static opcua_statuscode_t handle_set_triggering(mu_server_t *server,
 
     mu_binary_read_uint32(r, &subscription_id);
     mu_binary_read_uint32(r, &triggering_item_id);
-    if (r->status != MU_STATUS_GOOD) return r->status;
+    if (r->status != MU_STATUS_GOOD)
+        return r->status;
 
     s = read_set_triggering_uint32_array(r, links_to_add, &add_count);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
     s = read_set_triggering_uint32_array(r, links_to_remove, &remove_count);
-    if (s != MU_STATUS_GOOD) return s;
-    if ((size_t)add_count + (size_t)remove_count >
-        MU_DISPATCH_MAX_SUBSCRIPTION_OPERATIONS) {
+    if (s != MU_STATUS_GOOD)
+        return s;
+    if ((size_t)add_count + (size_t)remove_count > MU_DISPATCH_MAX_SUBSCRIPTION_OPERATIONS) {
         return MU_STATUS_BAD_TOOMANYOPERATIONS;
     }
 
-    mu_subscription_t *sub =
-        mu_subscription_find(&server->subs, server->active_session->session_id, subscription_id);
+    mu_subscription_t *sub = mu_subscription_find(&server->subs, server->active_session->session_id, subscription_id);
     if (sub == NULL) {
         return MU_STATUS_BAD_SUBSCRIPTIONIDINVALID;
     }
@@ -1704,40 +1675,40 @@ static opcua_statuscode_t handle_set_triggering(mu_server_t *server,
 
     for (opcua_int32_t i = 0; i < add_count; ++i) {
         add_results[i] =
-            mu_monitored_item_add_trigger_link(&server->subs,
-                                               subscription_id,
-                                               triggering_item_id,
-                                               links_to_add[i]);
+            mu_monitored_item_add_trigger_link(&server->subs, subscription_id, triggering_item_id, links_to_add[i]);
     }
     for (opcua_int32_t i = 0; i < remove_count; ++i) {
-        remove_results[i] =
-            mu_monitored_item_remove_trigger_link(&server->subs,
-                                                  subscription_id,
-                                                  triggering_item_id,
-                                                  links_to_remove[i]);
+        remove_results[i] = mu_monitored_item_remove_trigger_link(&server->subs, subscription_id, triggering_item_id,
+                                                                  links_to_remove[i]);
     }
 
-    s = write_response_prefix(w, MU_ID_SETTRIGGERINGRESPONSE,
-                              req.request_handle, MU_STATUS_GOOD);
-    if (s != MU_STATUS_GOOD) return s;
+    s = write_response_prefix(w, MU_ID_SETTRIGGERINGRESPONSE, req.request_handle, MU_STATUS_GOOD);
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     s = mu_binary_write_int32(w, add_count);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
     for (opcua_int32_t i = 0; i < add_count; ++i) {
         s = mu_binary_write_statuscode(w, add_results[i]);
-        if (s != MU_STATUS_GOOD) return s;
+        if (s != MU_STATUS_GOOD)
+            return s;
     }
     s = mu_binary_write_int32(w, 0);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     s = mu_binary_write_int32(w, remove_count);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
     for (opcua_int32_t i = 0; i < remove_count; ++i) {
         s = mu_binary_write_statuscode(w, remove_results[i]);
-        if (s != MU_STATUS_GOOD) return s;
+        if (s != MU_STATUS_GOOD)
+            return s;
     }
     s = mu_binary_write_int32(w, 0);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     *response_length = w->position;
     return MU_STATUS_GOOD;
@@ -1746,69 +1717,49 @@ static opcua_statuscode_t handle_set_triggering(mu_server_t *server,
 
 /* DeleteMonitoredItems (OPC 10000-4 5.13.6): service-level Good with per-id
    StatusCode results for the subscription-owned MonitoredItems. */
-static opcua_statuscode_t handle_delete_monitored_items(mu_server_t *server,
-                                                        mu_binary_reader_t *r,
-                                                        mu_binary_writer_t *w,
-                                                        size_t *response_length)
-{
+static opcua_statuscode_t handle_delete_monitored_items(mu_server_t *server, mu_binary_reader_t *r,
+                                                        mu_binary_writer_t *w, size_t *response_length) {
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
-    mu_monitored_item_id_context_t context = { 0u };
+    mu_monitored_item_id_context_t context = {0u};
     mu_binary_read_uint32(r, &context.subscription_id);
 
-    return drive_subscription_id_status_array(server,
-                                              r,
-                                              w,
-                                              response_length,
-                                              MU_ID_DELETEMONITOREDITEMSRESPONSE,
-                                              req.request_handle,
-                                              true,
-                                              context.subscription_id,
-                                              delete_monitored_item_result,
-                                              &context);
+    return drive_subscription_id_status_array(server, r, w, response_length, MU_ID_DELETEMONITOREDITEMSRESPONSE,
+                                              req.request_handle, true, context.subscription_id,
+                                              delete_monitored_item_result, &context);
 }
 
 /* DeleteSubscriptions (OPC 10000-4 5.14.8): service-level Good with per-id
    StatusCode results. DiagnosticInfos is empty, matching other array handlers. */
-static opcua_statuscode_t handle_delete_subscriptions(mu_server_t *server,
-                                                      mu_binary_reader_t *r,
-                                                      mu_binary_writer_t *w,
-                                                      size_t *response_length)
-{
+static opcua_statuscode_t handle_delete_subscriptions(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                                      size_t *response_length) {
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
-    return drive_subscription_id_status_array(server,
-                                              r,
-                                              w,
-                                              response_length,
-                                              MU_ID_DELETESUBSCRIPTIONSRESPONSE,
-                                              req.request_handle,
-                                              false,
-                                              0u,
-                                              delete_subscription_result,
-                                              NULL);
+    return drive_subscription_id_status_array(server, r, w, response_length, MU_ID_DELETESUBSCRIPTIONSRESPONSE,
+                                              req.request_handle, false, 0u, delete_subscription_result, NULL);
 }
 
 /* Publish (OPC 10000-4 5.14.5): decode RequestHeader and acknowledgements, then
    park the request. The publishing timer emits the PublishResponse asynchronously. */
-static opcua_statuscode_t handle_publish(mu_server_t *server,
-                                         mu_binary_reader_t *r,
-                                         mu_binary_writer_t *w,
-                                         size_t *response_length)
-{
+static opcua_statuscode_t handle_publish(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                         size_t *response_length) {
     (void)w;
 
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     opcua_int32_t ack_count;
     s = mu_binary_read_int32(r, &ack_count);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
     if (ack_count < 0) {
         ack_count = 0;
     }
@@ -1823,27 +1774,20 @@ static opcua_statuscode_t handle_publish(mu_server_t *server,
         opcua_uint32_t sequence_number;
         mu_binary_read_uint32(r, &subscription_id);
         mu_binary_read_uint32(r, &sequence_number);
-        if (r->status != MU_STATUS_GOOD) return r->status;
-        opcua_statuscode_t ack_result =
-            mu_subscription_acknowledge(&server->subs,
-                                        server->active_session->session_id,
-                                        subscription_id,
-                                        sequence_number);
+        if (r->status != MU_STATUS_GOOD)
+            return r->status;
+        opcua_statuscode_t ack_result = mu_subscription_acknowledge(&server->subs, server->active_session->session_id,
+                                                                    subscription_id, sequence_number);
         if (stored_ack_count < MU_DISPATCH_MAX_PUBLISH_ACKS) {
             ack_results[stored_ack_count] = ack_result;
             ++stored_ack_count;
         }
     }
 
-    opcua_uint64_t now_ms =
-        server->config.time_adapter.get_tick_ms(server->config.time_adapter.context);
+    opcua_uint64_t now_ms = server->config.time_adapter.get_tick_ms(server->config.time_adapter.context);
     mu_publish_request_t *parked = NULL;
-    s = mu_publish_request_enqueue(&server->subs,
-                                   server->active_session->session_id,
-                                   server->current_request_id,
-                                   req.request_handle,
-                                   now_ms,
-                                   &parked);
+    s = mu_publish_request_enqueue(&server->subs, server->active_session->session_id, server->current_request_id,
+                                   req.request_handle, now_ms, &parked);
     if (s != MU_STATUS_GOOD) {
         return s;
     }
@@ -1860,36 +1804,31 @@ static opcua_statuscode_t handle_publish(mu_server_t *server,
 
 /* Republish (OPC 10000-4 5.14.6): return a retained NotificationMessage body for
    the requested subscription sequence number. */
-static opcua_statuscode_t handle_republish(mu_server_t *server,
-                                           mu_binary_reader_t *r,
-                                           mu_binary_writer_t *w,
-                                           size_t *response_length)
-{
+static opcua_statuscode_t handle_republish(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                           size_t *response_length) {
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     opcua_uint32_t subscription_id;
     opcua_uint32_t sequence_number;
     mu_binary_read_uint32(r, &subscription_id);
     mu_binary_read_uint32(r, &sequence_number);
-    if (r->status != MU_STATUS_GOOD) return r->status;
+    if (r->status != MU_STATUS_GOOD)
+        return r->status;
 
     const opcua_byte_t *message = NULL;
     size_t message_len = 0u;
-    s = mu_subscription_republish(&server->subs,
-                                  server->active_session->session_id,
-                                  subscription_id,
-                                  sequence_number,
-                                  &message,
-                                  &message_len);
+    s = mu_subscription_republish(&server->subs, server->active_session->session_id, subscription_id, sequence_number,
+                                  &message, &message_len);
     if (s != MU_STATUS_GOOD) {
         return s;
     }
 
-    s = write_response_prefix(w, MU_ID_REPUBLISHRESPONSE,
-                              req.request_handle, MU_STATUS_GOOD);
-    if (s != MU_STATUS_GOOD) return s;
+    s = write_response_prefix(w, MU_ID_REPUBLISHRESPONSE, req.request_handle, MU_STATUS_GOOD);
+    if (s != MU_STATUS_GOOD)
+        return s;
     if (message_len > w->length - w->position) {
         return MU_STATUS_BAD_RESPONSETOOLARGE;
     }
@@ -1904,25 +1843,215 @@ static opcua_statuscode_t handle_republish(mu_server_t *server,
     *response_length = w->position;
     return MU_STATUS_GOOD;
 }
+
+#if MU_DISPATCH_CALL_ENABLED
+static bool nodeid_is_ns0_numeric(const mu_nodeid_t *node_id, opcua_uint32_t numeric_id) {
+    return node_id->identifier_type == MU_NODEID_NUMERIC && node_id->namespace_index == 0u &&
+           node_id->identifier.numeric == numeric_id;
+}
+
+static opcua_statuscode_t write_call_method_result(mu_binary_writer_t *w, opcua_statuscode_t status,
+                                                   opcua_int32_t input_argument_result_count,
+                                                   const opcua_statuscode_t *input_argument_results,
+                                                   opcua_int32_t output_argument_count,
+                                                   const mu_variant_t *output_arguments) {
+    opcua_statuscode_t s = mu_binary_write_statuscode(w, status);
+    if (s != MU_STATUS_GOOD)
+        return s;
+
+    s = mu_binary_write_int32(w, input_argument_result_count);
+    if (s != MU_STATUS_GOOD)
+        return s;
+    for (opcua_int32_t i = 0; i < input_argument_result_count; ++i) {
+        s = mu_binary_write_statuscode(w, input_argument_results[i]);
+        if (s != MU_STATUS_GOOD)
+            return s;
+    }
+
+    s = mu_binary_write_int32(w, 0);
+    if (s != MU_STATUS_GOOD)
+        return s;
+
+    s = mu_binary_write_int32(w, output_argument_count);
+    if (s != MU_STATUS_GOOD)
+        return s;
+    for (opcua_int32_t i = 0; i < output_argument_count; ++i) {
+        s = mu_binary_write_variant(w, &output_arguments[i]);
+        if (s != MU_STATUS_GOOD)
+            return s;
+    }
+
+    return MU_STATUS_GOOD;
+}
+
+static opcua_statuscode_t read_call_input_arguments(mu_binary_reader_t *r, mu_variant_t *args,
+                                                    opcua_int32_t *arg_count) {
+    opcua_int32_t count;
+    opcua_statuscode_t s = mu_binary_read_int32(r, &count);
+    if (s != MU_STATUS_GOOD)
+        return s;
+    if (count < -1) {
+        return MU_STATUS_BAD_DECODINGERROR;
+    }
+    if (count > MU_DISPATCH_MAX_CALL_INPUT_ARGUMENTS) {
+        return MU_STATUS_BAD_TOOMANYOPERATIONS;
+    }
+
+    if (count <= 0) {
+        *arg_count = 0;
+        return MU_STATUS_GOOD;
+    }
+
+    for (opcua_int32_t i = 0; i < count; ++i) {
+        memset(&args[i], 0, sizeof(args[i]));
+        s = mu_binary_read_variant(r, &args[i]);
+        if (s != MU_STATUS_GOOD)
+            return s;
+    }
+
+    *arg_count = count;
+    return MU_STATUS_GOOD;
+}
+
+static opcua_statuscode_t write_get_monitored_items_result(mu_server_t *server, mu_binary_writer_t *w,
+                                                           opcua_uint32_t subscription_id) {
+    opcua_uint32_t server_handles[MU_MAX_MONITORED_ITEMS];
+    opcua_uint32_t client_handles[MU_MAX_MONITORED_ITEMS];
+    size_t handle_count = 0u;
+    opcua_statuscode_t result =
+        mu_subscription_get_monitored_items(&server->subs, server->active_session->session_id, subscription_id,
+                                            server_handles, client_handles, MU_MAX_MONITORED_ITEMS, &handle_count);
+    if (result != MU_STATUS_GOOD) {
+        return write_call_method_result(w, result, 0, NULL, 0, NULL);
+    }
+
+    mu_variant_t outputs[2];
+    memset(outputs, 0, sizeof(outputs));
+    outputs[0].type = MU_TYPE_UINT32;
+    outputs[0].is_array = true;
+    outputs[0].array_length = (opcua_int32_t)handle_count;
+    outputs[0].value.array = server_handles;
+    outputs[1].type = MU_TYPE_UINT32;
+    outputs[1].is_array = true;
+    outputs[1].array_length = (opcua_int32_t)handle_count;
+    outputs[1].value.array = client_handles;
+
+    return write_call_method_result(w, MU_STATUS_GOOD, 0, NULL, 2, outputs);
+}
+
+static opcua_statuscode_t write_resend_data_result(mu_server_t *server, mu_binary_writer_t *w,
+                                                   opcua_uint32_t subscription_id) {
+    opcua_statuscode_t result =
+        mu_subscription_request_resend_data(&server->subs, server->active_session->session_id, subscription_id);
+    return write_call_method_result(w, result, 0, NULL, 0, NULL);
+}
+
+static opcua_statuscode_t write_single_call_method_result(mu_server_t *server, mu_binary_writer_t *w,
+                                                          const mu_nodeid_t *object_id, const mu_nodeid_t *method_id,
+                                                          const mu_variant_t *args, opcua_int32_t arg_count) {
+    opcua_statuscode_t input_result = MU_STATUS_BAD_INVALIDARGUMENT;
+
+    if (!nodeid_is_ns0_numeric(object_id, MU_ID_SERVER_OBJECT)) {
+        return write_call_method_result(w, MU_STATUS_BAD_NODEIDINVALID, 0, NULL, 0, NULL);
+    }
+    if (!nodeid_is_ns0_numeric(method_id, MU_ID_SERVER_GETMONITOREDITEMS) &&
+        !nodeid_is_ns0_numeric(method_id, MU_ID_SERVER_RESENDDATA)) {
+        return write_call_method_result(w, MU_STATUS_BAD_METHODINVALID, 0, NULL, 0, NULL);
+    }
+    if (arg_count <= 0) {
+        return write_call_method_result(w, MU_STATUS_BAD_ARGUMENTSMISSING, 0, NULL, 0, NULL);
+    }
+    if (arg_count > 1) {
+        return write_call_method_result(w, MU_STATUS_BAD_TOOMANYARGUMENTS, 0, NULL, 0, NULL);
+    }
+    if (args[0].is_array || args[0].type != MU_TYPE_UINT32) {
+        return write_call_method_result(w, MU_STATUS_BAD_INVALIDARGUMENT, 1, &input_result, 0, NULL);
+    }
+
+    if (nodeid_is_ns0_numeric(method_id, MU_ID_SERVER_GETMONITOREDITEMS)) {
+        return write_get_monitored_items_result(server, w, args[0].value.ui32);
+    }
+
+    return write_resend_data_result(server, w, args[0].value.ui32);
+}
+
+/* Call (OPC-10000-4 §5.12.2.2), limited to OPC-10000-5 Base Info methods
+   GetMonitoredItems (§9.1) and ResendData (§9.2) on the Server object. */
+static opcua_statuscode_t handle_call(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                      size_t *response_length) {
+    mu_request_header_t req;
+    opcua_statuscode_t s = mu_request_header_decode(r, &req);
+    if (s != MU_STATUS_GOOD)
+        return s;
+
+    opcua_int32_t method_count;
+    s = mu_binary_read_int32(r, &method_count);
+    if (s != MU_STATUS_GOOD)
+        return s;
+    if (method_count < -1) {
+        return MU_STATUS_BAD_DECODINGERROR;
+    }
+    if (method_count <= 0) {
+        return MU_STATUS_BAD_NOTHINGTODO;
+    }
+    if ((size_t)method_count > MU_DISPATCH_MAX_CALL_METHODS) {
+        return MU_STATUS_BAD_TOOMANYOPERATIONS;
+    }
+
+    s = write_response_prefix(w, MU_ID_CALLRESPONSE, req.request_handle, MU_STATUS_GOOD);
+    if (s != MU_STATUS_GOOD)
+        return s;
+    s = mu_binary_write_int32(w, method_count);
+    if (s != MU_STATUS_GOOD)
+        return s;
+
+    for (opcua_int32_t i = 0; i < method_count; ++i) {
+        mu_nodeid_t object_id;
+        mu_nodeid_t method_id;
+        mu_variant_t args[MU_DISPATCH_MAX_CALL_INPUT_ARGUMENTS];
+        opcua_int32_t arg_count = 0;
+
+        s = mu_binary_read_nodeid(r, &object_id);
+        if (s != MU_STATUS_GOOD)
+            return s;
+        s = mu_binary_read_nodeid(r, &method_id);
+        if (s != MU_STATUS_GOOD)
+            return s;
+        s = read_call_input_arguments(r, args, &arg_count);
+        if (s != MU_STATUS_GOOD)
+            return s;
+
+        s = write_single_call_method_result(server, w, &object_id, &method_id, args, arg_count);
+        if (s != MU_STATUS_GOOD)
+            return s;
+    }
+
+    s = mu_binary_write_int32(w, 0);
+    if (s != MU_STATUS_GOOD)
+        return s;
+
+    *response_length = w->position;
+    return MU_STATUS_GOOD;
+}
+#endif
 #endif /* MICRO_OPCUA_SUBSCRIPTIONS */
 
 #ifdef MICRO_OPCUA_SERVICE_REGISTER_NODES
 /* RegisterNodes (OPC 10000-4 5.9.5): this server has no alternate optimized
    handles, so registeredNodeIds is the identity mapping of nodesToRegister. */
-static opcua_statuscode_t handle_register_nodes(mu_server_t *server,
-                                                mu_binary_reader_t *r,
-                                                mu_binary_writer_t *w,
-                                                size_t *response_length)
-{
+static opcua_statuscode_t handle_register_nodes(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                                size_t *response_length) {
     (void)server;
 
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     opcua_int32_t count;
     s = mu_binary_read_int32(r, &count);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
     if (count < 0) {
         count = 0;
     }
@@ -1934,16 +2063,20 @@ static opcua_statuscode_t handle_register_nodes(mu_server_t *server,
     size_t node_count = (size_t)count;
     for (size_t i = 0; i < node_count; ++i) {
         s = mu_binary_read_nodeid(r, &nodes[i]);
-        if (s != MU_STATUS_GOOD) return s;
+        if (s != MU_STATUS_GOOD)
+            return s;
     }
 
     s = write_response_prefix(w, MU_ID_REGISTERNODESRESPONSE, req.request_handle, MU_STATUS_GOOD);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
     s = mu_binary_write_int32(w, count);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
     for (size_t i = 0; i < node_count; ++i) {
         s = mu_binary_write_nodeid(w, &nodes[i]);
-        if (s != MU_STATUS_GOOD) return s;
+        if (s != MU_STATUS_GOOD)
+            return s;
     }
 
     *response_length = w->position;
@@ -1951,20 +2084,19 @@ static opcua_statuscode_t handle_register_nodes(mu_server_t *server,
 }
 
 /* UnregisterNodes (OPC 10000-4 5.9.6): consume the NodeIds and return Good. */
-static opcua_statuscode_t handle_unregister_nodes(mu_server_t *server,
-                                                  mu_binary_reader_t *r,
-                                                  mu_binary_writer_t *w,
-                                                  size_t *response_length)
-{
+static opcua_statuscode_t handle_unregister_nodes(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                                  size_t *response_length) {
     (void)server;
 
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     opcua_int32_t count;
     s = mu_binary_read_int32(r, &count);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
     if (count < 0) {
         count = 0;
     }
@@ -1976,11 +2108,13 @@ static opcua_statuscode_t handle_unregister_nodes(mu_server_t *server,
     for (size_t i = 0; i < node_count; ++i) {
         mu_nodeid_t ignored;
         s = mu_binary_read_nodeid(r, &ignored);
-        if (s != MU_STATUS_GOOD) return s;
+        if (s != MU_STATUS_GOOD)
+            return s;
     }
 
     s = write_response_prefix(w, MU_ID_UNREGISTERNODESRESPONSE, req.request_handle, MU_STATUS_GOOD);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     *response_length = w->position;
     return MU_STATUS_GOOD;
@@ -1988,8 +2122,7 @@ static opcua_statuscode_t handle_unregister_nodes(mu_server_t *server,
 #endif /* MICRO_OPCUA_SERVICE_REGISTER_NODES */
 
 #ifdef MICRO_OPCUA_SERVICE_BROWSE
-static opcua_boolean_t browse_name_equals(const mu_string_t *left, const mu_string_t *right)
-{
+static opcua_boolean_t browse_name_equals(const mu_string_t *left, const mu_string_t *right) {
     if (left->length != right->length) {
         return false;
     }
@@ -2004,18 +2137,17 @@ static opcua_boolean_t browse_name_equals(const mu_string_t *left, const mu_stri
 
 /* TranslateBrowsePathsToNodeIds (OPC 10000-4 5.9.4): resolve each RelativePath
    over the static address space and encode BrowsePathResult[] directly. */
-static opcua_statuscode_t handle_translate_browse_paths(mu_server_t *server,
-                                                        mu_binary_reader_t *r,
-                                                        mu_binary_writer_t *w,
-                                                        size_t *response_length)
-{
+static opcua_statuscode_t handle_translate_browse_paths(mu_server_t *server, mu_binary_reader_t *r,
+                                                        mu_binary_writer_t *w, size_t *response_length) {
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     opcua_int32_t browse_path_count;
     s = mu_binary_read_int32(r, &browse_path_count);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
     if (browse_path_count < 0) {
         browse_path_count = 0;
     }
@@ -2023,22 +2155,25 @@ static opcua_statuscode_t handle_translate_browse_paths(mu_server_t *server,
         return MU_STATUS_BAD_TOOMANYOPERATIONS;
     }
 
-    s = write_response_prefix(w, MU_ID_TRANSLATEBROWSEPATHSTONODEIDSRESPONSE,
-                              req.request_handle, MU_STATUS_GOOD);
-    if (s != MU_STATUS_GOOD) return s;
+    s = write_response_prefix(w, MU_ID_TRANSLATEBROWSEPATHSTONODEIDSRESPONSE, req.request_handle, MU_STATUS_GOOD);
+    if (s != MU_STATUS_GOOD)
+        return s;
     s = mu_binary_write_int32(w, browse_path_count);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     const mu_address_space_t *address_space = server->config.address_space;
     size_t path_count = (size_t)browse_path_count;
     for (size_t path_index = 0; path_index < path_count; ++path_index) {
         mu_nodeid_t starting_node;
         s = mu_binary_read_nodeid(r, &starting_node);
-        if (s != MU_STATUS_GOOD) return s;
+        if (s != MU_STATUS_GOOD)
+            return s;
 
         opcua_int32_t element_count;
         s = mu_binary_read_int32(r, &element_count);
-        if (s != MU_STATUS_GOOD) return s;
+        if (s != MU_STATUS_GOOD)
+            return s;
         if (element_count < 0) {
             element_count = 0;
         }
@@ -2048,9 +2183,7 @@ static opcua_statuscode_t handle_translate_browse_paths(mu_server_t *server,
 
         const mu_node_t *current = NULL;
         if (address_space != NULL) {
-            current = mu_address_space_find_node(address_space,
-                                                 &server->user_address_space_index,
-                                                 &starting_node);
+            current = mu_address_space_find_node(address_space, &server->user_address_space_index, &starting_node);
         }
 
         size_t element_total = (size_t)element_count;
@@ -2062,13 +2195,16 @@ static opcua_statuscode_t handle_translate_browse_paths(mu_server_t *server,
             mu_string_t target_name;
 
             s = mu_binary_read_nodeid(r, &reference_type_id);
-            if (s != MU_STATUS_GOOD) return s;
+            if (s != MU_STATUS_GOOD)
+                return s;
             mu_binary_read_boolean(r, &is_inverse);
             mu_binary_read_boolean(r, &include_subtypes);
             mu_binary_read_uint16(r, &target_namespace_index);
-            if (r->status != MU_STATUS_GOOD) return r->status;
+            if (r->status != MU_STATUS_GOOD)
+                return r->status;
             s = mu_binary_read_string(r, &target_name);
-            if (s != MU_STATUS_GOOD) return s;
+            if (s != MU_STATUS_GOOD)
+                return s;
             (void)target_namespace_index; /* Nano model stores BrowseName name only. */
 
             if (current != NULL) {
@@ -2092,9 +2228,7 @@ static opcua_statuscode_t handle_translate_browse_paths(mu_server_t *server,
                     }
 
                     const mu_node_t *target =
-                        mu_address_space_find_node(address_space,
-                                                   &server->user_address_space_index,
-                                                   &ref->target_id);
+                        mu_address_space_find_node(address_space, &server->user_address_space_index, &ref->target_id);
                     if (target == NULL) {
                         continue;
                     }
@@ -2112,20 +2246,25 @@ static opcua_statuscode_t handle_translate_browse_paths(mu_server_t *server,
         if (current != NULL) {
             mu_binary_write_statuscode(w, MU_STATUS_GOOD);
             mu_binary_write_int32(w, 1);
-            if (w->status != MU_STATUS_GOOD) return w->status;
+            if (w->status != MU_STATUS_GOOD)
+                return w->status;
             s = mu_binary_write_nodeid(w, &current->node_id);
-            if (s != MU_STATUS_GOOD) return s;
+            if (s != MU_STATUS_GOOD)
+                return s;
             mu_binary_write_uint32(w, 0xFFFFFFFFu);
-            if (w->status != MU_STATUS_GOOD) return w->status;
+            if (w->status != MU_STATUS_GOOD)
+                return w->status;
         } else {
             mu_binary_write_statuscode(w, MU_STATUS_BAD_NOMATCH);
             mu_binary_write_int32(w, 0);
-            if (w->status != MU_STATUS_GOOD) return w->status;
+            if (w->status != MU_STATUS_GOOD)
+                return w->status;
         }
     }
 
     s = mu_binary_write_int32(w, 0);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     *response_length = w->position;
     return MU_STATUS_GOOD;
@@ -2135,31 +2274,33 @@ static opcua_statuscode_t handle_translate_browse_paths(mu_server_t *server,
 #ifdef MICRO_OPCUA_SERVICE_READ
 /* Read (OPC 10000-4 5.11.2): decode the request after the RequestHeader, read each
    attribute from the address space, and encode the ReadResponse. */
-static opcua_statuscode_t handle_read(mu_server_t *server,
-                                      mu_binary_reader_t *r,
-                                      mu_binary_writer_t *w,
-                                      size_t *response_length)
-{
+static opcua_statuscode_t handle_read(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                      size_t *response_length) {
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     mu_read_request_t rreq;
     mu_read_value_id_t nodes[MU_DISPATCH_MAX_READ_NODES];
     s = mu_read_request_decode(r, &rreq, nodes, MU_DISPATCH_MAX_READ_NODES);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     mu_read_response_t rresp;
     mu_datavalue_t results[MU_DISPATCH_MAX_READ_NODES];
     s = mu_read_process_with_user_index(server->config.address_space, &server->user_address_space_index,
-                                        &server->runtime_base.space, &rreq, &rresp,
-                                        results, MU_DISPATCH_MAX_READ_NODES);
-    if (s != MU_STATUS_GOOD) return s;
+                                        &server->runtime_base.space, &rreq, &rresp, results,
+                                        MU_DISPATCH_MAX_READ_NODES);
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     s = write_response_prefix(w, MU_ID_READRESPONSE, req.request_handle, MU_STATUS_GOOD);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
     s = mu_read_response_encode(w, &rresp);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     *response_length = w->position;
     return MU_STATUS_GOOD;
@@ -2169,36 +2310,37 @@ static opcua_statuscode_t handle_read(mu_server_t *server,
 #ifdef MICRO_OPCUA_SERVICE_BROWSE
 /* Browse (OPC 10000-4 5.9.2): decode the request after the RequestHeader, traverse
    references in the address space, and encode the BrowseResponse. */
-static opcua_statuscode_t handle_browse(mu_server_t *server,
-                                        mu_binary_reader_t *r,
-                                        mu_binary_writer_t *w,
-                                        size_t *response_length)
-{
+static opcua_statuscode_t handle_browse(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                        size_t *response_length) {
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     mu_browse_request_t breq;
     mu_browse_description_t descs[MU_DISPATCH_MAX_BROWSE_NODES];
     s = mu_browse_request_decode(r, &breq, descs, MU_DISPATCH_MAX_BROWSE_NODES);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     mu_browse_result_t results[MU_DISPATCH_MAX_BROWSE_NODES];
     mu_reference_description_t ref_pool[MU_DISPATCH_MAX_BROWSE_REFS];
     s = mu_browse_process_with_user_index(server->config.address_space, &server->user_address_space_index,
-                                          &server->runtime_base.space, &breq,
-                                          results, MU_DISPATCH_MAX_BROWSE_NODES,
+                                          &server->runtime_base.space, &breq, results, MU_DISPATCH_MAX_BROWSE_NODES,
                                           ref_pool, MU_DISPATCH_MAX_BROWSE_REFS);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     s = write_response_prefix(w, MU_ID_BROWSERESPONSE, req.request_handle, MU_STATUS_GOOD);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     mu_browse_response_t bresp;
     bresp.results = results;
     bresp.num_results = breq.num_nodes_to_browse;
     s = mu_browse_response_encode(w, &bresp);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     *response_length = w->position;
     return MU_STATUS_GOOD;
@@ -2206,23 +2348,22 @@ static opcua_statuscode_t handle_browse(mu_server_t *server,
 
 /* BrowseNext (OPC 10000-4 5.9.3, 7.9): this server never creates
    ContinuationPoints, so every supplied point is unknown. */
-static opcua_statuscode_t handle_browse_next(mu_server_t *server,
-                                             mu_binary_reader_t *r,
-                                             mu_binary_writer_t *w,
-                                             size_t *response_length)
-{
+static opcua_statuscode_t handle_browse_next(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                             size_t *response_length) {
     (void)server;
 
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     opcua_boolean_t release_continuation_points;
     mu_binary_read_boolean(r, &release_continuation_points);
 
     opcua_int32_t count;
     mu_binary_read_int32(r, &count);
-    if (r->status != MU_STATUS_GOOD) return r->status;
+    if (r->status != MU_STATUS_GOOD)
+        return r->status;
     (void)release_continuation_points;
     if (count < 0) {
         count = 0;
@@ -2234,42 +2375,44 @@ static opcua_statuscode_t handle_browse_next(mu_server_t *server,
     for (opcua_int32_t i = 0; i < count; ++i) {
         mu_bytestring_t continuation_point;
         s = mu_binary_read_bytestring(r, &continuation_point);
-        if (s != MU_STATUS_GOOD) return s;
+        if (s != MU_STATUS_GOOD)
+            return s;
     }
 
     s = write_response_prefix(w, MU_ID_BROWSENEXTRESPONSE, req.request_handle, MU_STATUS_GOOD);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     s = mu_binary_write_int32(w, count);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
     for (opcua_int32_t i = 0; i < count; ++i) {
-        mu_bytestring_t null_continuation_point = { -1, NULL };
+        mu_bytestring_t null_continuation_point = {-1, NULL};
 
         s = mu_binary_write_statuscode(w, MU_STATUS_BAD_CONTINUATIONPOINTINVALID);
-        if (s != MU_STATUS_GOOD) return s;
+        if (s != MU_STATUS_GOOD)
+            return s;
         s = mu_binary_write_bytestring(w, &null_continuation_point);
-        if (s != MU_STATUS_GOOD) return s;
+        if (s != MU_STATUS_GOOD)
+            return s;
         s = mu_binary_write_int32(w, 0);
-        if (s != MU_STATUS_GOOD) return s;
+        if (s != MU_STATUS_GOOD)
+            return s;
     }
 
     s = mu_binary_write_int32(w, 0);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     *response_length = w->position;
     return MU_STATUS_GOOD;
 }
 #endif /* MICRO_OPCUA_SERVICE_BROWSE */
 
-opcua_statuscode_t mu_service_dispatch(
-    mu_server_t *server,
-    opcua_uint32_t request_id,
-    const opcua_byte_t *request_body,
-    size_t request_length,
-    opcua_byte_t *response_body,
-    size_t *response_length)
-{
-    if (!server || !request_body || !response_body || !response_length) return MU_STATUS_BAD_INTERNALERROR;
+opcua_statuscode_t mu_service_dispatch(mu_server_t *server, opcua_uint32_t request_id, const opcua_byte_t *request_body,
+                                       size_t request_length, opcua_byte_t *response_body, size_t *response_length) {
+    if (!server || !request_body || !response_body || !response_length)
+        return MU_STATUS_BAD_INTERNALERROR;
 
     server->active_session = NULL;
 
@@ -2282,19 +2425,17 @@ opcua_statuscode_t mu_service_dispatch(
         if (!server->secure_channel.is_open) {
             /* If we haven't even opened a secure channel, we can't process requests over it */
             /* OPC UA Part 4, 7.38.2: Bad_SecureChannelIdInvalid */
-            return MU_STATUS_BAD_SECURECHANNELIDINVALID; 
+            return MU_STATUS_BAD_SECURECHANNELIDINVALID;
         }
     }
 
     if (descriptor->service.requires_session) {
         opcua_uint32_t auth_token = 0u;
-        opcua_statuscode_t s =
-            read_auth_token_from_request(request_body, request_length, &auth_token);
+        opcua_statuscode_t s = read_auth_token_from_request(request_body, request_length, &auth_token);
         if (s != MU_STATUS_GOOD) {
             return s;
         }
-        mu_session_t *session =
-            mu_session_find_by_token(server->sessions, MU_MAX_SESSIONS, auth_token);
+        mu_session_t *session = mu_session_find_by_token(server->sessions, MU_MAX_SESSIONS, auth_token);
         if (session == NULL || session->state != MU_SESSION_STATE_ACTIVATED) {
             return MU_STATUS_BAD_SESSIONIDINVALID;
         }

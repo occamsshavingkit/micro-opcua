@@ -1,20 +1,20 @@
 # Contract: Call service — GetMonitoredItems & ResendData
 
-**Service**: Call — OPC-10000-4 §5.11 (CallRequest / CallResponse / CallMethodResult).
+**Service**: Call — OPC-10000-4 §5.12.2.2 (CallRequest / CallResponse / CallMethodResult).
 **Methods**: GetMonitoredItems, ResendData — defined on the Server object in OPC-10000-5.
 **Facet**: `Method Call`, `Base Info GetMonitoredItems Method`, `Base Info ResendData Method`
 CUs of the Standard DataChange Subscription 2017 Server Facet (OPC-10000-7 §6.6.17; research.md).
 **Build gate**: embedded profile scope (Call dispatch + method nodes). Minimal surface: ONLY
 these two methods are dispatched; all others are rejected.
 
-## Request (CallRequest, §5.11.2)
+## Request (CallRequest, §5.12.2.2)
 
 | Field | Type | Notes |
 |---|---|---|
 | requestHeader | RequestHeader | standard |
 | methodsToCall | CallMethodRequest[] | each: { objectId: NodeId, methodId: NodeId, inputArguments: Variant[] } |
 
-## Response (CallResponse, §5.11.2)
+## Response (CallResponse, §5.12.2.2)
 
 | Field | Type | Notes |
 |---|---|---|
@@ -22,7 +22,7 @@ these two methods are dispatched; all others are rejected.
 | results | CallMethodResult[] | each: { statusCode, inputArgumentResults[], inputArgumentDiagnosticInfos[], outputArguments[] } |
 | diagnosticInfos | DiagnosticInfo[] | empty unless requested |
 
-## Method: GetMonitoredItems (OPC-10000-5; behavior via Call §5.11)
+## Method: GetMonitoredItems (OPC-10000-5 §9.1; behavior via Call §5.12.2.2)
 
 - **objectId**: the Server object; **methodId**: GetMonitoredItems method node.
 - **Input**: `subscriptionId` (UInt32).
@@ -31,7 +31,7 @@ these two methods are dispatched; all others are rejected.
 - **Errors**: unknown subscription → result `Bad_SubscriptionIdInvalid`; subscription not owned
   by the calling session → cited StatusCode.
 
-## Method: ResendData (OPC-10000-5; behavior via Call §5.11)
+## Method: ResendData (OPC-10000-5 §9.2; behavior via Call §5.12.2.2)
 
 - **objectId**: the Server object; **methodId**: ResendData method node.
 - **Input**: `subscriptionId` (UInt32).
@@ -42,10 +42,10 @@ these two methods are dispatched; all others are rejected.
 
 ## Validation / failure (correctness gate)
 
-- `methodId` not GetMonitoredItems/ResendData → result `Bad_MethodInvalid` (or
-  `Bad_NotImplemented`); `objectId` not the Server object → `Bad_NodeIdInvalid`.
+- `methodId` not GetMonitoredItems/ResendData → result `Bad_MethodInvalid`; `objectId` not the
+  Server object → `Bad_NodeIdInvalid`.
 - Wrong input-argument count/type → per-argument `inputArgumentResults` StatusCode
-  (`Bad_ArgumentsMissing` / `Bad_InvalidArgument` / `Bad_TooManyArguments`), §5.11.
+  (`Bad_ArgumentsMissing` / `Bad_InvalidArgument` / `Bad_TooManyArguments`), §5.12.2.2.
 - methodsToCall length > fixed limit → `Bad_TooManyOperations`. Malformed request → cited decode
   StatusCode; no out-of-bounds read.
 

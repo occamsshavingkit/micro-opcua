@@ -2,53 +2,98 @@
 #include "micro_opcua/status.h"
 
 #ifdef MICRO_OPCUA_STATUS_STRINGS
-const char* mu_status_name(opcua_statuscode_t status)
-{
+const char *mu_status_name(opcua_statuscode_t status) {
     switch (status) {
-        case MU_STATUS_GOOD: return "Good";
-        case MU_STATUS_BAD_UNEXPECTEDERROR: return "Bad_UnexpectedError";
-        case MU_STATUS_BAD_INTERNALERROR: return "Bad_InternalError";
-        case MU_STATUS_BAD_OUTOFMEMORY: return "Bad_OutOfMemory";
-        case MU_STATUS_BAD_ENCODINGERROR: return "Bad_EncodingError";
-        case MU_STATUS_BAD_DECODINGERROR: return "Bad_DecodingError";
-        case MU_STATUS_BAD_ENCODINGLIMITSEXCEEDED: return "Bad_EncodingLimitsExceeded";
-        case MU_STATUS_BAD_TIMEOUT: return "Bad_Timeout";
-        case MU_STATUS_BAD_SERVICEUNSUPPORTED: return "Bad_ServiceUnsupported";
-        case MU_STATUS_BAD_NOTREADABLE: return "Bad_NotReadable";
-        case MU_STATUS_BAD_SECURITYCHECKSFAILED: return "Bad_SecurityChecksFailed";
+    case MU_STATUS_GOOD:
+        return "Good";
+    case MU_STATUS_BAD_UNEXPECTEDERROR:
+        return "Bad_UnexpectedError";
+    case MU_STATUS_BAD_INTERNALERROR:
+        return "Bad_InternalError";
+    case MU_STATUS_BAD_OUTOFMEMORY:
+        return "Bad_OutOfMemory";
+    case MU_STATUS_BAD_ENCODINGERROR:
+        return "Bad_EncodingError";
+    case MU_STATUS_BAD_DECODINGERROR:
+        return "Bad_DecodingError";
+    case MU_STATUS_BAD_ENCODINGLIMITSEXCEEDED:
+        return "Bad_EncodingLimitsExceeded";
+    case MU_STATUS_BAD_TIMEOUT:
+        return "Bad_Timeout";
+    case MU_STATUS_BAD_SERVICEUNSUPPORTED:
+        return "Bad_ServiceUnsupported";
+    case MU_STATUS_BAD_NOTREADABLE:
+        return "Bad_NotReadable";
+    case MU_STATUS_BAD_SECURITYCHECKSFAILED:
+        return "Bad_SecurityChecksFailed";
 #if MICRO_OPCUA_SUBSCRIPTIONS
-        case MU_STATUS_BAD_SEQUENCENUMBERUNKNOWN: return "Bad_SequenceNumberUnknown";
+    case MU_STATUS_BAD_SEQUENCENUMBERUNKNOWN:
+        return "Bad_SequenceNumberUnknown";
 #else
-        case MU_STATUS_BAD_REQUESTTOOLARGE: return "Bad_RequestTooLarge";
+    case MU_STATUS_BAD_REQUESTTOOLARGE:
+        return "Bad_RequestTooLarge";
 #endif
-        case MU_STATUS_BAD_RESPONSETOOLARGE: return "Bad_ResponseTooLarge";
-        case MU_STATUS_BAD_SESSIONIDINVALID: return "Bad_SessionIdInvalid";
-        case MU_STATUS_BAD_IDENTITYTOKENINVALID: return "Bad_IdentityTokenInvalid";
-        case MU_STATUS_BAD_TOOMANYSESSIONS: return "Bad_TooManySessions";
-        case MU_STATUS_BAD_NODEIDUNKNOWN: return "Bad_NodeIdUnknown";
-        case MU_STATUS_BAD_MONITOREDITEMIDINVALID: return "Bad_MonitoredItemIdInvalid";
-        case MU_STATUS_BAD_ATTRIBUTEIDINVALID: return "Bad_AttributeIdInvalid";
-        case MU_STATUS_BAD_TOOMANYOPERATIONS: return "Bad_TooManyOperations";
-        case MU_STATUS_BAD_NOCONTINUATIONPOINTS: return "Bad_NoContinuationPoints";
-        case MU_STATUS_BAD_TOOMANYMONITOREDITEMS: return "Bad_TooManyMonitoredItems";
-        case MU_STATUS_BAD_TOOMANYSUBSCRIPTIONS: return "Bad_TooManySubscriptions";
-        case MU_STATUS_BAD_SUBSCRIPTIONIDINVALID: return "Bad_SubscriptionIdInvalid";
+    case MU_STATUS_BAD_RESPONSETOOLARGE:
+        return "Bad_ResponseTooLarge";
+    case MU_STATUS_BAD_SESSIONIDINVALID:
+        return "Bad_SessionIdInvalid";
+    case MU_STATUS_BAD_IDENTITYTOKENINVALID:
+        return "Bad_IdentityTokenInvalid";
+    case MU_STATUS_BAD_TOOMANYSESSIONS:
+        return "Bad_TooManySessions";
+    case MU_STATUS_BAD_NODEIDUNKNOWN:
+        return "Bad_NodeIdUnknown";
+    case MU_STATUS_BAD_NODEIDINVALID:
+        return "Bad_NodeIdInvalid";
+    case MU_STATUS_BAD_METHODINVALID:
+        return "Bad_MethodInvalid";
+    case MU_STATUS_BAD_ARGUMENTSMISSING:
+        return "Bad_ArgumentsMissing";
+    case MU_STATUS_BAD_TOOMANYARGUMENTS:
+        return "Bad_TooManyArguments";
+    case MU_STATUS_BAD_INVALIDARGUMENT:
+        return "Bad_InvalidArgument";
+    case MU_STATUS_BAD_MONITOREDITEMIDINVALID:
+        return "Bad_MonitoredItemIdInvalid";
+    case MU_STATUS_BAD_ATTRIBUTEIDINVALID:
+        return "Bad_AttributeIdInvalid";
+    case MU_STATUS_BAD_TOOMANYOPERATIONS:
+        return "Bad_TooManyOperations";
+    case MU_STATUS_BAD_NOCONTINUATIONPOINTS:
+        return "Bad_NoContinuationPoints";
+    case MU_STATUS_BAD_TOOMANYMONITOREDITEMS:
+        return "Bad_TooManyMonitoredItems";
+    case MU_STATUS_BAD_TOOMANYSUBSCRIPTIONS:
+        return "Bad_TooManySubscriptions";
+    case MU_STATUS_BAD_SUBSCRIPTIONIDINVALID:
+        return "Bad_SubscriptionIdInvalid";
 #if MICRO_OPCUA_SUBSCRIPTIONS
-        case MU_STATUS_BAD_MESSAGENOTAVAILABLE: return "Bad_MessageNotAvailable";
-        case MU_STATUS_BAD_TOOMANYPUBLISHREQUESTS: return "Bad_TooManyPublishRequests";
+    case MU_STATUS_BAD_MESSAGENOTAVAILABLE:
+        return "Bad_MessageNotAvailable";
+    case MU_STATUS_BAD_TOOMANYPUBLISHREQUESTS:
+        return "Bad_TooManyPublishRequests";
 #endif
-        case MU_STATUS_BAD_NOTHINGTODO: return "Bad_NothingToDo";
+    case MU_STATUS_BAD_NOTHINGTODO:
+        return "Bad_NothingToDo";
 
-        /* TCP Specific StatusCodes */
-        case MU_STATUS_BAD_TCPSERVERTOOBUSY: return "Bad_TcpServerTooBusy";
-        case MU_STATUS_BAD_TCPMESSAGETYPEINVALID: return "Bad_TcpMessageTypeInvalid";
-        case MU_STATUS_BAD_TCPSECURECHANNELUNKNOWN: return "Bad_TcpSecureChannelUnknown";
-        case MU_STATUS_BAD_TCPMESSAGETOOLARGE: return "Bad_TcpMessageTooLarge";
-        case MU_STATUS_BAD_TCPNOTENOUGHRESOURCES: return "Bad_TcpNotEnoughResources";
-        case MU_STATUS_BAD_TCPINTERNALERROR: return "Bad_TcpInternalError";
-        case MU_STATUS_BAD_TCPENDPOINTURLINVALID: return "Bad_TcpEndpointUrlInvalid";
+    /* TCP Specific StatusCodes */
+    case MU_STATUS_BAD_TCPSERVERTOOBUSY:
+        return "Bad_TcpServerTooBusy";
+    case MU_STATUS_BAD_TCPMESSAGETYPEINVALID:
+        return "Bad_TcpMessageTypeInvalid";
+    case MU_STATUS_BAD_TCPSECURECHANNELUNKNOWN:
+        return "Bad_TcpSecureChannelUnknown";
+    case MU_STATUS_BAD_TCPMESSAGETOOLARGE:
+        return "Bad_TcpMessageTooLarge";
+    case MU_STATUS_BAD_TCPNOTENOUGHRESOURCES:
+        return "Bad_TcpNotEnoughResources";
+    case MU_STATUS_BAD_TCPINTERNALERROR:
+        return "Bad_TcpInternalError";
+    case MU_STATUS_BAD_TCPENDPOINTURLINVALID:
+        return "Bad_TcpEndpointUrlInvalid";
 
-        default: return "Unknown_StatusCode";
+    default:
+        return "Unknown_StatusCode";
     }
 }
 #endif

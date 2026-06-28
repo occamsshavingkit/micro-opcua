@@ -1,9 +1,8 @@
 # Conformance Status
 
-**Target Profile:** Nano Embedded Device 2017 Server Profile
-(`http://opcfoundation.org/UA-Profile/Server/NanoEmbeddedDevice2017`), which is
-functionally equivalent to the **Core 2017 Server Facet** over UA-TCP UA-SC
-UA-Binary with SecurityPolicy None and Anonymous identity.
+**Target Profile:** Embedded 2017 UA Server Profile
+(`http://opcfoundation.org/UA-Profile/Server/EmbeddedUA2017`) for the `embedded`
+build. `nano` and `micro` remain available as lower-tier profile builds.
 
 **Status:** `profile-targeting`. This server has **not** been verified with the OPC
 Foundation Compliance Test Tool (CTT); a compliance claim is withheld
@@ -45,15 +44,26 @@ The Micro Embedded Device 2017 Server Profile builds on Nano (see
 | Data-change sampling (DataChangeFilter trigger) | Implemented | `test_subscriptions` (§5.12.1.6, §7.17.2) |
 | ≥2 concurrent sessions | Implemented | up to `MU_MAX_SESSIONS` (default 2) logical sessions multiplexed over one TCP connection; `test_session`, `test_single_client_limit` |
 
+## Embedded profile progress
+
+The Embedded 2017 profile surface is implemented behind `make embedded` /
+`MICRO_OPCUA_EMBEDDED_PROFILE=ON`. See [profile-embedded.md](profile-embedded.md) for the
+conformance-unit map.
+
+| Conformance group / unit | Status | Evidence |
+|---|---|---|
+| SecurityPolicy Basic256Sha256 | Implemented | `test_asym_chunk`, `test_sym_chunk`, `test_server_handshake_secure` |
+| Security Default ApplicationInstance Certificate | Satisfied | `test_certificate`, existing certificate handling |
+| Standard DataChange Subscription 2017 facet | Implemented | `test_subscriptions_capacity`, `test_subscriptions` |
+| Base Info Type System | Implemented | `test_type_system`, `test_view_services` |
+| Method Call: GetMonitoredItems / ResendData | Implemented | `test_method_call`, `test_method_call_errors` |
+
 ## Remaining
 1. **CTT verification** — run the OPC Foundation Compliance Test Tool against the
    server and record results; only then may a profile-compliance claim be made.
    (External step.)
-2. **Embedded profile is preliminary** — the `embedded` build is the Micro surface
-   plus SecurityPolicy Basic256Sha256 (Sign / Sign&Encrypt). It is **not** a complete
-   OPC UA Embedded 2017 Device Server profile: full address-space/type-system exposure
-   and the Standard DataChange Subscription facet are not yet implemented, and it is
-   not CTT-verified.
+2. **External interoperability/CTT evidence** — the implementation is profile-targeting
+   and locally tested; CTT evidence is still required before promoting the claim.
 
 See `specs/002-nano-profile-completion/` and `specs/003-micro-profile-completion/` for
 the task breakdowns.

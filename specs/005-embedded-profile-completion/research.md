@@ -57,9 +57,9 @@ The **Standard DataChange Subscription 2017 Server Facet** (§6.6.17) adds the f
 | `Monitored Items Deadband Filter` | **absolute** Deadband DataChangeFilter (numeric) | §7.22.2 (DeadbandType = Absolute(1)) |
 | `Subscription Minimum 02` | ≥2 subscriptions per session (≥½ sessions) | §5.14.2 |
 | `Subscription Publish Min 05` | ≥5 parallel Publish per session + Republish retransmit queue | §5.14.5 / §5.14.6 |
-| `Base Info GetMonitoredItems Method` | **GetMonitoredItems** method on the Server object | method behavior via Call §5.11; method defined OPC-10000-5 |
-| `Method Call` | **Call** service set | §5.11 |
-| `Base Info ResendData Method` | **ResendData** method on the Server object | method behavior via Call §5.11; method defined OPC-10000-5 |
+| `Base Info GetMonitoredItems Method` | **GetMonitoredItems** method on the Server object | method behavior via Call §5.12.2.2; method defined OPC-10000-5 §9.1 |
+| `Method Call` | **Call** service set | §5.12.2.2 |
+| `Base Info ResendData Method` | **ResendData** method on the Server object | method behavior via Call §5.12.2.2; method defined OPC-10000-5 §9.2 |
 
 > **Scope decision (user-confirmed 2026-06-27): Full Embedded 2017, including the minimal
 > Method surface.** The §6.6.17 "2017" facet makes `Method Call`, `GetMonitoredItems`, and
@@ -132,8 +132,8 @@ The **Standard DataChange Subscription 2017 Server Facet** (§6.6.17) adds the f
 
 | Capability | OPC-10000 citation |
 |---|---|
-| Call service (Method Call) | OPC-10000-4 §5.11 (CallRequest/CallResponse/CallMethodResult) |
-| GetMonitoredItems / ResendData methods | OPC-10000-5 (Server object methods); behavior via Call §5.11 |
+| Call service (Method Call) | OPC-10000-4 §5.12.2.2 (CallRequest/CallResponse/CallMethodResult) |
+| GetMonitoredItems / ResendData methods | OPC-10000-5 §9.1 / §9.2 (Server object methods); behavior via Call §5.12.2.2 |
 | SetTriggering service | OPC-10000-4 §5.13.5 |
 | CreateMonitoredItems / MonitoringParameters (queueSize, discardOldest) | OPC-10000-4 §5.13.2 |
 | DataChangeFilter / DeadbandType=Absolute | OPC-10000-4 §7.22.2 |

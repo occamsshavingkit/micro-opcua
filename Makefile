@@ -12,9 +12,9 @@
 #                  engine (MICRO_OPCUA_SUBSCRIPTIONS=ON: the Embedded Data Change
 #                  Subscription Server Facet). Distinct from nano. (Concurrent ≥2-session
 #                  support is the remaining Micro item.)
-#   make embedded  Embedded profile configuration — Micro + SecurityPolicy
-#                  Basic256Sha256 ON (sign/encrypt). The Standard DataChange Subscription
-#                  facet and full type-system exposure are still pending.
+#   make embedded  Embedded profile configuration — Micro + Basic256Sha256,
+#                  Standard DataChange Subscription 2017 facet capacities, and
+#                  Base Info Type System exposure.
 #   make all-profiles   build nano, micro and embedded
 #   make test           configure with tests and run the full ctest suite
 #   make clean          remove the profile build directories
@@ -24,6 +24,9 @@
 CMAKE ?= cmake
 BUILD  ?= build
 COMMON := -DMICRO_OPCUA_BUILD_EXAMPLES=ON -DMICRO_OPCUA_OPTIMIZE_SIZE=ON
+EMBEDDED_CAPS := -DMU_MAX_SUBSCRIPTIONS=2 -DMU_MAX_MONITORED_ITEMS=100 \
+	-DMU_MAX_PUBLISH_REQUESTS=5 -DMU_MONITORED_QUEUE_DEPTH=2 \
+	-DMU_MAX_TRIGGER_LINKS=4
 
 .PHONY: help nano micro embedded all-profiles test clean
 
@@ -31,7 +34,7 @@ help:
 	@echo "micro-opcua profile builds:"
 	@echo "  make nano      Nano 2017 profile (None, subscriptions OFF)  -> $(BUILD)/nano"
 	@echo "  make micro     Micro profile (None + subscriptions ON)      -> $(BUILD)/micro"
-	@echo "  make embedded  Embedded config (Basic256Sha256 + subs ON)   -> $(BUILD)/embedded"
+	@echo "  make embedded  Embedded 2017 profile target                 -> $(BUILD)/embedded"
 	@echo "  make test      build with tests and run ctest"
 	@echo "  make clean     remove profile build directories"
 
@@ -46,8 +49,8 @@ micro:
 	$(CMAKE) --build $(BUILD)/micro
 
 embedded:
-	@echo ">> EMBEDDED profile: Basic256Sha256 ON + subscriptions ON (NOTE: full type system pending)"
-	$(CMAKE) -S . -B $(BUILD)/embedded $(COMMON) -DMICRO_OPCUA_SECURITY=ON -DMICRO_OPCUA_SUBSCRIPTIONS=ON
+	@echo ">> EMBEDDED profile: Basic256Sha256 + Standard subscriptions + Base Info Type System"
+	$(CMAKE) -S . -B $(BUILD)/embedded $(COMMON) -DMICRO_OPCUA_EMBEDDED_PROFILE=ON $(EMBEDDED_CAPS)
 	$(CMAKE) --build $(BUILD)/embedded
 
 all-profiles: nano micro embedded

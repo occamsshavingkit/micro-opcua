@@ -70,9 +70,9 @@ unchanged.
 - [X] T006 [P] [US1] {Claude} Test: absolute-deadband sampling — sub-threshold change → no notification, at/above → one notification; status change always reports (§7.22.2) in `tests/unit/test_subscriptions_deadband.c`.
 - [X] T007 [P] [US1] {Claude} Test: monitored-item queue≥2 + discardOldest (and discard-newest) with overflow InfoBit (§5.13.2, §7.20.1) in `tests/unit/test_subscriptions_queue.c`.
 - [X] T008 [P] [US1] {Claude} Test: SetTriggering add/remove links + triggered (Sampling-mode) item reports on triggering event; per-link StatusCodes (§5.13.5) in `tests/unit/test_subscriptions_triggering.c`.
-- [ ] T009 [P] [US1] {Claude} Test: capacity enforcement — accept ≥100 items / ≥2 subs / ≥5 parallel Publish, reject beyond with `Bad_TooManyMonitoredItems`/`Bad_TooManySubscriptions`/`Bad_TooManyPublishRequests` (§5.13.2, §5.14.2, §5.14.5) in `tests/unit/test_subscriptions_capacity.c`.
-- [ ] T010 [P] [US1] {Claude} Test: malformed DataChangeFilter / SetTriggering decode → cited StatusCodes, no OOB (ASan) in `tests/unit/test_subscriptions_errors.c`.
-- [ ] T011 [P] [US1] {Claude} Fuzz: SetTriggering and DataChangeFilter decoders in `tests/fuzz/fuzz_subscription_filters.c`.
+- [X] T009 [P] [US1] {Claude} Test: capacity enforcement — accept ≥100 items / ≥2 subs / ≥5 parallel Publish, reject beyond with `Bad_TooManyMonitoredItems`/`Bad_TooManySubscriptions`/`Bad_TooManyPublishRequests` (§5.13.2, §5.14.2, §5.14.5) in `tests/unit/test_subscriptions_capacity.c`.
+- [X] T010 [P] [US1] {Claude} Test: malformed DataChangeFilter / SetTriggering decode → cited StatusCodes, no OOB (ASan) in `tests/unit/test_subscriptions_errors.c`.
+- [X] T011 [P] [US1] {Claude} Fuzz: SetTriggering and DataChangeFilter decoders in `tests/fuzz/fuzz_subscription_filters.c`.
 
 ### Implementation for User Story 1 — {Codex} (one task at a time)
 
@@ -80,11 +80,11 @@ unchanged.
 - [X] T013 [US1] {Codex} Implement absolute-deadband evaluation in the sampling path (numeric integer + soft-float compare; status changes bypass deadband) (§7.22.2) in `src/services/subscription.c`.
 - [X] T014 [US1] {Codex} Implement the notification queue (depth≥2), discardOldest/discard-newest, and overflow InfoBit signaling in the publish path (§5.13.2, §7.20.1) in `src/services/subscription.c`.
 - [X] T015 [US1] {Codex} Implement SetTriggering link storage and triggered-item reporting on triggering events (§5.13.5, §5.13.1.6) in `src/services/subscription.c`.
-- [ ] T016 [US1] {Codex} Enforce the raised capacities and return cited `Bad_TooMany*` StatusCodes (§5.13.2, §5.14.2, §5.14.5) in `src/services/subscription.c`.
+- [X] T016 [US1] {Codex} Enforce the raised capacities and return cited `Bad_TooMany*` StatusCodes (§5.13.2, §5.14.2, §5.14.5) in `src/services/subscription.c`.
 - [X] T017 [US1] {Codex} Decode the DataChangeFilter deadband fields in the CreateMonitoredItems/ModifyMonitoredItems handlers, rejecting non-numeric/percent with cited StatusCodes (§7.22.2) in `src/core/service_dispatch.c`.
 - [X] T018 [US1] {Codex} Add the SetTriggering request decode, dispatch handler, and response encode (§5.13.5) in `src/core/service_dispatch.c`.
-- [ ] T019 [US1] {Claude} Run T006–T011 + full suite, ASan, and record results; iterate with Codex on failures.
-- [ ] T020 [US1] {Claude} Measure US1 flash/RAM delta and update `docs/traceability/005-embedded-profile-completion.md` (file/test maps + size).
+- [X] T019 [US1] {Claude} Run T006–T011 + full suite, ASan, and record results; iterate with Codex on failures.
+- [X] T020 [US1] {Claude} Measure US1 flash/RAM delta and update `docs/traceability/005-embedded-profile-completion.md` (file/test maps + size).
 
 **Checkpoint**: US1 independently testable; `micro` regression-clean; size known.
 
@@ -100,19 +100,19 @@ read ServerProfileArray.
 
 ### Tests for User Story 2 (write first, confirm failing) — {Claude}
 
-- [ ] T021 [P] [US2] {Claude} Test: browse namespace-0 ReferenceType/DataType/ObjectType/VariableType nodes present with correct NodeClass/BrowseName/HasSubtype (OPC-10000-5, OPC-10000-3) in `tests/unit/test_type_system.c`.
-- [ ] T022 [P] [US2] {Claude} Test: an exposed instance's HasTypeDefinition resolves to its type node (OPC-10000-3 §7.7) in `tests/unit/test_type_system.c`.
-- [ ] T023 [P] [US2] {Claude} Test: read `Server.ServerProfileArray` advertises the Embedded 2017 profile URI (OPC-10000-5) in `tests/unit/test_type_system.c`.
-- [ ] T024 [P] [US2] {Claude} Regression: `nano`/`micro` golden browse/read vectors unchanged in `tests/unit/test_view_services.c` (and any golden-vector test) — confirm the added type nodes are profile-gated and do not alter lower-profile output.
+- [X] T021 [P] [US2] {Claude} Test: browse namespace-0 ReferenceType/DataType/ObjectType/VariableType nodes present with correct NodeClass/BrowseName/HasSubtype (OPC-10000-5, OPC-10000-3) in `tests/unit/test_type_system.c`.
+- [X] T022 [P] [US2] {Claude} Test: an exposed instance's HasTypeDefinition resolves to its type node (OPC-10000-3 §7.7) in `tests/unit/test_type_system.c`.
+- [X] T023 [P] [US2] {Claude} Test: read `Server.ServerProfileArray` advertises the Embedded 2017 profile URI (OPC-10000-5) in `tests/unit/test_type_system.c`.
+- [X] T024 [P] [US2] {Claude} Regression: `nano`/`micro` golden browse/read vectors unchanged in `tests/unit/test_view_services.c` (and any golden-vector test) — confirm the added type nodes are profile-gated and do not alter lower-profile output.
 
 ### Implementation for User Story 2 — {Codex} (one task at a time)
 
-- [ ] T025 [US2] {Codex} Add the standard ReferenceType nodes the server uses (References, HierarchicalReferences, HasChild, HasComponent, HasProperty, Organizes, HasTypeDefinition, HasSubtype, …) with IsAbstract/Symmetric/InverseName and HasSubtype links (OPC-10000-5) in `src/address_space/base_nodes.c`.
-- [ ] T026 [US2] {Codex} Add the standard DataType nodes underpinning exposed values (BaseDataType subtree used) with HasSubtype (OPC-10000-5) in `src/address_space/base_nodes.c`.
-- [ ] T027 [US2] {Codex} Add the standard ObjectType/VariableType nodes used (BaseObjectType, BaseVariableType, BaseDataVariableType, PropertyType, ServerType, …) with HasSubtype (OPC-10000-5) in `src/address_space/base_nodes.c`.
-- [ ] T028 [US2] {Codex} Add HasTypeDefinition references from exposed instance nodes to their type nodes (OPC-10000-3 §7.7) in `src/address_space/base_nodes.c`.
-- [ ] T029 [US2] {Codex} Populate `ServerProfileArray` with the Embedded 2017 profile URI and align ServerCapabilities with actual limits (OPC-10000-5) in `src/address_space/base_nodes.c`.
-- [ ] T030 [US2] {Claude} Run T021–T024 + full suite; confirm nano/micro unchanged; record results and update traceability + size.
+- [X] T025 [US2] {Codex} Add the standard ReferenceType nodes the server uses (References, HierarchicalReferences, HasChild, HasComponent, HasProperty, Organizes, HasTypeDefinition, HasSubtype, …) with IsAbstract/Symmetric/InverseName and HasSubtype links (OPC-10000-5) in `src/address_space/base_nodes.c`.
+- [X] T026 [US2] {Codex} Add the standard DataType nodes underpinning exposed values (BaseDataType subtree used) with HasSubtype (OPC-10000-5) in `src/address_space/base_nodes.c`.
+- [X] T027 [US2] {Codex} Add the standard ObjectType/VariableType nodes used (BaseObjectType, BaseVariableType, BaseDataVariableType, PropertyType, ServerType, …) with HasSubtype (OPC-10000-5) in `src/address_space/base_nodes.c`.
+- [X] T028 [US2] {Codex} Add HasTypeDefinition references from exposed instance nodes to their type nodes (OPC-10000-3 §7.7) in `src/address_space/base_nodes.c`.
+- [X] T029 [US2] {Codex} Populate `ServerProfileArray` with the Embedded 2017 profile URI and align ServerCapabilities with actual limits (OPC-10000-5) in `src/address_space/base_nodes.c`.
+- [X] T030 [US2] {Claude} Run T021–T024 + full suite; confirm nano/micro unchanged; record results and update traceability + size.
 
 **Checkpoint**: US1 and US2 both independently functional.
 
@@ -128,19 +128,19 @@ and StatusCodes.
 
 ### Tests for User Story 3 (write first, confirm failing) — {Claude}
 
-- [ ] T031 [P] [US3] {Claude} Fixture: CallRequest bytes for GetMonitoredItems and ResendData (OPC-10000-4 §5.11) in `tests/fixtures/embedded/`.
-- [ ] T032 [P] [US3] {Claude} Test: GetMonitoredItems returns matching serverHandles[]/clientHandles[] for a subscription (§5.11; OPC-10000-5) in `tests/unit/test_method_call.c`.
-- [ ] T033 [P] [US3] {Claude} Test: ResendData causes the next Publish to re-report all monitored items' current values (§5.11; OPC-10000-5) in `tests/unit/test_method_call.c`.
-- [ ] T034 [P] [US3] {Claude} Test: unknown method / wrong object / bad argument count-or-type → cited StatusCodes (`Bad_MethodInvalid`/`Bad_NodeIdInvalid`/`Bad_InvalidArgument`, §5.11) in `tests/unit/test_method_call_errors.c`.
-- [ ] T035 [P] [US3] {Claude} Fuzz: Call request decoder in `tests/fuzz/fuzz_call.c`.
+- [X] T031 [P] [US3] {Claude} Fixture: CallRequest bytes for GetMonitoredItems and ResendData (OPC-10000-4 §5.12.2.2) in `tests/fixtures/embedded/`.
+- [X] T032 [P] [US3] {Claude} Test: GetMonitoredItems returns matching serverHandles[]/clientHandles[] for a subscription (§5.12.2.2; OPC-10000-5 §9.1) in `tests/unit/test_method_call.c`.
+- [X] T033 [P] [US3] {Claude} Test: ResendData causes the next Publish to re-report all monitored items' current values (§5.12.2.2; OPC-10000-5 §9.2) in `tests/unit/test_method_call.c`.
+- [X] T034 [P] [US3] {Claude} Test: unknown method / wrong object / bad argument count-or-type → cited StatusCodes (`Bad_MethodInvalid`/`Bad_NodeIdInvalid`/`Bad_InvalidArgument`, §5.12.2.2) in `tests/unit/test_method_call_errors.c`.
+- [X] T035 [P] [US3] {Claude} Fuzz: Call request decoder in `tests/fuzz/fuzz_call.c`.
 
 ### Implementation for User Story 3 — {Codex} (one task at a time)
 
-- [ ] T036 [US3] {Codex} Add GetMonitoredItems and ResendData method nodes on the Server object (HasComponent) with Input/OutputArguments Properties (OPC-10000-5 — pin the exact section/NodeIds via the OPC MCP) in `src/address_space/base_nodes.c`.
-- [ ] T037 [US3] {Codex} Add the `resend_data_pending` flag to the subscription and drain it (re-report current values) in `mu_subscriptions_tick` in `src/services/subscription.c`.
-- [ ] T038 [US3] {Codex} Implement GetMonitoredItems handle enumeration (serverHandles/clientHandles for a subscription) in `src/services/subscription.c`.
-- [ ] T039 [US3] {Codex} Add the Call request decode, method routing (the two methods; reject others with cited StatusCodes), and CallResponse encode (§5.11) in `src/core/service_dispatch.c`.
-- [ ] T040 [US3] {Claude} Run T032–T035 + full suite; record results; update traceability + size.
+- [X] T036 [US3] {Codex} Add GetMonitoredItems and ResendData method nodes on the Server object (HasComponent) with Input/OutputArguments Properties (OPC-10000-5 §8.3.2, §9.1, §9.2; NodeIds i=11492/i=12873 and argument Properties) in `src/address_space/base_nodes.c`.
+- [X] T037 [US3] {Codex} Add the `resend_data_pending` flag to the subscription and drain it (re-report current values) in `mu_subscriptions_tick` in `src/services/subscription.c`.
+- [X] T038 [US3] {Codex} Implement GetMonitoredItems handle enumeration (serverHandles/clientHandles for a subscription) in `src/services/subscription.c`.
+- [X] T039 [US3] {Codex} Add the Call request decode, method routing (the two methods; reject others with cited StatusCodes), and CallResponse encode (§5.12.2.2) in `src/core/service_dispatch.c`.
+- [X] T040 [US3] {Claude} Run T032–T035 + full suite; record results; update traceability + size.
 
 **Checkpoint**: US1–US3 independently functional.
 
@@ -154,11 +154,11 @@ conformance at `profile-targeting`.
 **Independent Test**: Build `embedded`; confirm advertised surface; review conformance docs;
 confirm nano/micro unchanged.
 
-- [ ] T041 [US4] {Codex} Add the `embedded` capacity `-D` overrides (`MU_MAX_MONITORED_ITEMS=100 MU_MAX_SUBSCRIPTIONS=2 MU_MAX_PUBLISH_REQUESTS=5 MU_MONITORED_QUEUE_DEPTH=2`) to the `embedded` target in `Makefile` and the corresponding CMake wiring, leaving `nano`/`micro` unchanged.
-- [ ] T042 [US4] {Claude} Create `docs/conformance/profile-embedded.md` enumerating each implemented Embedded conformance unit with exact OPC-10000 citations at status `profile-targeting`, **including a row verifying the `Security Default ApplicationInstance Certificate` CU is satisfied by the existing certificate handling** (research Decision 5).
-- [ ] T043 [US4] {Claude} Update `docs/conformance/status.md` — `embedded` now targets the full Embedded 2017 UA Server Profile (subscriptions Standard facet + Type System), still CTT-pending.
-- [ ] T044 [US4] {Claude} Update `docs/conformance/profile-micro.md` "Out of scope (Embedded tier)" note for the research corrections (TransferSubscriptions = Client Redundancy Facet; percent deadband = Data Access Facet; SetTriggering/absolute-deadband/Methods are the Standard-facet delta).
-- [ ] T045 [US4] {Claude} Refresh `docs/size/feature-size-ledger.md` with measured `embedded` flash/RAM (raised capacities + type nodes + Call), confirming `.bss`=0 and heap=0.
+- [X] T041 [US4] {Codex} Add the `embedded` capacity `-D` overrides (`MU_MAX_MONITORED_ITEMS=100 MU_MAX_SUBSCRIPTIONS=2 MU_MAX_PUBLISH_REQUESTS=5 MU_MONITORED_QUEUE_DEPTH=2`) to the `embedded` target in `Makefile` and the corresponding CMake wiring, leaving `nano`/`micro` unchanged.
+- [X] T042 [US4] {Claude} Create `docs/conformance/profile-embedded.md` enumerating each implemented Embedded conformance unit with exact OPC-10000 citations at status `profile-targeting`, **including a row verifying the `Security Default ApplicationInstance Certificate` CU is satisfied by the existing certificate handling** (research Decision 5).
+- [X] T043 [US4] {Claude} Update `docs/conformance/status.md` — `embedded` now targets the full Embedded 2017 UA Server Profile (subscriptions Standard facet + Type System), still CTT-pending.
+- [X] T044 [US4] {Claude} Update `docs/conformance/profile-micro.md` "Out of scope (Embedded tier)" note for the research corrections (TransferSubscriptions = Client Redundancy Facet; percent deadband = Data Access Facet; SetTriggering/absolute-deadband/Methods are the Standard-facet delta).
+- [X] T045 [US4] {Claude} Refresh `docs/size/feature-size-ledger.md` with measured `embedded` flash/RAM (raised capacities + type nodes + Call), confirming `.bss`=0 and heap=0.
 
 **Checkpoint**: Embedded profile claim is documented and CTT-targeting.
 
@@ -166,15 +166,15 @@ confirm nano/micro unchanged.
 
 ## Phase 7: Compliance, Size, and Polish — {Claude}
 
-- [ ] T046 {Claude} Run host unit + integration suite (`make test`); all green.
-- [ ] T047 {Claude} Run ASan/UBSan build and suite; clean.
-- [ ] T048 {Claude} Run fuzz targets (or document unavailable tooling).
-- [ ] T049 {Claude} Run clang-format + static analysis (cppcheck/clang-tidy); clean.
-- [ ] T050 {Claude} Run the Pico cross-compile (`MICRO_OPCUA_PLATFORM=pico`); builds.
-- [ ] T051 {Claude} Measure flash/RAM vs the plan budget; confirm `.bss`=0/heap=0; record in the size ledger.
-- [ ] T052 {Claude} Verify `nano`/`micro` are unchanged in surface and footprint (golden regression + size).
-- [ ] T053 {Claude} Verify every unsupported/over-capacity case returns the cited OPC UA StatusCode.
-- [ ] T054 {Claude} Validate `quickstart.md` on host; verify `docs/traceability/005-embedded-profile-completion.md` maps each impl/test file to OPC sections.
+- [X] T046 {Claude} Run host unit + integration suite (`make test`); all green.
+- [X] T047 {Claude} Run ASan/UBSan build and suite; clean.
+- [X] T048 {Claude} Run fuzz targets (or document unavailable tooling).
+- [X] T049 {Claude} Run clang-format + static analysis (cppcheck/clang-tidy); clean.
+- [X] T050 {Claude} Run the Pico cross-compile (`MICRO_OPCUA_PLATFORM=pico`); builds.
+- [X] T051 {Claude} Measure flash/RAM vs the plan budget; confirm `.bss`=0/heap=0; record in the size ledger.
+- [X] T052 {Claude} Verify `nano`/`micro` are unchanged in surface and footprint (golden regression + size).
+- [X] T053 {Claude} Verify every unsupported/over-capacity case returns the cited OPC UA StatusCode.
+- [X] T054 {Claude} Validate `quickstart.md` on host; verify `docs/traceability/005-embedded-profile-completion.md` maps each impl/test file to OPC sections.
 
 ---
 

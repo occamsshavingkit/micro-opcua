@@ -46,7 +46,7 @@ values on the next publish.
 
 ## 2. Subscription (extend behavior)
 
-OPC-10000-4 §5.14; capacities §5.14.2; parallel Publish §5.14.5; ResendData via §5.11.
+OPC-10000-4 §5.14; capacities §5.14.2; parallel Publish §5.14.5; ResendData via §5.12.2.2.
 
 **Existing**: `subscription_id`, `session_id`, interval/keep-alive/lifetime counts, priority,
 publishing flags, sequence/keep-alive/lifetime counters, `next_publish_ms`, `more_notifications`,
@@ -59,7 +59,7 @@ publishing flags, sequence/keep-alive/lifetime counters, `next_publish_ms`, `mor
   build raises capacities via `-D` (research Decision 6); `micro`/`nano` keep small defaults.
 
 **Validation rules**:
-- GetMonitoredItems / ResendData on an unknown subscription → `Bad_SubscriptionIdInvalid` (§5.11).
+- GetMonitoredItems / ResendData on an unknown subscription → `Bad_SubscriptionIdInvalid` (§5.12.2.2).
 - Subscription not owned by the calling session → cited StatusCode.
 
 ## 3. Triggering links (SetTriggering, §5.13.5)
@@ -71,7 +71,7 @@ array with a back-reference) — exact representation chosen in implementation, 
 
 ## 4. Call / Method entities (new wire + dispatch)
 
-OPC-10000-4 §5.11 (Call); methods defined OPC-10000-5.
+OPC-10000-4 §5.12.2.2 (Call); methods defined OPC-10000-5 §9.1 / §9.2.
 
 - **CallMethodRequest**: `objectId` (NodeId), `methodId` (NodeId), `inputArguments` (Variant[]).
 - **CallMethodResult**: `statusCode`, `inputArgumentResults` (StatusCode[]),
@@ -81,8 +81,8 @@ OPC-10000-4 §5.11 (Call); methods defined OPC-10000-5.
 - **ResendData**: input `subscriptionId` (UInt32) → no output; sets `resend_data_pending`.
 
 **Validation rules**: only the Server object + the two method NodeIds are accepted; other
-objectId/methodId → `Bad_NodeIdInvalid` / `Bad_MethodInvalid` (or `Bad_NotImplemented`). Wrong
-argument count/type → per-argument StatusCode (§5.11). Array length > fixed cap →
+objectId/methodId → `Bad_NodeIdInvalid` / `Bad_MethodInvalid`. Wrong argument count/type →
+per-argument StatusCode (§5.12.2.2). Array length > fixed cap →
 `Bad_TooManyOperations`. Malformed request → cited decode StatusCode; no OOB read.
 
 ## 5. Standard information-model nodes (extend `base_nodes.c`)
@@ -123,7 +123,7 @@ profile-scoped). Reading an unsupported attribute → `Bad_AttributeIdInvalid`; 
 Session 1..* ── owns ──> Subscription 1..* ── owns ──> MonitoredItem
                               │  ^                          │  │
               ResendData ─────┘  └── GetMonitoredItems      │  └─ SetTriggering links (§5.13.5)
-              (Call §5.11)           (Call §5.11)           │     (triggering ↔ triggered, same sub)
+              (Call §5.12.2.2)       (Call §5.12.2.2)       │     (triggering ↔ triggered, same sub)
                                                   samples ──> AddressSpace node
                                                   (deadband/queue/overflow) │
 Server object ── HasComponent ──> GetMonitoredItems / ResendData methods    └─> HasTypeDefinition ─> Type node
