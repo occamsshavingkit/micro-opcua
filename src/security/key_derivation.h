@@ -13,9 +13,8 @@ bool mu_secure_memeq(const void *a, const void *b, size_t n);
 
 /* P_SHA256(secret, seed) expanded to `output_length` bytes, using the crypto
    adapter's HMAC-SHA256. Returns Bad_* on adapter failure or if seed is too long. */
-opcua_statuscode_t mu_p_sha256(const mu_crypto_adapter_t *crypto,
-                               const opcua_byte_t *secret, size_t secret_length,
-                               const opcua_byte_t *seed, size_t seed_length,
-                               opcua_byte_t *output, size_t output_length);
+opcua_statuscode_t mu_p_sha256(const mu_crypto_adapter_t *crypto, const opcua_byte_t *secret, size_t secret_length,
+                               const opcua_byte_t *seed, size_t seed_length, opcua_byte_t *output,
+                               size_t output_length);
 
 #endif /* MICRO_OPCUA_KEY_DERIVATION_H */

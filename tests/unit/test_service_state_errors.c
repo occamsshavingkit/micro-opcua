@@ -1,7 +1,7 @@
 /* tests/unit/test_service_state_errors.c */
-#include "unity.h"
-#include "micro_opcua/micro_opcua.h"
 #include "fake_platform.h"
+#include "micro_opcua/micro_opcua.h"
+#include "unity.h"
 
 void setUp(void) {}
 void tearDown(void) {}
@@ -47,7 +47,8 @@ static opcua_statuscode_t test_accept(void *context, void **handle) {
     return MU_STATUS_GOOD;
 }
 
-static opcua_statuscode_t test_read(void *context, void *handle, opcua_byte_t *buffer, size_t capacity, size_t *bytes_read) {
+static opcua_statuscode_t test_read(void *context, void *handle, opcua_byte_t *buffer, size_t capacity,
+                                    size_t *bytes_read) {
     state_error_transport_t *transport = (state_error_transport_t *)context;
     (void)handle;
     if (transport->read_index >= transport->inbound_count) {
@@ -63,7 +64,8 @@ static opcua_statuscode_t test_read(void *context, void *handle, opcua_byte_t *b
     return MU_STATUS_GOOD;
 }
 
-static opcua_statuscode_t test_write(void *context, void *handle, const opcua_byte_t *buffer, size_t len, size_t *bytes_written) {
+static opcua_statuscode_t test_write(void *context, void *handle, const opcua_byte_t *buffer, size_t len,
+                                     size_t *bytes_written) {
     state_error_transport_t *transport = (state_error_transport_t *)context;
     (void)handle;
     TEST_ASSERT_TRUE(transport->write_count < TEST_MAX_WRITES);
@@ -94,7 +96,10 @@ static size_t build_hello(opcua_byte_t *out, size_t capacity) {
     static const opcua_byte_t endpoint[] = "opc.tcp://host:4840";
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, out, capacity);
-    out[0] = 'H'; out[1] = 'E'; out[2] = 'L'; out[3] = 'F';
+    out[0] = 'H';
+    out[1] = 'E';
+    out[2] = 'L';
+    out[3] = 'F';
     w.position = 4;
     (void)mu_binary_write_uint32(&w, 0);
     (void)mu_binary_write_uint32(&w, 0);
@@ -102,15 +107,15 @@ static size_t build_hello(opcua_byte_t *out, size_t capacity) {
     (void)mu_binary_write_uint32(&w, 8192);
     (void)mu_binary_write_uint32(&w, 0);
     (void)mu_binary_write_uint32(&w, 0);
-    mu_string_t url = { (opcua_int32_t)(sizeof(endpoint) - 1u), endpoint };
+    mu_string_t url = {(opcua_int32_t)(sizeof(endpoint) - 1u), endpoint};
     (void)mu_binary_write_string(&w, &url);
     patch_message_size(out, w.position);
     return w.position;
 }
 
 static void write_request_header(mu_binary_writer_t *w, const mu_nodeid_t *auth, opcua_uint32_t handle) {
-    mu_nodeid_t null_id = { 0, MU_NODEID_NUMERIC, { 0 } };
-    mu_string_t null_str = { -1, NULL };
+    mu_nodeid_t null_id = {0, MU_NODEID_NUMERIC, {0}};
+    mu_string_t null_str = {-1, NULL};
     (void)mu_binary_write_nodeid(w, auth);
     (void)mu_binary_write_int64(w, 0);
     (void)mu_binary_write_uint32(w, handle);
@@ -124,19 +129,22 @@ static size_t build_opn(opcua_byte_t *out, size_t capacity) {
     static const opcua_byte_t policy_uri[] = "http://opcfoundation.org/UA/SecurityPolicy#None";
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, out, capacity);
-    out[0] = 'O'; out[1] = 'P'; out[2] = 'N'; out[3] = 'F';
+    out[0] = 'O';
+    out[1] = 'P';
+    out[2] = 'N';
+    out[3] = 'F';
     w.position = 4;
     (void)mu_binary_write_uint32(&w, 0);
     (void)mu_binary_write_uint32(&w, 0);
-    mu_string_t policy = { (opcua_int32_t)(sizeof(policy_uri) - 1u), policy_uri };
+    mu_string_t policy = {(opcua_int32_t)(sizeof(policy_uri) - 1u), policy_uri};
     (void)mu_binary_write_string(&w, &policy);
     (void)mu_binary_write_int32(&w, -1);
     (void)mu_binary_write_int32(&w, -1);
     (void)mu_binary_write_uint32(&w, 1);
     (void)mu_binary_write_uint32(&w, 1);
-    mu_nodeid_t opn_type = { 0, MU_NODEID_NUMERIC, { MU_ID_OPENSECURECHANNELREQUEST } };
+    mu_nodeid_t opn_type = {0, MU_NODEID_NUMERIC, {MU_ID_OPENSECURECHANNELREQUEST}};
     (void)mu_binary_write_nodeid(&w, &opn_type);
-    mu_nodeid_t null_id = { 0, MU_NODEID_NUMERIC, { 0 } };
+    mu_nodeid_t null_id = {0, MU_NODEID_NUMERIC, {0}};
     write_request_header(&w, &null_id, 1);
     (void)mu_binary_write_uint32(&w, 0);
     (void)mu_binary_write_uint32(&w, 0);
@@ -147,11 +155,14 @@ static size_t build_opn(opcua_byte_t *out, size_t capacity) {
     return w.position;
 }
 
-static size_t build_msg(opcua_byte_t *out, size_t capacity, opcua_uint32_t sequence_number,
-                        opcua_uint32_t request_id, const opcua_byte_t *body, size_t body_len) {
+static size_t build_msg(opcua_byte_t *out, size_t capacity, opcua_uint32_t sequence_number, opcua_uint32_t request_id,
+                        const opcua_byte_t *body, size_t body_len) {
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, out, capacity);
-    out[0] = 'M'; out[1] = 'S'; out[2] = 'G'; out[3] = 'F';
+    out[0] = 'M';
+    out[1] = 'S';
+    out[2] = 'G';
+    out[3] = 'F';
     w.position = 4;
     (void)mu_binary_write_uint32(&w, (opcua_uint32_t)(TEST_MSG_HEADER_SIZE + body_len));
     (void)mu_binary_write_uint32(&w, 1);
@@ -162,9 +173,7 @@ static size_t build_msg(opcua_byte_t *out, size_t capacity, opcua_uint32_t seque
     return TEST_MSG_HEADER_SIZE + body_len;
 }
 
-static void configure_transport_server(mu_server_config_t *config,
-                                       state_error_transport_t *transport,
-                                       opcua_byte_t *rx,
+static void configure_transport_server(mu_server_config_t *config, state_error_transport_t *transport, opcua_byte_t *rx,
                                        opcua_byte_t *tx) {
     memset(config, 0, sizeof(*config));
     config->endpoint_url = "opc.tcp://host:4840";
@@ -189,9 +198,7 @@ static void configure_transport_server(mu_server_config_t *config,
     config->tcp_adapter.shutdown = test_shutdown;
 }
 
-static opcua_statuscode_t read_response_service_result_at(const opcua_byte_t *buffer,
-                                                          size_t len,
-                                                          size_t offset,
+static opcua_statuscode_t read_response_service_result_at(const opcua_byte_t *buffer, size_t len, size_t offset,
                                                           opcua_uint32_t *response_type,
                                                           opcua_statuscode_t *service_result) {
     mu_binary_reader_t r;
@@ -199,7 +206,8 @@ static opcua_statuscode_t read_response_service_result_at(const opcua_byte_t *bu
     r.position = offset;
     mu_nodeid_t type;
     opcua_statuscode_t status = mu_binary_read_nodeid(&r, &type);
-    if (status != MU_STATUS_GOOD) return status;
+    if (status != MU_STATUS_GOOD)
+        return status;
     if (type.identifier_type != MU_NODEID_NUMERIC || type.namespace_index != 0) {
         return MU_STATUS_BAD_DECODINGERROR;
     }
@@ -207,8 +215,12 @@ static opcua_statuscode_t read_response_service_result_at(const opcua_byte_t *bu
 
     opcua_int64_t timestamp;
     opcua_uint32_t handle;
-    status = mu_binary_read_int64(&r, &timestamp); if (status != MU_STATUS_GOOD) return status;
-    status = mu_binary_read_uint32(&r, &handle); if (status != MU_STATUS_GOOD) return status;
+    status = mu_binary_read_int64(&r, &timestamp);
+    if (status != MU_STATUS_GOOD)
+        return status;
+    status = mu_binary_read_uint32(&r, &handle);
+    if (status != MU_STATUS_GOOD)
+        return status;
     return mu_binary_read_statuscode(&r, service_result);
 }
 
@@ -219,18 +231,15 @@ static void prepare_created_session(mu_server_t *server, opcua_uint32_t *auth_to
     mu_session_init(&server->sessions[0]);
     opcua_uint64_t revised;
     opcua_uint32_t session_id;
-    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_session_create(&server->sessions[0], 0, &revised, &session_id, auth_token));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_session_create(&server->sessions[0], 0, &revised, &session_id, auth_token));
 }
 
-static size_t build_activate_body(opcua_byte_t *buffer,
-                                  size_t capacity,
-                                  const mu_nodeid_t *auth_token,
+static size_t build_activate_body(opcua_byte_t *buffer, size_t capacity, const mu_nodeid_t *auth_token,
                                   const mu_nodeid_t *identity_token_type) {
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, buffer, capacity);
-    mu_string_t null_str = { -1, NULL };
-    mu_bytestring_t null_bytes = { -1, NULL };
+    mu_string_t null_str = {-1, NULL};
+    mu_bytestring_t null_bytes = {-1, NULL};
     write_request_header(&w, auth_token, 77);
     (void)mu_binary_write_string(&w, &null_str);
     (void)mu_binary_write_bytestring(&w, &null_bytes);
@@ -246,9 +255,11 @@ void test_browse_before_activate_session(void) {
     server.tcp_conn.state = MU_TCP_STATE_ESTABLISHED;
     server.secure_channel.is_open = true;
     server.sessions[0].state = MU_SESSION_STATE_CLOSED;
-    
-    opcua_byte_t req[1], resp[1]; size_t resp_len = 1;
-    TEST_ASSERT_EQUAL(MU_STATUS_BAD_SESSIONIDINVALID, mu_service_dispatch(&server, MU_ID_BROWSEREQUEST, req, 1, resp, &resp_len));
+
+    opcua_byte_t req[1], resp[1];
+    size_t resp_len = 1;
+    TEST_ASSERT_EQUAL(MU_STATUS_BAD_SESSIONIDINVALID,
+                      mu_service_dispatch(&server, MU_ID_BROWSEREQUEST, req, 1, resp, &resp_len));
 }
 
 void test_read_before_activate_session(void) {
@@ -257,9 +268,11 @@ void test_read_before_activate_session(void) {
     server.tcp_conn.state = MU_TCP_STATE_ESTABLISHED;
     server.secure_channel.is_open = true;
     server.sessions[0].state = MU_SESSION_STATE_CREATED; /* Created but not activated */
-    
-    opcua_byte_t req[1], resp[1]; size_t resp_len = 1;
-    TEST_ASSERT_EQUAL(MU_STATUS_BAD_SESSIONIDINVALID, mu_service_dispatch(&server, MU_ID_READREQUEST, req, 1, resp, &resp_len));
+
+    opcua_byte_t req[1], resp[1];
+    size_t resp_len = 1;
+    TEST_ASSERT_EQUAL(MU_STATUS_BAD_SESSIONIDINVALID,
+                      mu_service_dispatch(&server, MU_ID_READREQUEST, req, 1, resp, &resp_len));
 }
 
 void test_session_before_secure_channel(void) {
@@ -267,23 +280,27 @@ void test_session_before_secure_channel(void) {
     memset(&server, 0, sizeof(server));
     server.tcp_conn.state = MU_TCP_STATE_ESTABLISHED;
     server.secure_channel.is_open = false; /* Not open */
-    
-    opcua_byte_t req[1], resp[1]; size_t resp_len = 1;
-    TEST_ASSERT_EQUAL(MU_STATUS_BAD_SECURECHANNELIDINVALID, mu_service_dispatch(&server, MU_ID_CREATESESSIONREQUEST, req, 1, resp, &resp_len));
+
+    opcua_byte_t req[1], resp[1];
+    size_t resp_len = 1;
+    TEST_ASSERT_EQUAL(MU_STATUS_BAD_SECURECHANNELIDINVALID,
+                      mu_service_dispatch(&server, MU_ID_CREATESESSIONREQUEST, req, 1, resp, &resp_len));
 }
 
 void test_service_before_hello(void) {
     mu_server_t server;
     memset(&server, 0, sizeof(server));
     server.tcp_conn.state = MU_TCP_STATE_CONNECTED; /* Not established yet */
-    
-    opcua_byte_t req[1], resp[1]; size_t resp_len = 1;
-    /* If called before HEL/ACK, it should reject. 
-       In OPC UA, a Service cannot be invoked before SecureChannel, 
+
+    opcua_byte_t req[1], resp[1];
+    size_t resp_len = 1;
+    /* If called before HEL/ACK, it should reject.
+       In OPC UA, a Service cannot be invoked before SecureChannel,
        but if we are at TCP layer, before HEL it's not even a SecureChannel issue yet.
-       Wait, let's just make service_dispatch return BAD_SECURECHANNELIDINVALID 
+       Wait, let's just make service_dispatch return BAD_SECURECHANNELIDINVALID
        since SecureChannel isn't open either. */
-    TEST_ASSERT_EQUAL(MU_STATUS_BAD_SECURECHANNELIDINVALID, mu_service_dispatch(&server, MU_ID_GETENDPOINTSREQUEST, req, 1, resp, &resp_len));
+    TEST_ASSERT_EQUAL(MU_STATUS_BAD_SECURECHANNELIDINVALID,
+                      mu_service_dispatch(&server, MU_ID_GETENDPOINTSREQUEST, req, 1, resp, &resp_len));
 }
 
 void test_request_type_non_numeric_nodeid_rejected_with_bad_decodingerror(void) {
@@ -299,7 +316,7 @@ void test_request_type_non_numeric_nodeid_rejected_with_bad_decodingerror(void) 
     opcua_byte_t body[32];
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, body, sizeof(body));
-    mu_string_t string_id = { 1, (const opcua_byte_t *)"x" };
+    mu_string_t string_id = {1, (const opcua_byte_t *)"x"};
     mu_nodeid_t request_type;
     request_type.namespace_index = 0;
     request_type.identifier_type = MU_NODEID_STRING;
@@ -328,8 +345,8 @@ void test_request_type_non_numeric_nodeid_rejected_with_bad_decodingerror(void) 
     opcua_uint32_t response_type;
     opcua_statuscode_t service_result;
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        read_response_service_result_at(transport.writes[2], transport.write_len[2],
-                                        TEST_MSG_HEADER_SIZE, &response_type, &service_result));
+                      read_response_service_result_at(transport.writes[2], transport.write_len[2], TEST_MSG_HEADER_SIZE,
+                                                      &response_type, &service_result));
     TEST_ASSERT_EQUAL(MU_ID_SERVICEFAULT, response_type);
     /* OPC-10000-6 §5.2.2.9 encodes a NodeId's identifier type separately from
        its value; the leading request type-id must be ns=0 numeric. OPC-10000-4
@@ -343,20 +360,19 @@ void test_activate_session_rejects_non_ns0_numeric_authentication_token(void) {
     prepare_created_session(&server, &token);
 
     opcua_byte_t request[256];
-    mu_nodeid_t auth = { 1, MU_NODEID_NUMERIC, { token } };
-    mu_nodeid_t anon = { 0, MU_NODEID_NUMERIC, { MU_ID_ANONYMOUSIDENTITYTOKEN_ENCODING_DEFAULTBINARY } };
+    mu_nodeid_t auth = {1, MU_NODEID_NUMERIC, {token}};
+    mu_nodeid_t anon = {0, MU_NODEID_NUMERIC, {MU_ID_ANONYMOUSIDENTITYTOKEN_ENCODING_DEFAULTBINARY}};
     size_t request_len = build_activate_body(request, sizeof(request), &auth, &anon);
 
     opcua_byte_t response[256];
     size_t response_len = sizeof(response);
-    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_service_dispatch(&server, MU_ID_ACTIVATESESSIONREQUEST,
-                            request, request_len, response, &response_len));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_service_dispatch(&server, MU_ID_ACTIVATESESSIONREQUEST, request, request_len,
+                                                          response, &response_len));
 
     opcua_uint32_t response_type;
     opcua_statuscode_t service_result;
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        read_response_service_result_at(response, response_len, 0, &response_type, &service_result));
+                      read_response_service_result_at(response, response_len, 0, &response_type, &service_result));
     TEST_ASSERT_EQUAL(MU_ID_ACTIVATESESSIONRESPONSE, response_type);
     /* OPC-10000-6 §5.2.2.9 makes the namespace part of the NodeId encoding; a
        non-ns=0 authentication token is not this server's numeric session token.
@@ -372,29 +388,25 @@ void test_activate_session_rejects_non_numeric_user_identity_token_typeid(void) 
 
     opcua_byte_t type_name[MU_ID_ANONYMOUSIDENTITYTOKEN_ENCODING_DEFAULTBINARY];
     memset(type_name, 'A', sizeof(type_name));
-    mu_string_t non_numeric_name = {
-        (opcua_int32_t)sizeof(type_name),
-        type_name
-    };
+    mu_string_t non_numeric_name = {(opcua_int32_t)sizeof(type_name), type_name};
     mu_nodeid_t unsupported_type;
     unsupported_type.namespace_index = 0;
     unsupported_type.identifier_type = MU_NODEID_STRING;
     unsupported_type.identifier.string = non_numeric_name;
 
     opcua_byte_t request[512];
-    mu_nodeid_t auth = { 0, MU_NODEID_NUMERIC, { token } };
+    mu_nodeid_t auth = {0, MU_NODEID_NUMERIC, {token}};
     size_t request_len = build_activate_body(request, sizeof(request), &auth, &unsupported_type);
 
     opcua_byte_t response[256];
     size_t response_len = sizeof(response);
-    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_service_dispatch(&server, MU_ID_ACTIVATESESSIONREQUEST,
-                            request, request_len, response, &response_len));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_service_dispatch(&server, MU_ID_ACTIVATESESSIONREQUEST, request, request_len,
+                                                          response, &response_len));
 
     opcua_uint32_t response_type;
     opcua_statuscode_t service_result;
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        read_response_service_result_at(response, response_len, 0, &response_type, &service_result));
+                      read_response_service_result_at(response, response_len, 0, &response_type, &service_result));
     TEST_ASSERT_EQUAL(MU_ID_ACTIVATESESSIONRESPONSE, response_type);
     /* OPC-10000-6 §5.2.2.9 encodes String and Numeric NodeIds with different
        identifier forms. The UserIdentityToken ExtensionObject typeId must not be

@@ -37,7 +37,7 @@ void test_write_request_decode_happy_path(void) {
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_write_uint32(&w, 13));
 
     /* IndexRange (null string) */
-    mu_string_t idx_range = { -1, NULL };
+    mu_string_t idx_range = {-1, NULL};
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_write_string(&w, &idx_range));
 
     /* Value (DataValue: has_value=true, variant=Int32 42) */
@@ -93,7 +93,7 @@ void test_write_response_encode(void) {
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, buf, sizeof(buf));
 
-    opcua_statuscode_t results[] = { MU_STATUS_GOOD, MU_STATUS_BAD_NOTWRITABLE };
+    opcua_statuscode_t results[] = {MU_STATUS_GOOD, MU_STATUS_BAD_NOTWRITABLE};
     mu_write_response_t resp;
     resp.num_results = 2;
     resp.results = results;

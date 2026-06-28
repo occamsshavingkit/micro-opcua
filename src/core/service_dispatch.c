@@ -115,13 +115,12 @@ static opcua_statuscode_t handle_read(mu_server_t *server, mu_binary_reader_t *r
 #endif
 #ifdef MICRO_OPCUA_SERVICE_WRITE
 opcua_statuscode_t handle_write(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
-                                       size_t *response_length);
+                                size_t *response_length);
 #endif
 #if MU_DISPATCH_CALL_ENABLED
 static opcua_statuscode_t handle_call(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                       size_t *response_length);
 #endif
-
 
 /* Fill a ServerNonce from the entropy adapter (zeros if unavailable). */
 static void fill_server_nonce(mu_server_t *server, opcua_byte_t *nonce, size_t len) {
@@ -2301,13 +2300,15 @@ static opcua_statuscode_t write_single_call_method_result(mu_server_t *server, m
 
 #ifdef MICRO_OPCUA_CUSTOM_METHODS
     /* Verify object exists in address space */
-    const mu_node_t *obj_node = mu_address_space_find_node(server->config.address_space, &server->user_address_space_index, object_id);
+    const mu_node_t *obj_node =
+        mu_address_space_find_node(server->config.address_space, &server->user_address_space_index, object_id);
     if (obj_node == NULL) {
         return write_call_method_result(w, MU_STATUS_BAD_NODEIDINVALID, 0, NULL, 0, NULL);
     }
 
     /* Verify method node exists in address space */
-    const mu_node_t *method_node = mu_address_space_find_node(server->config.address_space, &server->user_address_space_index, method_id);
+    const mu_node_t *method_node =
+        mu_address_space_find_node(server->config.address_space, &server->user_address_space_index, method_id);
     if (method_node == NULL) {
         return write_call_method_result(w, MU_STATUS_BAD_METHODINVALID, 0, NULL, 0, NULL);
     }
@@ -2329,7 +2330,8 @@ static opcua_statuscode_t write_single_call_method_result(mu_server_t *server, m
     mu_variant_t output_args[8];
     size_t output_args_count = 8;
     memset(output_args, 0, sizeof(output_args));
-    opcua_statuscode_t handler_status = callback(server, object_id, method_id, args, (size_t)arg_count, output_args, &output_args_count);
+    opcua_statuscode_t handler_status =
+        callback(server, object_id, method_id, args, (size_t)arg_count, output_args, &output_args_count);
     if (handler_status != MU_STATUS_GOOD) {
         return write_call_method_result(w, handler_status, 0, NULL, 0, NULL);
     }
@@ -2674,7 +2676,7 @@ static opcua_statuscode_t handle_read(mu_server_t *server, mu_binary_reader_t *r
 
 #ifdef MICRO_OPCUA_SERVICE_WRITE
 opcua_statuscode_t handle_write(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
-                                       size_t *response_length) {
+                                size_t *response_length) {
     mu_request_header_t req;
     opcua_statuscode_t s = mu_request_header_decode(r, &req);
     if (s != MU_STATUS_GOOD)
@@ -2897,5 +2899,3 @@ opcua_statuscode_t mu_service_dispatch(mu_server_t *server, opcua_uint32_t reque
     *response_length = 0;
     return MU_STATUS_GOOD;
 }
-
-

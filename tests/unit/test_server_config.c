@@ -7,18 +7,15 @@
 void setUp(void) {}
 void tearDown(void) {}
 
-void test_server_config_null_buffers(void)
-{
+void test_server_config_null_buffers(void) {
     /* TBD: implement test */
 }
 
-void test_server_config_invalid_endpoint(void)
-{
+void test_server_config_invalid_endpoint(void) {
     /* TBD: implement test */
 }
 
-int main(void)
-{
+int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_server_config_null_buffers);
     RUN_TEST(test_server_config_invalid_endpoint);

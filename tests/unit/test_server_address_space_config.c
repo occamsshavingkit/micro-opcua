@@ -1,6 +1,6 @@
 /* tests/unit/test_server_address_space_config.c */
-#include "unity.h"
 #include "micro_opcua/micro_opcua.h"
+#include "unity.h"
 
 void setUp(void) {}
 void tearDown(void) {}

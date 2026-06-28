@@ -119,28 +119,35 @@ void test_write_service_integration(void) {
     memset(&mock, 0, sizeof(mock));
 
     /* Address Space Definition */
-    static const mu_reference_t obj_refs[] = {
-        { { 0, MU_NODEID_NUMERIC, { 35 } }, { 1, MU_NODEID_NUMERIC, { 1001 } }, true },
-        { { 0, MU_NODEID_NUMERIC, { 35 } }, { 1, MU_NODEID_NUMERIC, { 1002 } }, true }
-    };
-    static const mu_reference_t var_refs[] = {
-        { { 0, MU_NODEID_NUMERIC, { 35 } }, { 0, MU_NODEID_NUMERIC, { 85 } }, false }
-    };
-    static const mu_value_source_t mutable_value = {
-        MU_VALUESOURCE_STATIC, { .static_value = { MU_TYPE_INT32, { .i32 = 10 } } }
-    };
-    static const mu_value_source_t readonly_value = {
-        MU_VALUESOURCE_STATIC, { .static_value = { MU_TYPE_INT32, { .i32 = 20 } } }
-    };
-    static const mu_node_t nodes[] = {
-        { { 0, MU_NODEID_NUMERIC, { 85 } }, MU_NODECLASS_OBJECT,
-          { 7, (const opcua_byte_t *)"Objects" }, { 7, (const opcua_byte_t *)"Objects" }, obj_refs, 2, NULL },
-        { { 1, MU_NODEID_NUMERIC, { 1001 } }, MU_NODECLASS_VARIABLE,
-          { 6, (const opcua_byte_t *)"MyVar1" }, { 6, (const opcua_byte_t *)"MyVar1" }, var_refs, 1, &mutable_value },
-        { { 1, MU_NODEID_NUMERIC, { 1002 } }, MU_NODECLASS_VARIABLE,
-          { 6, (const opcua_byte_t *)"MyVar2" }, { 6, (const opcua_byte_t *)"MyVar2" }, var_refs, 1, &readonly_value }
-    };
-    static const mu_address_space_t space = { nodes, 3 };
+    static const mu_reference_t obj_refs[] = {{{0, MU_NODEID_NUMERIC, {35}}, {1, MU_NODEID_NUMERIC, {1001}}, true},
+                                              {{0, MU_NODEID_NUMERIC, {35}}, {1, MU_NODEID_NUMERIC, {1002}}, true}};
+    static const mu_reference_t var_refs[] = {{{0, MU_NODEID_NUMERIC, {35}}, {0, MU_NODEID_NUMERIC, {85}}, false}};
+    static const mu_value_source_t mutable_value = {MU_VALUESOURCE_STATIC,
+                                                    {.static_value = {MU_TYPE_INT32, {.i32 = 10}}}};
+    static const mu_value_source_t readonly_value = {MU_VALUESOURCE_STATIC,
+                                                     {.static_value = {MU_TYPE_INT32, {.i32 = 20}}}};
+    static const mu_node_t nodes[] = {{{0, MU_NODEID_NUMERIC, {85}},
+                                       MU_NODECLASS_OBJECT,
+                                       {7, (const opcua_byte_t *)"Objects"},
+                                       {7, (const opcua_byte_t *)"Objects"},
+                                       obj_refs,
+                                       2,
+                                       NULL},
+                                      {{1, MU_NODEID_NUMERIC, {1001}},
+                                       MU_NODECLASS_VARIABLE,
+                                       {6, (const opcua_byte_t *)"MyVar1"},
+                                       {6, (const opcua_byte_t *)"MyVar1"},
+                                       var_refs,
+                                       1,
+                                       &mutable_value},
+                                      {{1, MU_NODEID_NUMERIC, {1002}},
+                                       MU_NODECLASS_VARIABLE,
+                                       {6, (const opcua_byte_t *)"MyVar2"},
+                                       {6, (const opcua_byte_t *)"MyVar2"},
+                                       var_refs,
+                                       1,
+                                       &readonly_value}};
+    static const mu_address_space_t space = {nodes, 3};
 
     /* ---- Build the inbound queue ---- */
     opcua_byte_t tmp[512];
@@ -150,7 +157,10 @@ void test_write_service_integration(void) {
 
     /* 1. HEL */
     mu_binary_writer_init(&w, tmp, sizeof(tmp));
-    tmp[0] = 'H'; tmp[1] = 'E'; tmp[2] = 'L'; tmp[3] = 'F';
+    tmp[0] = 'H';
+    tmp[1] = 'E';
+    tmp[2] = 'L';
+    tmp[3] = 'F';
     w.position = 4;
     mu_binary_write_uint32(&w, 0);
     mu_binary_write_uint32(&w, 0);
@@ -170,7 +180,10 @@ void test_write_service_integration(void) {
 
     /* 2. OPN */
     mu_binary_writer_init(&w, chunk, sizeof(chunk));
-    chunk[0] = 'O'; chunk[1] = 'P'; chunk[2] = 'N'; chunk[3] = 'F';
+    chunk[0] = 'O';
+    chunk[1] = 'P';
+    chunk[2] = 'N';
+    chunk[3] = 'F';
     w.position = 4;
     mu_binary_write_uint32(&w, 0);
     mu_binary_write_uint32(&w, 0);

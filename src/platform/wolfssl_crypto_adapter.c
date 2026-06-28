@@ -223,16 +223,18 @@ static opcua_statuscode_t w_rsa_pss_sha256_sign(void *context, const opcua_byte_
     if (wc_Sha256Final(&sha, hash) != 0)
         return MU_STATUS_BAD_INTERNALERROR;
 
-    int ret = wc_RsaPSS_Sign(hash, sizeof(hash), signature, (word32)*signature_length, WC_HASH_TYPE_SHA256, WC_MGF1SHA256, &ctx->key, &ctx->rng);
+    int ret = wc_RsaPSS_Sign(hash, sizeof(hash), signature, (word32)*signature_length, WC_HASH_TYPE_SHA256,
+                             WC_MGF1SHA256, &ctx->key, &ctx->rng);
     if (ret < 0)
         return MU_STATUS_BAD_INTERNALERROR;
     *signature_length = (size_t)ret;
     return MU_STATUS_GOOD;
 }
 
-static opcua_statuscode_t w_rsa_pss_sha256_verify(void *context, const opcua_byte_t *certificate, size_t certificate_length,
-                                                  const opcua_byte_t *data, size_t data_length,
-                                                  const opcua_byte_t *signature, size_t signature_length) {
+static opcua_statuscode_t w_rsa_pss_sha256_verify(void *context, const opcua_byte_t *certificate,
+                                                  size_t certificate_length, const opcua_byte_t *data,
+                                                  size_t data_length, const opcua_byte_t *signature,
+                                                  size_t signature_length) {
     (void)context;
     DecodedCert decoded;
     InitDecodedCert(&decoded, certificate, (word32)certificate_length, NULL);
@@ -265,7 +267,8 @@ static opcua_statuscode_t w_rsa_pss_sha256_verify(void *context, const opcua_byt
     }
 
     opcua_byte_t verify_buf[32];
-    ret = wc_RsaPSS_Verify((byte *)signature, (word32)signature_length, verify_buf, sizeof(verify_buf), WC_HASH_TYPE_SHA256, WC_MGF1SHA256, &peer_key);
+    ret = wc_RsaPSS_Verify((byte *)signature, (word32)signature_length, verify_buf, sizeof(verify_buf),
+                           WC_HASH_TYPE_SHA256, WC_MGF1SHA256, &peer_key);
     wc_FreeRsaKey(&peer_key);
 
     if (ret < 0 || ret != 32 || memcmp(verify_buf, hash, 32) != 0) {
@@ -275,7 +278,7 @@ static opcua_statuscode_t w_rsa_pss_sha256_verify(void *context, const opcua_byt
 }
 
 static opcua_statuscode_t w_rsa_oaep_sha256_decrypt(void *context, const opcua_byte_t *input, size_t length,
-                                                     opcua_byte_t *output, size_t *output_length) {
+                                                    opcua_byte_t *output, size_t *output_length) {
     struct wolfssl_crypto_context *ctx = (struct wolfssl_crypto_context *)context;
 
     int ret = wc_RsaPrivateDecrypt_ex(input, (word32)length, output, (word32)*output_length, &ctx->key, WC_RSA_OAEP_PAD,
@@ -286,9 +289,9 @@ static opcua_statuscode_t w_rsa_oaep_sha256_decrypt(void *context, const opcua_b
     return MU_STATUS_GOOD;
 }
 
-static opcua_statuscode_t w_rsa_oaep_sha256_encrypt(void *context, const opcua_byte_t *certificate, size_t certificate_length,
-                                                     const opcua_byte_t *input, size_t length, opcua_byte_t *output,
-                                                     size_t *output_length) {
+static opcua_statuscode_t w_rsa_oaep_sha256_encrypt(void *context, const opcua_byte_t *certificate,
+                                                    size_t certificate_length, const opcua_byte_t *input, size_t length,
+                                                    opcua_byte_t *output, size_t *output_length) {
     struct wolfssl_crypto_context *ctx = (struct wolfssl_crypto_context *)context;
     DecodedCert decoded;
     InitDecodedCert(&decoded, certificate, (word32)certificate_length, NULL);

@@ -13,9 +13,9 @@
  * paste the printed bytes into the matching golden_* array. Once non-empty, the
  * same harness asserts byte-for-byte equality.
  */
-#include "unity.h"
-#include "micro_opcua/micro_opcua.h"
 #include "fake_platform.h"
+#include "micro_opcua/micro_opcua.h"
+#include "unity.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -23,22 +23,15 @@ void setUp(void) {}
 void tearDown(void) {}
 
 static const opcua_byte_t golden_browse[] = {
-    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF,
-    0x01, 0x00, 0x00, 0x00, 0x00, 0x23, 0x01, 0x01, 0x01, 0xE8, 0x03, 0x00,
-    0x00, 0x06, 0x00, 0x00, 0x00, 0x4D, 0x79, 0x56, 0x61, 0x72, 0x31, 0x02,
-    0x06, 0x00, 0x00, 0x00, 0x4D, 0x79, 0x56, 0x61, 0x72, 0x31, 0x02, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-static const opcua_byte_t golden_read[] = {
-    0x01, 0x00, 0x00, 0x00, 0x01, 0x06, 0x2A, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00
-};
+    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x00, 0x00, 0x00, 0x00, 0x23, 0x01,
+    0x01, 0x01, 0xE8, 0x03, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x4D, 0x79, 0x56, 0x61, 0x72, 0x31, 0x02, 0x06, 0x00,
+    0x00, 0x00, 0x4D, 0x79, 0x56, 0x61, 0x72, 0x31, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+static const opcua_byte_t golden_read[] = {0x01, 0x00, 0x00, 0x00, 0x01, 0x06, 0x2A,
+                                           0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 #if MICRO_OPCUA_SUBSCRIPTIONS
-static const opcua_byte_t golden_publish[] = {
-    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
+static const opcua_byte_t golden_publish[] = {0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00,
+                                              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 #endif
 
 #define MAX_INBOUND 12
@@ -52,9 +45,18 @@ typedef struct {
     size_t last_write_len;
 } mock_t;
 
-static opcua_statuscode_t mock_listen(void *c, const char *u) { (void)c; (void)u; return MU_STATUS_GOOD; }
-static void mock_shutdown(void *c) { (void)c; }
-static void mock_close(void *c, void *h) { (void)c; (void)h; }
+static opcua_statuscode_t mock_listen(void *c, const char *u) {
+    (void)c;
+    (void)u;
+    return MU_STATUS_GOOD;
+}
+static void mock_shutdown(void *c) {
+    (void)c;
+}
+static void mock_close(void *c, void *h) {
+    (void)c;
+    (void)h;
+}
 
 static opcua_statuscode_t mock_accept(void *c, void **handle) {
     mock_t *m = (mock_t *)c;
@@ -97,9 +99,9 @@ static void enqueue(mock_t *m, const opcua_byte_t *bytes, size_t len) {
 }
 
 static void write_request_header(mu_binary_writer_t *w, opcua_uint32_t auth_token, opcua_uint32_t handle) {
-    mu_nodeid_t auth = { 0, MU_NODEID_NUMERIC, { auth_token } };
-    mu_nodeid_t null_id = { 0, MU_NODEID_NUMERIC, { 0 } };
-    mu_string_t null_str = { -1, NULL };
+    mu_nodeid_t auth = {0, MU_NODEID_NUMERIC, {auth_token}};
+    mu_nodeid_t null_id = {0, MU_NODEID_NUMERIC, {0}};
+    mu_string_t null_str = {-1, NULL};
     mu_binary_write_nodeid(w, &auth);
     mu_binary_write_int64(w, 0);
     mu_binary_write_uint32(w, handle);
@@ -113,7 +115,10 @@ static size_t build_msg(opcua_byte_t *out, size_t cap, opcua_uint32_t seq, opcua
                         const opcua_byte_t *body, size_t body_len) {
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, out, cap);
-    out[0] = 'M'; out[1] = 'S'; out[2] = 'G'; out[3] = 'F';
+    out[0] = 'M';
+    out[1] = 'S';
+    out[2] = 'G';
+    out[3] = 'F';
     w.position = 4;
     mu_binary_write_uint32(&w, (opcua_uint32_t)(24 + body_len));
     mu_binary_write_uint32(&w, 1);
@@ -130,7 +135,10 @@ static void enqueue_connect(mock_t *mock) {
     size_t clen;
 
     mu_binary_writer_init(&w, tmp, sizeof(tmp));
-    tmp[0] = 'H'; tmp[1] = 'E'; tmp[2] = 'L'; tmp[3] = 'F';
+    tmp[0] = 'H';
+    tmp[1] = 'E';
+    tmp[2] = 'L';
+    tmp[3] = 'F';
     w.position = 4;
     mu_binary_write_uint32(&w, 0);
     mu_binary_write_uint32(&w, 0);
@@ -138,43 +146,79 @@ static void enqueue_connect(mock_t *mock) {
     mu_binary_write_uint32(&w, 8192);
     mu_binary_write_uint32(&w, 0);
     mu_binary_write_uint32(&w, 0);
-    { mu_string_t url = { 19, (const opcua_byte_t *)"opc.tcp://host:4840" }; mu_binary_write_string(&w, &url); }
-    { mu_binary_writer_t hs; mu_binary_writer_init(&hs, tmp, sizeof(tmp)); hs.position = 4; mu_binary_write_uint32(&hs, (opcua_uint32_t)w.position); }
+    {
+        mu_string_t url = {19, (const opcua_byte_t *)"opc.tcp://host:4840"};
+        mu_binary_write_string(&w, &url);
+    }
+    {
+        mu_binary_writer_t hs;
+        mu_binary_writer_init(&hs, tmp, sizeof(tmp));
+        hs.position = 4;
+        mu_binary_write_uint32(&hs, (opcua_uint32_t)w.position);
+    }
     enqueue(mock, tmp, w.position);
 
     mu_binary_writer_init(&w, chunk, sizeof(chunk));
-    chunk[0] = 'O'; chunk[1] = 'P'; chunk[2] = 'N'; chunk[3] = 'F';
+    chunk[0] = 'O';
+    chunk[1] = 'P';
+    chunk[2] = 'N';
+    chunk[3] = 'F';
     w.position = 4;
     mu_binary_write_uint32(&w, 0);
     mu_binary_write_uint32(&w, 0);
-    { mu_string_t pol = { 47, (const opcua_byte_t *)"http://opcfoundation.org/UA/SecurityPolicy#None" }; mu_binary_write_string(&w, &pol); }
+    {
+        mu_string_t pol = {47, (const opcua_byte_t *)"http://opcfoundation.org/UA/SecurityPolicy#None"};
+        mu_binary_write_string(&w, &pol);
+    }
     mu_binary_write_int32(&w, -1);
     mu_binary_write_int32(&w, -1);
     mu_binary_write_uint32(&w, 1);
     mu_binary_write_uint32(&w, 1);
-    { mu_nodeid_t t = { 0, MU_NODEID_NUMERIC, { MU_ID_OPENSECURECHANNELREQUEST } }; mu_binary_write_nodeid(&w, &t); }
+    {
+        mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_OPENSECURECHANNELREQUEST}};
+        mu_binary_write_nodeid(&w, &t);
+    }
     write_request_header(&w, 0, 1);
     mu_binary_write_uint32(&w, 0);
     mu_binary_write_uint32(&w, 0);
     mu_binary_write_uint32(&w, 1);
     mu_binary_write_int32(&w, -1);
     mu_binary_write_uint32(&w, 3600000);
-    { mu_binary_writer_t os; mu_binary_writer_init(&os, chunk, sizeof(chunk)); os.position = 4; mu_binary_write_uint32(&os, (opcua_uint32_t)w.position); }
+    {
+        mu_binary_writer_t os;
+        mu_binary_writer_init(&os, chunk, sizeof(chunk));
+        os.position = 4;
+        mu_binary_write_uint32(&os, (opcua_uint32_t)w.position);
+    }
     enqueue(mock, chunk, w.position);
 
     mu_binary_writer_init(&w, tmp, sizeof(tmp));
-    { mu_nodeid_t t = { 0, MU_NODEID_NUMERIC, { MU_ID_CREATESESSIONREQUEST } }; mu_binary_write_nodeid(&w, &t); }
+    {
+        mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_CREATESESSIONREQUEST}};
+        mu_binary_write_nodeid(&w, &t);
+    }
     write_request_header(&w, 0, 2);
     clen = build_msg(chunk, sizeof(chunk), 2, 2, tmp, w.position);
     enqueue(mock, chunk, clen);
 
     mu_binary_writer_init(&w, tmp, sizeof(tmp));
-    { mu_nodeid_t t = { 0, MU_NODEID_NUMERIC, { MU_ID_ACTIVATESESSIONREQUEST } }; mu_binary_write_nodeid(&w, &t); }
+    {
+        mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_ACTIVATESESSIONREQUEST}};
+        mu_binary_write_nodeid(&w, &t);
+    }
     write_request_header(&w, 12345, 3);
-    { mu_string_t ns = { -1, NULL }; mu_bytestring_t nb = { -1, NULL }; mu_binary_write_string(&w, &ns); mu_binary_write_bytestring(&w, &nb); }
+    {
+        mu_string_t ns = {-1, NULL};
+        mu_bytestring_t nb = {-1, NULL};
+        mu_binary_write_string(&w, &ns);
+        mu_binary_write_bytestring(&w, &nb);
+    }
     mu_binary_write_int32(&w, 0);
     mu_binary_write_int32(&w, 0);
-    { mu_nodeid_t anon = { 0, MU_NODEID_NUMERIC, { MU_ID_ANONYMOUSIDENTITYTOKEN_ENCODING_DEFAULTBINARY } }; mu_binary_write_extension_object_header(&w, &anon, 0); }
+    {
+        mu_nodeid_t anon = {0, MU_NODEID_NUMERIC, {MU_ID_ANONYMOUSIDENTITYTOKEN_ENCODING_DEFAULTBINARY}};
+        mu_binary_write_extension_object_header(&w, &anon, 0);
+    }
     clen = build_msg(chunk, sizeof(chunk), 3, 3, tmp, w.position);
     enqueue(mock, chunk, clen);
 }
@@ -183,21 +227,29 @@ static void enqueue_browse_objects(mock_t *mock, opcua_uint32_t seq) {
     opcua_byte_t tmp[512], chunk[512];
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, tmp, sizeof(tmp));
-    { mu_nodeid_t t = { 0, MU_NODEID_NUMERIC, { MU_ID_BROWSEREQUEST } }; mu_binary_write_nodeid(&w, &t); }
+    {
+        mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_BROWSEREQUEST}};
+        mu_binary_write_nodeid(&w, &t);
+    }
     write_request_header(&w, 12345, seq);
-    { mu_nodeid_t view = { 0, MU_NODEID_NUMERIC, { 0 } }; mu_binary_write_nodeid(&w, &view); }
+    {
+        mu_nodeid_t view = {0, MU_NODEID_NUMERIC, {0}};
+        mu_binary_write_nodeid(&w, &view);
+    }
     mu_binary_write_int64(&w, 0);
     mu_binary_write_uint32(&w, 0);
     mu_binary_write_uint32(&w, 0);
     mu_binary_write_int32(&w, 1);
-    { mu_nodeid_t objects = { 0, MU_NODEID_NUMERIC, { 85 } };
-      mu_nodeid_t hierarchical = { 0, MU_NODEID_NUMERIC, { 33 } };
-      mu_binary_write_nodeid(&w, &objects);
-      mu_binary_write_uint32(&w, 0);
-      mu_binary_write_nodeid(&w, &hierarchical);
-      mu_binary_write_boolean(&w, true);
-      mu_binary_write_uint32(&w, 0);
-      mu_binary_write_uint32(&w, 0x3F); }
+    {
+        mu_nodeid_t objects = {0, MU_NODEID_NUMERIC, {85}};
+        mu_nodeid_t hierarchical = {0, MU_NODEID_NUMERIC, {33}};
+        mu_binary_write_nodeid(&w, &objects);
+        mu_binary_write_uint32(&w, 0);
+        mu_binary_write_nodeid(&w, &hierarchical);
+        mu_binary_write_boolean(&w, true);
+        mu_binary_write_uint32(&w, 0);
+        mu_binary_write_uint32(&w, 0x3F);
+    }
     enqueue(mock, chunk, build_msg(chunk, sizeof(chunk), seq, seq, tmp, w.position));
 }
 
@@ -205,29 +257,41 @@ static void enqueue_read_myvar1(mock_t *mock, opcua_uint32_t seq) {
     opcua_byte_t tmp[512], chunk[512];
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, tmp, sizeof(tmp));
-    { mu_nodeid_t t = { 0, MU_NODEID_NUMERIC, { MU_ID_READREQUEST } }; mu_binary_write_nodeid(&w, &t); }
+    {
+        mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_READREQUEST}};
+        mu_binary_write_nodeid(&w, &t);
+    }
     write_request_header(&w, 12345, seq);
     mu_binary_write_double(&w, 0.0);
     mu_binary_write_uint32(&w, 3);
     mu_binary_write_int32(&w, 1);
-    { mu_nodeid_t v = { 1, MU_NODEID_NUMERIC, { 1000 } }; mu_string_t ns = { -1, NULL };
-      mu_binary_write_nodeid(&w, &v);
-      mu_binary_write_uint32(&w, 13);
-      mu_binary_write_string(&w, &ns);
-      mu_binary_write_uint16(&w, 0);
-      mu_binary_write_string(&w, &ns); }
+    {
+        mu_nodeid_t v = {1, MU_NODEID_NUMERIC, {1000}};
+        mu_string_t ns = {-1, NULL};
+        mu_binary_write_nodeid(&w, &v);
+        mu_binary_write_uint32(&w, 13);
+        mu_binary_write_string(&w, &ns);
+        mu_binary_write_uint16(&w, 0);
+        mu_binary_write_string(&w, &ns);
+    }
     enqueue(mock, chunk, build_msg(chunk, sizeof(chunk), seq, seq, tmp, w.position));
 }
 
 #if MICRO_OPCUA_SUBSCRIPTIONS
 static opcua_uint64_t s_tick_ms = 0;
-static opcua_uint64_t test_get_tick_ms(void *c) { (void)c; return s_tick_ms; }
+static opcua_uint64_t test_get_tick_ms(void *c) {
+    (void)c;
+    return s_tick_ms;
+}
 
 static void enqueue_create_subscription(mock_t *mock, opcua_uint32_t seq) {
     opcua_byte_t tmp[512], chunk[512];
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, tmp, sizeof(tmp));
-    { mu_nodeid_t t = { 0, MU_NODEID_NUMERIC, { MU_ID_CREATESUBSCRIPTIONREQUEST } }; mu_binary_write_nodeid(&w, &t); }
+    {
+        mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_CREATESUBSCRIPTIONREQUEST}};
+        mu_binary_write_nodeid(&w, &t);
+    }
     write_request_header(&w, 12345, seq);
     mu_binary_write_double(&w, 100.0);
     mu_binary_write_uint32(&w, 30);
@@ -242,7 +306,10 @@ static void enqueue_publish(mock_t *mock, opcua_uint32_t seq) {
     opcua_byte_t tmp[256], chunk[256];
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, tmp, sizeof(tmp));
-    { mu_nodeid_t t = { 0, MU_NODEID_NUMERIC, { MU_ID_PUBLISHREQUEST } }; mu_binary_write_nodeid(&w, &t); }
+    {
+        mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_PUBLISHREQUEST}};
+        mu_binary_write_nodeid(&w, &t);
+    }
     write_request_header(&w, 12345, seq);
     mu_binary_write_int32(&w, 0);
     enqueue(mock, chunk, build_msg(chunk, sizeof(chunk), seq, seq, tmp, w.position));
@@ -286,8 +353,7 @@ static size_t response_body_offset(const opcua_byte_t *buf, size_t len, opcua_ui
     return r.position;
 }
 
-static const opcua_byte_t *capture_service_body(const mock_t *mock, opcua_uint32_t expected_type,
-                                                size_t *body_len) {
+static const opcua_byte_t *capture_service_body(const mock_t *mock, opcua_uint32_t expected_type, size_t *body_len) {
     size_t offset = response_body_offset(mock->last_write, mock->last_write_len, expected_type);
     TEST_ASSERT_TRUE(offset <= mock->last_write_len);
     *body_len = mock->last_write_len - offset;
@@ -324,26 +390,28 @@ static void assert_or_capture(const char *name, const opcua_byte_t *golden, size
 }
 
 static const mu_reference_t regression_obj_refs[] = {
-    { { 0, MU_NODEID_NUMERIC, { 35 } }, { 1, MU_NODEID_NUMERIC, { 1000 } }, true }
-};
+    {{0, MU_NODEID_NUMERIC, {35}}, {1, MU_NODEID_NUMERIC, {1000}}, true}};
 static const mu_reference_t regression_var_refs[] = {
-    { { 0, MU_NODEID_NUMERIC, { 35 } }, { 0, MU_NODEID_NUMERIC, { 85 } }, false }
-};
-static const mu_value_source_t regression_var_value = {
-    MU_VALUESOURCE_STATIC, { .static_value = { MU_TYPE_INT32, { .i32 = 42 } } }
-};
-static const mu_node_t regression_nodes[] = {
-    { { 0, MU_NODEID_NUMERIC, { 85 } }, MU_NODECLASS_OBJECT,
-      { 7, (const opcua_byte_t *)"Objects" }, { 7, (const opcua_byte_t *)"Objects" },
-      regression_obj_refs, 1, NULL },
-    { { 1, MU_NODEID_NUMERIC, { 1000 } }, MU_NODECLASS_VARIABLE,
-      { 6, (const opcua_byte_t *)"MyVar1" }, { 6, (const opcua_byte_t *)"MyVar1" },
-      regression_var_refs, 1, &regression_var_value }
-};
-static const mu_address_space_t regression_space = { regression_nodes, 2 };
+    {{0, MU_NODEID_NUMERIC, {35}}, {0, MU_NODEID_NUMERIC, {85}}, false}};
+static const mu_value_source_t regression_var_value = {MU_VALUESOURCE_STATIC,
+                                                       {.static_value = {MU_TYPE_INT32, {.i32 = 42}}}};
+static const mu_node_t regression_nodes[] = {{{0, MU_NODEID_NUMERIC, {85}},
+                                              MU_NODECLASS_OBJECT,
+                                              {7, (const opcua_byte_t *)"Objects"},
+                                              {7, (const opcua_byte_t *)"Objects"},
+                                              regression_obj_refs,
+                                              1,
+                                              NULL},
+                                             {{1, MU_NODEID_NUMERIC, {1000}},
+                                              MU_NODECLASS_VARIABLE,
+                                              {6, (const opcua_byte_t *)"MyVar1"},
+                                              {6, (const opcua_byte_t *)"MyVar1"},
+                                              regression_var_refs,
+                                              1,
+                                              &regression_var_value}};
+static const mu_address_space_t regression_space = {regression_nodes, 2};
 
-static mu_server_t *make_server(mock_t *mock, opcua_byte_t *storage, size_t storage_size,
-                                mu_server_config_t *config) {
+static mu_server_t *make_server(mock_t *mock, opcua_byte_t *storage, size_t storage_size, mu_server_config_t *config) {
     memset(config, 0, sizeof(*config));
     config->endpoint_url = "opc.tcp://host:4840";
     config->application_uri = "urn:response-regression";

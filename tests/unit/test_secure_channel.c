@@ -1,7 +1,7 @@
 /* tests/unit/test_secure_channel.c */
-#include "unity.h"
-#include "micro_opcua/micro_opcua.h"
 #include "fake_platform.h"
+#include "micro_opcua/micro_opcua.h"
+#include "unity.h"
 #include <string.h>
 
 void setUp(void) {}
@@ -47,10 +47,7 @@ static opcua_statuscode_t test_accept(void *context, void **handle) {
     return MU_STATUS_GOOD;
 }
 
-static opcua_statuscode_t test_read(void *context,
-                                    void *handle,
-                                    opcua_byte_t *buffer,
-                                    size_t capacity,
+static opcua_statuscode_t test_read(void *context, void *handle, opcua_byte_t *buffer, size_t capacity,
                                     size_t *bytes_read) {
     secure_channel_transport_t *transport = (secure_channel_transport_t *)context;
     (void)handle;
@@ -67,10 +64,7 @@ static opcua_statuscode_t test_read(void *context,
     return MU_STATUS_GOOD;
 }
 
-static opcua_statuscode_t test_write(void *context,
-                                     void *handle,
-                                     const opcua_byte_t *buffer,
-                                     size_t len,
+static opcua_statuscode_t test_write(void *context, void *handle, const opcua_byte_t *buffer, size_t len,
                                      size_t *bytes_written) {
     secure_channel_transport_t *transport = (secure_channel_transport_t *)context;
     (void)handle;
@@ -83,9 +77,7 @@ static opcua_statuscode_t test_write(void *context,
     return MU_STATUS_GOOD;
 }
 
-static void enqueue_request(secure_channel_transport_t *transport,
-                            const opcua_byte_t *bytes,
-                            size_t len) {
+static void enqueue_request(secure_channel_transport_t *transport, const opcua_byte_t *bytes, size_t len) {
     TEST_ASSERT_TRUE(transport->inbound_count < TEST_MAX_INBOUND);
     TEST_ASSERT_TRUE(len <= sizeof(transport->inbound[0]));
     memcpy(transport->inbound[transport->inbound_count], bytes, len);
@@ -101,8 +93,8 @@ static void patch_message_size(opcua_byte_t *buffer, size_t len) {
 }
 
 static void write_request_header(mu_binary_writer_t *w, opcua_uint32_t handle) {
-    mu_nodeid_t null_id = { 0, MU_NODEID_NUMERIC, { 0 } };
-    mu_string_t null_str = { -1, NULL };
+    mu_nodeid_t null_id = {0, MU_NODEID_NUMERIC, {0}};
+    mu_string_t null_str = {-1, NULL};
     (void)mu_binary_write_nodeid(w, &null_id);
     (void)mu_binary_write_int64(w, 0);
     (void)mu_binary_write_uint32(w, handle);
@@ -129,18 +121,15 @@ static size_t build_hello(opcua_byte_t *out, size_t capacity) {
     (void)mu_binary_write_uint32(&w, 0);
     (void)mu_binary_write_uint32(&w, 0);
     {
-        mu_string_t url = { (opcua_int32_t)(sizeof(endpoint) - 1u), endpoint };
+        mu_string_t url = {(opcua_int32_t)(sizeof(endpoint) - 1u), endpoint};
         (void)mu_binary_write_string(&w, &url);
     }
     patch_message_size(out, w.position);
     return w.position;
 }
 
-static size_t build_opn(opcua_byte_t *out,
-                        size_t capacity,
-                        const opcua_byte_t *policy_uri,
-                        opcua_int32_t policy_uri_len,
-                        mu_message_security_mode_t security_mode) {
+static size_t build_opn(opcua_byte_t *out, size_t capacity, const opcua_byte_t *policy_uri,
+                        opcua_int32_t policy_uri_len, mu_message_security_mode_t security_mode) {
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, out, capacity);
 
@@ -152,7 +141,7 @@ static size_t build_opn(opcua_byte_t *out,
     (void)mu_binary_write_uint32(&w, 0);
     (void)mu_binary_write_uint32(&w, 0);
     {
-        mu_string_t policy = { policy_uri_len, policy_uri };
+        mu_string_t policy = {policy_uri_len, policy_uri};
         (void)mu_binary_write_string(&w, &policy);
     }
     (void)mu_binary_write_int32(&w, -1);
@@ -160,7 +149,7 @@ static size_t build_opn(opcua_byte_t *out,
     (void)mu_binary_write_uint32(&w, 1);
     (void)mu_binary_write_uint32(&w, 1);
     {
-        mu_nodeid_t opn_type = { 0, MU_NODEID_NUMERIC, { MU_ID_OPENSECURECHANNELREQUEST } };
+        mu_nodeid_t opn_type = {0, MU_NODEID_NUMERIC, {MU_ID_OPENSECURECHANNELREQUEST}};
         (void)mu_binary_write_nodeid(&w, &opn_type);
     }
     write_request_header(&w, 77);
@@ -173,10 +162,8 @@ static size_t build_opn(opcua_byte_t *out,
     return w.position;
 }
 
-static void configure_transport_server(mu_server_config_t *config,
-                                       secure_channel_transport_t *transport,
-                                       opcua_byte_t *rx,
-                                       opcua_byte_t *tx) {
+static void configure_transport_server(mu_server_config_t *config, secure_channel_transport_t *transport,
+                                       opcua_byte_t *rx, opcua_byte_t *tx) {
     memset(config, 0, sizeof(*config));
     config->endpoint_url = "opc.tcp://host:4840";
     config->application_uri = "urn:test";
@@ -200,8 +187,7 @@ static void configure_transport_server(mu_server_config_t *config,
     config->tcp_adapter.shutdown = test_shutdown;
 }
 
-static opcua_statuscode_t read_opn_response_service_result(const opcua_byte_t *buffer,
-                                                           size_t len,
+static opcua_statuscode_t read_opn_response_service_result(const opcua_byte_t *buffer, size_t len,
                                                            opcua_uint32_t *response_type,
                                                            opcua_statuscode_t *service_result) {
     mu_binary_reader_t r;
@@ -214,23 +200,26 @@ static opcua_statuscode_t read_opn_response_service_result(const opcua_byte_t *b
     r.position = MU_UASC_ASYMMETRIC_NONE_HEADER_SIZE;
 
     status = mu_binary_read_nodeid(&r, &type);
-    if (status != MU_STATUS_GOOD) return status;
+    if (status != MU_STATUS_GOOD)
+        return status;
     if (type.identifier_type != MU_NODEID_NUMERIC || type.namespace_index != 0) {
         return MU_STATUS_BAD_DECODINGERROR;
     }
     *response_type = type.identifier.numeric;
 
-    status = mu_binary_read_int64(&r, &timestamp); if (status != MU_STATUS_GOOD) return status;
-    status = mu_binary_read_uint32(&r, &handle); if (status != MU_STATUS_GOOD) return status;
+    status = mu_binary_read_int64(&r, &timestamp);
+    if (status != MU_STATUS_GOOD)
+        return status;
+    status = mu_binary_read_uint32(&r, &handle);
+    if (status != MU_STATUS_GOOD)
+        return status;
     (void)timestamp;
     (void)handle;
     return mu_binary_read_statuscode(&r, service_result);
 }
 
-static void assert_opn_rejected(const opcua_byte_t *policy_uri,
-                                opcua_int32_t policy_uri_len,
-                                mu_message_security_mode_t security_mode,
-                                opcua_statuscode_t expected_status) {
+static void assert_opn_rejected(const opcua_byte_t *policy_uri, opcua_int32_t policy_uri_len,
+                                mu_message_security_mode_t security_mode, opcua_statuscode_t expected_status) {
     secure_channel_transport_t transport;
     opcua_byte_t chunk[512];
     mu_server_config_t config;
@@ -253,8 +242,7 @@ static void assert_opn_rejected(const opcua_byte_t *policy_uri,
     enqueue_request(&transport, chunk, len);
 
     configure_transport_server(&config, &transport, rx, tx);
-    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_server_init(storage.bytes, sizeof(storage.bytes), &config, &server));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_server_init(storage.bytes, sizeof(storage.bytes), &config, &server));
 
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_server_poll(server));
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_server_poll(server));
@@ -263,13 +251,9 @@ static void assert_opn_rejected(const opcua_byte_t *policy_uri,
 
     TEST_ASSERT_EQUAL(2, transport.write_count);
     TEST_ASSERT_EQUAL_MEMORY("OPNF", transport.writes[1], 4);
-    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        read_opn_response_service_result(transport.writes[1],
-                                         transport.write_len[1],
-                                         &response_type,
-                                         &service_result));
-    TEST_ASSERT_TRUE(response_type == MU_ID_SERVICEFAULT ||
-                     response_type == MU_ID_OPENSECURECHANNELRESPONSE);
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, read_opn_response_service_result(transport.writes[1], transport.write_len[1],
+                                                                       &response_type, &service_result));
+    TEST_ASSERT_TRUE(response_type == MU_ID_SERVICEFAULT || response_type == MU_ID_OPENSECURECHANNELRESPONSE);
     TEST_ASSERT_EQUAL_HEX32(expected_status, service_result);
     TEST_ASSERT_FALSE(server->secure_channel.is_open);
 }
@@ -278,16 +262,18 @@ void test_secure_channel_open_none(void) {
     mu_secure_channel_t channel;
     mu_secure_channel_init(&channel);
     TEST_ASSERT_FALSE(channel.is_open);
-    
+
     opcua_uint32_t revised_lifetime = 0;
-    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_secure_channel_open(&channel, NULL, MU_MESSAGE_SECURITY_MODE_NONE, 1000, &revised_lifetime));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
+                      mu_secure_channel_open(&channel, NULL, MU_MESSAGE_SECURITY_MODE_NONE, 1000, &revised_lifetime));
     TEST_ASSERT_TRUE(channel.is_open);
     TEST_ASSERT_EQUAL(10000, revised_lifetime); /* Bounded to min */
     TEST_ASSERT_EQUAL(1, channel.channel_id);
     TEST_ASSERT_EQUAL(1, channel.token_id);
-    
+
     /* Renew */
-    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_secure_channel_open(&channel, NULL, MU_MESSAGE_SECURITY_MODE_NONE, 5000000, &revised_lifetime));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_secure_channel_open(&channel, NULL, MU_MESSAGE_SECURITY_MODE_NONE, 5000000,
+                                                             &revised_lifetime));
     TEST_ASSERT_EQUAL(3600000, revised_lifetime); /* Bounded to max */
     TEST_ASSERT_EQUAL(2, channel.token_id);
 }
@@ -295,13 +281,13 @@ void test_secure_channel_open_none(void) {
 void test_secure_channel_close(void) {
     mu_secure_channel_t channel;
     mu_secure_channel_init(&channel);
-    
+
     TEST_ASSERT_EQUAL(MU_STATUS_BAD_TCPSECURECHANNELUNKNOWN, mu_secure_channel_close(&channel));
-    
+
     opcua_uint32_t revised_lifetime = 0;
     mu_secure_channel_open(&channel, NULL, MU_MESSAGE_SECURITY_MODE_NONE, 3600000, &revised_lifetime);
     TEST_ASSERT_TRUE(channel.is_open);
-    
+
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_secure_channel_close(&channel));
     TEST_ASSERT_FALSE(channel.is_open);
 }
@@ -318,7 +304,7 @@ static void populate_derived_session_keys(mu_secure_channel_t *channel) {
 }
 
 static void assert_symmetric_keys_zeroized(const mu_sym_keys_t *keys) {
-    const opcua_byte_t zeros[sizeof(*keys)] = { 0 };
+    const opcua_byte_t zeros[sizeof(*keys)] = {0};
     TEST_ASSERT_EQUAL_MEMORY(zeros, keys, sizeof(*keys));
 }
 
@@ -329,20 +315,16 @@ static void assert_channel_keys_zeroized(const mu_secure_channel_t *channel) {
 }
 
 void test_secure_channel_close_and_init_zeroize_derived_session_keys(void) {
-    static const opcua_byte_t policy_uri[] =
-        "http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256";
+    static const opcua_byte_t policy_uri[] = "http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256";
     mu_secure_channel_t channel;
-    mu_string_t policy = { (opcua_int32_t)(sizeof(policy_uri) - 1u), policy_uri };
+    mu_string_t policy = {(opcua_int32_t)(sizeof(policy_uri) - 1u), policy_uri};
     opcua_uint32_t revised_lifetime = 0;
 
     mu_secure_channel_init(&channel);
     channel.policy = MU_SECURITY_POLICY_BASIC256SHA256_ID;
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-        mu_secure_channel_open(&channel,
-                               &policy,
-                               MU_MESSAGE_SECURITY_MODE_SIGN_AND_ENCRYPT,
-                               3600000,
-                               &revised_lifetime));
+                      mu_secure_channel_open(&channel, &policy, MU_MESSAGE_SECURITY_MODE_SIGN_AND_ENCRYPT, 3600000,
+                                             &revised_lifetime));
     populate_derived_session_keys(&channel);
 
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_secure_channel_close(&channel));
@@ -355,35 +337,27 @@ void test_secure_channel_close_and_init_zeroize_derived_session_keys(void) {
 #endif
 
 void test_opn_rejects_unacceptable_security_policy_without_crypto_adapter(void) {
-    static const opcua_byte_t policy_uri[] =
-        "http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256";
+    static const opcua_byte_t policy_uri[] = "http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256";
 
     /* OPC-10000-4 §5.6.2.2 defines securityPolicyUri as the OPN policy
        parameter; §5.6.2.3 defines Bad_SecurityPolicyRejected for a policy that
        does not meet the server requirements. This server has no crypto adapter,
        so its active SecureChannel capability is SecurityPolicy None. */
-    assert_opn_rejected(policy_uri,
-                        (opcua_int32_t)(sizeof(policy_uri) - 1u),
-                        MU_MESSAGE_SECURITY_MODE_NONE,
+    assert_opn_rejected(policy_uri, (opcua_int32_t)(sizeof(policy_uri) - 1u), MU_MESSAGE_SECURITY_MODE_NONE,
                         MU_STATUS_BAD_SECURITYPOLICYREJECTED);
 }
 
 void test_opn_rejects_signing_modes_for_security_policy_none(void) {
-    static const opcua_byte_t policy_uri[] =
-        "http://opcfoundation.org/UA/SecurityPolicy#None";
-    static const mu_message_security_mode_t modes[] = {
-        MU_MESSAGE_SECURITY_MODE_SIGN,
-        MU_MESSAGE_SECURITY_MODE_SIGN_AND_ENCRYPT
-    };
+    static const opcua_byte_t policy_uri[] = "http://opcfoundation.org/UA/SecurityPolicy#None";
+    static const mu_message_security_mode_t modes[] = {MU_MESSAGE_SECURITY_MODE_SIGN,
+                                                       MU_MESSAGE_SECURITY_MODE_SIGN_AND_ENCRYPT};
 
     /* OPC-10000-4 §5.6.2.2 defines securityMode as the OPN mode parameter;
        §5.6.2.3 defines Bad_SecurityModeRejected for a mode that does not meet
        the server requirements. With SecurityPolicy None / no crypto adapter,
        Sign and SignAndEncrypt are inconsistent with the active capability. */
     for (size_t i = 0; i < (sizeof(modes) / sizeof(modes[0])); ++i) {
-        assert_opn_rejected(policy_uri,
-                            (opcua_int32_t)(sizeof(policy_uri) - 1u),
-                            modes[i],
+        assert_opn_rejected(policy_uri, (opcua_int32_t)(sizeof(policy_uri) - 1u), modes[i],
                             MU_STATUS_BAD_SECURITYMODEREJECTED);
     }
 }

@@ -1,10 +1,10 @@
 /* tests/unit/test_size_report.c */
 #define _POSIX_C_SOURCE 200809L
 #include "unity.h"
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 #ifndef PROJECT_ROOT_DIR
 #define PROJECT_ROOT_DIR "."
@@ -23,14 +23,18 @@ void test_size_ledger_contains_required_fields(void) {
     bool has_flash = false;
     bool has_ram = false;
     bool has_heap = false;
-    
+
     bool has_feature_009 = false;
-    
+
     while (fgets(buf, sizeof(buf), fp)) {
-        if (strstr(buf, "Flash") != NULL) has_flash = true;
-        if (strstr(buf, "RAM") != NULL) has_ram = true;
-        if (strstr(buf, "Heap") != NULL || strstr(buf, "Dynamic") != NULL) has_heap = true;
-        if (strstr(buf, "Feature 009") != NULL || strstr(buf, "009-core-feature") != NULL) has_feature_009 = true;
+        if (strstr(buf, "Flash") != NULL)
+            has_flash = true;
+        if (strstr(buf, "RAM") != NULL)
+            has_ram = true;
+        if (strstr(buf, "Heap") != NULL || strstr(buf, "Dynamic") != NULL)
+            has_heap = true;
+        if (strstr(buf, "Feature 009") != NULL || strstr(buf, "009-core-feature") != NULL)
+            has_feature_009 = true;
     }
     fclose(fp);
 

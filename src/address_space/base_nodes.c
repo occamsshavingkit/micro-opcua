@@ -67,8 +67,10 @@ static const opcua_byte_t s_str_UInt64[] = "UInt64";
 static const opcua_byte_t s_str_VariableTypes[] = "VariableTypes";
 static const opcua_byte_t s_str_Views[] = "Views";
 static const opcua_byte_t s_str_en[] = "en";
-static const opcua_byte_t s_str_http___opcfoundation_org_UA_Profile_Server_EmbeddedUA2017[] = "http://opcfoundation.org/UA-Profile/Server/EmbeddedUA2017";
-static const opcua_byte_t s_str_http___opcfoundation_org_UA_Profile_Server_NanoEmbeddedDevice2017[] = "http://opcfoundation.org/UA-Profile/Server/NanoEmbeddedDevice2017";
+static const opcua_byte_t s_str_http___opcfoundation_org_UA_Profile_Server_EmbeddedUA2017[] =
+    "http://opcfoundation.org/UA-Profile/Server/EmbeddedUA2017";
+static const opcua_byte_t s_str_http___opcfoundation_org_UA_Profile_Server_NanoEmbeddedDevice2017[] =
+    "http://opcfoundation.org/UA-Profile/Server/NanoEmbeddedDevice2017";
 static const opcua_byte_t s_str_http___opcfoundation_org_UA_[] = "http://opcfoundation.org/UA/";
 static const opcua_byte_t s_str_urn_micro_opcua_server[] = "urn:micro-opcua:server";
 #if defined(__GNUC__) || defined(__clang__)
@@ -260,130 +262,46 @@ static const mu_value_source_t s_max_nodes_per_browse_value = {
 
 static const mu_node_t s_base_nodes[] = {
 #if MICRO_OPCUA_BASE_TYPE_SYSTEM
-    {{0, MU_NODEID_NUMERIC, {1}},
-     MU_NODECLASS_DATATYPE,
-     {7, s_str_Boolean},
-     {7, s_str_Boolean},
-     NULL,
-     0,
-     NULL},
+    {{0, MU_NODEID_NUMERIC, {1}}, MU_NODECLASS_DATATYPE, {7, s_str_Boolean}, {7, s_str_Boolean}, NULL, 0, NULL},
 #endif
 #if MICRO_OPCUA_BASE_TYPE_SYSTEM
-    {{0, MU_NODEID_NUMERIC, {2}},
-     MU_NODECLASS_DATATYPE,
-     {5, s_str_SByte},
-     {5, s_str_SByte},
-     NULL,
-     0,
-     NULL},
+    {{0, MU_NODEID_NUMERIC, {2}}, MU_NODECLASS_DATATYPE, {5, s_str_SByte}, {5, s_str_SByte}, NULL, 0, NULL},
 #endif
 #if MICRO_OPCUA_BASE_TYPE_SYSTEM
-    {{0, MU_NODEID_NUMERIC, {3}},
-     MU_NODECLASS_DATATYPE,
-     {4, s_str_Byte},
-     {4, s_str_Byte},
-     NULL,
-     0,
-     NULL},
+    {{0, MU_NODEID_NUMERIC, {3}}, MU_NODECLASS_DATATYPE, {4, s_str_Byte}, {4, s_str_Byte}, NULL, 0, NULL},
 #endif
 #if MICRO_OPCUA_BASE_TYPE_SYSTEM
-    {{0, MU_NODEID_NUMERIC, {4}},
-     MU_NODECLASS_DATATYPE,
-     {5, s_str_Int16},
-     {5, s_str_Int16},
-     NULL,
-     0,
-     NULL},
+    {{0, MU_NODEID_NUMERIC, {4}}, MU_NODECLASS_DATATYPE, {5, s_str_Int16}, {5, s_str_Int16}, NULL, 0, NULL},
 #endif
 #if MICRO_OPCUA_BASE_TYPE_SYSTEM
-    {{0, MU_NODEID_NUMERIC, {5}},
-     MU_NODECLASS_DATATYPE,
-     {6, s_str_UInt16},
-     {6, s_str_UInt16},
-     NULL,
-     0,
-     NULL},
+    {{0, MU_NODEID_NUMERIC, {5}}, MU_NODECLASS_DATATYPE, {6, s_str_UInt16}, {6, s_str_UInt16}, NULL, 0, NULL},
 #endif
 #if MICRO_OPCUA_BASE_TYPE_SYSTEM
-    {{0, MU_NODEID_NUMERIC, {6}},
-     MU_NODECLASS_DATATYPE,
-     {5, s_str_Int32},
-     {5, s_str_Int32},
-     NULL,
-     0,
-     NULL},
+    {{0, MU_NODEID_NUMERIC, {6}}, MU_NODECLASS_DATATYPE, {5, s_str_Int32}, {5, s_str_Int32}, NULL, 0, NULL},
 #endif
 #if MICRO_OPCUA_BASE_TYPE_SYSTEM
-    {{0, MU_NODEID_NUMERIC, {7}},
-     MU_NODECLASS_DATATYPE,
-     {6, s_str_UInt32},
-     {6, s_str_UInt32},
-     NULL,
-     0,
-     NULL},
+    {{0, MU_NODEID_NUMERIC, {7}}, MU_NODECLASS_DATATYPE, {6, s_str_UInt32}, {6, s_str_UInt32}, NULL, 0, NULL},
 #endif
 #if MICRO_OPCUA_BASE_TYPE_SYSTEM
-    {{0, MU_NODEID_NUMERIC, {8}},
-     MU_NODECLASS_DATATYPE,
-     {5, s_str_Int64},
-     {5, s_str_Int64},
-     NULL,
-     0,
-     NULL},
+    {{0, MU_NODEID_NUMERIC, {8}}, MU_NODECLASS_DATATYPE, {5, s_str_Int64}, {5, s_str_Int64}, NULL, 0, NULL},
 #endif
 #if MICRO_OPCUA_BASE_TYPE_SYSTEM
-    {{0, MU_NODEID_NUMERIC, {9}},
-     MU_NODECLASS_DATATYPE,
-     {6, s_str_UInt64},
-     {6, s_str_UInt64},
-     NULL,
-     0,
-     NULL},
+    {{0, MU_NODEID_NUMERIC, {9}}, MU_NODECLASS_DATATYPE, {6, s_str_UInt64}, {6, s_str_UInt64}, NULL, 0, NULL},
 #endif
 #if MICRO_OPCUA_BASE_TYPE_SYSTEM
-    {{0, MU_NODEID_NUMERIC, {10}},
-     MU_NODECLASS_DATATYPE,
-     {5, s_str_Float},
-     {5, s_str_Float},
-     NULL,
-     0,
-     NULL},
+    {{0, MU_NODEID_NUMERIC, {10}}, MU_NODECLASS_DATATYPE, {5, s_str_Float}, {5, s_str_Float}, NULL, 0, NULL},
 #endif
 #if MICRO_OPCUA_BASE_TYPE_SYSTEM
-    {{0, MU_NODEID_NUMERIC, {11}},
-     MU_NODECLASS_DATATYPE,
-     {6, s_str_Double},
-     {6, s_str_Double},
-     NULL,
-     0,
-     NULL},
+    {{0, MU_NODEID_NUMERIC, {11}}, MU_NODECLASS_DATATYPE, {6, s_str_Double}, {6, s_str_Double}, NULL, 0, NULL},
 #endif
 #if MICRO_OPCUA_BASE_TYPE_SYSTEM
-    {{0, MU_NODEID_NUMERIC, {12}},
-     MU_NODECLASS_DATATYPE,
-     {6, s_str_String},
-     {6, s_str_String},
-     NULL,
-     0,
-     NULL},
+    {{0, MU_NODEID_NUMERIC, {12}}, MU_NODECLASS_DATATYPE, {6, s_str_String}, {6, s_str_String}, NULL, 0, NULL},
 #endif
 #if MICRO_OPCUA_BASE_TYPE_SYSTEM
-    {{0, MU_NODEID_NUMERIC, {13}},
-     MU_NODECLASS_DATATYPE,
-     {8, s_str_DateTime},
-     {8, s_str_DateTime},
-     NULL,
-     0,
-     NULL},
+    {{0, MU_NODEID_NUMERIC, {13}}, MU_NODECLASS_DATATYPE, {8, s_str_DateTime}, {8, s_str_DateTime}, NULL, 0, NULL},
 #endif
 #if MICRO_OPCUA_BASE_TYPE_SYSTEM
-    {{0, MU_NODEID_NUMERIC, {17}},
-     MU_NODECLASS_DATATYPE,
-     {6, s_str_NodeId},
-     {6, s_str_NodeId},
-     NULL,
-     0,
-     NULL},
+    {{0, MU_NODEID_NUMERIC, {17}}, MU_NODECLASS_DATATYPE, {6, s_str_NodeId}, {6, s_str_NodeId}, NULL, 0, NULL},
 #endif
 #if MICRO_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {19}},
@@ -556,8 +474,7 @@ static const mu_node_t s_base_nodes[] = {
      {12, s_str_PropertyType},
      NULL,
      0,
-     NULL}
-    ,
+     NULL},
 #endif
     {{0, MU_NODEID_NUMERIC, {84}},
      MU_NODECLASS_OBJECT,

@@ -1,7 +1,7 @@
 /* tests/unit/test_connection_multiplex.c */
-#include "unity.h"
-#include "micro_opcua/micro_opcua.h"
 #include "fake_platform.h"
+#include "micro_opcua/micro_opcua.h"
+#include "unity.h"
 #include <string.h>
 
 #include "../../src/core/server_internal.h"
@@ -52,7 +52,8 @@ static opcua_statuscode_t mock_accept(void *context, void **handle) {
     return MU_STATUS_GOOD;
 }
 
-static opcua_statuscode_t mock_read(void *context, void *handle, opcua_byte_t *buffer, size_t capacity, size_t *bytes_read) {
+static opcua_statuscode_t mock_read(void *context, void *handle, opcua_byte_t *buffer, size_t capacity,
+                                    size_t *bytes_read) {
     (void)context;
     (void)handle;
     (void)buffer;
@@ -61,7 +62,8 @@ static opcua_statuscode_t mock_read(void *context, void *handle, opcua_byte_t *b
     return MU_STATUS_GOOD;
 }
 
-static opcua_statuscode_t mock_write(void *context, void *handle, const opcua_byte_t *buffer, size_t len, size_t *bytes_written) {
+static opcua_statuscode_t mock_write(void *context, void *handle, const opcua_byte_t *buffer, size_t len,
+                                     size_t *bytes_written) {
     mock_tcp_t *tcp = (mock_tcp_t *)context;
     (void)handle;
     tcp->write_count++;
@@ -77,7 +79,7 @@ void test_connection_limits(void) {
 #ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
     mock_tcp_t tcp;
     memset(&tcp, 0, sizeof(tcp));
-    
+
     tcp.handles[0] = (void *)0x10;
     tcp.handles[1] = (void *)0x20;
     tcp.handles[2] = (void *)0x30;

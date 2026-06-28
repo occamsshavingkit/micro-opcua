@@ -2,13 +2,12 @@
 #define _DEFAULT_SOURCE
 #define _XOPEN_SOURCE 500
 #include "micro_opcua/micro_opcua.h"
+#include "static_address_space.h"
+#include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <unistd.h>
-#include "static_address_space.h"
 
 #include "../../src/platform/host_tcp_adapter.h"
 #ifdef MICRO_OPCUA_HAVE_OPENSSL
@@ -33,19 +32,21 @@ static void sigint_handler(int sig) {
 }
 
 static opcua_datetime_t stub_get_time(void *context) {
-    (void)context; return 0;
+    (void)context;
+    return 0;
 }
 static opcua_uint64_t stub_get_tick_ms(void *context) {
-    (void)context; return 0;
+    (void)context;
+    return 0;
 }
 static opcua_statuscode_t stub_generate_random(void *context, opcua_byte_t *buffer, size_t length) {
     (void)context;
-    if (buffer) memset(buffer, 0xAA, length);
+    if (buffer)
+        memset(buffer, 0xAA, length);
     return MU_STATUS_GOOD;
 }
 
-int main(void)
-{
+int main(void) {
     mu_server_config_t config;
     mu_server_t *server = NULL;
     opcua_statuscode_t status;
@@ -111,7 +112,7 @@ int main(void)
         mu_server_poll(server);
         usleep(10000); /* 10ms sleep to avoid 100% CPU on non-blocking sockets */
     }
-    
+
     printf("\nShutting down...\n");
     mu_server_close(server);
     return 0;

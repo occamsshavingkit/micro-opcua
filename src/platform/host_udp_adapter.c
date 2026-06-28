@@ -8,17 +8,18 @@
 #include <ws2tcpip.h>
 #pragma comment(lib, "ws2_32.lib")
 #else
-#include <sys/socket.h>
 #include <arpa/inet.h>
+#include <sys/socket.h>
 #include <unistd.h>
 #endif
 
-/* We just store the socket FD in the context directly to keep it simple, 
+/* We just store the socket FD in the context directly to keep it simple,
  * or use an intptr_t. Let's assume context points to an int. */
 
 opcua_statuscode_t mu_host_udp_init(void *context, uint16_t port) {
     (void)port;
-    if (!context) return MU_STATUS_BAD_INVALIDARGUMENT;
+    if (!context)
+        return MU_STATUS_BAD_INVALIDARGUMENT;
 
 #ifdef _WIN32
     WSADATA wsaData;
@@ -31,22 +32,25 @@ opcua_statuscode_t mu_host_udp_init(void *context, uint16_t port) {
     }
 
     int broadcastEnable = 1;
-    setsockopt(fd, SOL_SOCKET, SO_BROADCAST, (const void*)&broadcastEnable, sizeof(broadcastEnable));
+    setsockopt(fd, SOL_SOCKET, SO_BROADCAST, (const void *)&broadcastEnable, sizeof(broadcastEnable));
 
-    *(int*)context = fd;
+    *(int *)context = fd;
     return MU_STATUS_GOOD;
 }
 
-opcua_statuscode_t mu_host_udp_send(void *context, const opcua_byte_t *buffer, size_t buffer_size, const char *address, uint16_t port) {
-    if (!context) return MU_STATUS_BAD_INTERNALERROR;
-    int fd = *(int*)context;
-    if (fd < 0) return MU_STATUS_BAD_INTERNALERROR;
+opcua_statuscode_t mu_host_udp_send(void *context, const opcua_byte_t *buffer, size_t buffer_size, const char *address,
+                                    uint16_t port) {
+    if (!context)
+        return MU_STATUS_BAD_INTERNALERROR;
+    int fd = *(int *)context;
+    if (fd < 0)
+        return MU_STATUS_BAD_INTERNALERROR;
 
     struct sockaddr_in dest_addr;
     memset(&dest_addr, 0, sizeof(dest_addr));
     dest_addr.sin_family = AF_INET;
     dest_addr.sin_port = htons(port);
-    
+
 #ifdef _WIN32
     dest_addr.sin_addr.s_addr = inet_addr(address);
 #else
@@ -59,7 +63,7 @@ opcua_statuscode_t mu_host_udp_send(void *context, const opcua_byte_t *buffer, s
 
 void mu_host_udp_shutdown(void *context) {
     if (context) {
-        int fd = *(int*)context;
+        int fd = *(int *)context;
         if (fd >= 0) {
 #ifdef _WIN32
             closesocket(fd);
@@ -67,7 +71,7 @@ void mu_host_udp_shutdown(void *context) {
 #else
             close(fd);
 #endif
-            *(int*)context = -1;
+            *(int *)context = -1;
         }
     }
 }

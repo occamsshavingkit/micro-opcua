@@ -1,7 +1,7 @@
 /* tests/unit/test_message_chunk_errors.c */
-#include "unity.h"
-#include "micro_opcua/micro_opcua.h"
 #include "../../src/core/message_chunk.h"
+#include "micro_opcua/micro_opcua.h"
+#include "unity.h"
 
 void setUp(void) {}
 void tearDown(void) {}

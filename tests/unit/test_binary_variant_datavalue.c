@@ -1,6 +1,6 @@
 /* tests/unit/test_binary_variant_datavalue.c */
-#include "unity.h"
 #include "micro_opcua/micro_opcua.h"
+#include "unity.h"
 #include <string.h>
 
 void setUp(void) {}
@@ -11,16 +11,16 @@ void test_binary_variant_roundtrip(void) {
     opcua_byte_t buffer[128];
     mu_binary_writer_t writer;
     mu_binary_reader_t reader;
-    
-    mu_variant_t variant = { MU_TYPE_INT32, { .i32 = 42 } };
-    
+
+    mu_variant_t variant = {MU_TYPE_INT32, {.i32 = 42}};
+
     mu_binary_writer_init(&writer, buffer, sizeof(buffer));
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_write_variant(&writer, &variant));
-    
+
     mu_binary_reader_init(&reader, buffer, writer.position);
     mu_variant_t read_variant;
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_variant(&reader, &read_variant));
-    
+
     TEST_ASSERT_EQUAL(MU_TYPE_INT32, read_variant.type);
     TEST_ASSERT_EQUAL(42, read_variant.value.i32);
 }
@@ -29,7 +29,7 @@ void test_binary_datavalue_roundtrip(void) {
     opcua_byte_t buffer[128];
     mu_binary_writer_t writer;
     mu_binary_reader_t reader;
-    
+
     mu_datavalue_t datavalue;
     memset(&datavalue, 0, sizeof(datavalue));
     datavalue.has_value = true;
@@ -37,14 +37,14 @@ void test_binary_datavalue_roundtrip(void) {
     datavalue.value.value.i32 = 42;
     datavalue.has_status = true;
     datavalue.status = MU_STATUS_GOOD;
-    
+
     mu_binary_writer_init(&writer, buffer, sizeof(buffer));
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_write_datavalue(&writer, &datavalue));
-    
+
     mu_binary_reader_init(&reader, buffer, writer.position);
     mu_datavalue_t read_datavalue;
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_datavalue(&reader, &read_datavalue));
-    
+
     TEST_ASSERT_TRUE(read_datavalue.has_value);
     TEST_ASSERT_EQUAL(MU_TYPE_INT32, read_datavalue.value.type);
     TEST_ASSERT_EQUAL(42, read_datavalue.value.value.i32);
@@ -61,7 +61,7 @@ void test_binary_variant_qualifiedname_roundtrip(void) {
     memset(&variant, 0, sizeof(variant));
     variant.type = MU_TYPE_QUALIFIEDNAME;
     variant.value.qualified_name.namespace_index = 1;
-    variant.value.qualified_name.name = (mu_string_t){ 6, (const opcua_byte_t *)"MyVar1" };
+    variant.value.qualified_name.name = (mu_string_t){6, (const opcua_byte_t *)"MyVar1"};
 
     mu_binary_writer_init(&writer, buffer, sizeof(buffer));
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_write_variant(&writer, &variant));
@@ -83,8 +83,8 @@ void test_binary_variant_localizedtext_roundtrip(void) {
     mu_variant_t variant;
     memset(&variant, 0, sizeof(variant));
     variant.type = MU_TYPE_LOCALIZEDTEXT;
-    variant.value.localized_text.locale = (mu_string_t){ -1, NULL }; /* null locale -> absent */
-    variant.value.localized_text.text = (mu_string_t){ 6, (const opcua_byte_t *)"MyVar1" };
+    variant.value.localized_text.locale = (mu_string_t){-1, NULL}; /* null locale -> absent */
+    variant.value.localized_text.text = (mu_string_t){6, (const opcua_byte_t *)"MyVar1"};
 
     mu_binary_writer_init(&writer, buffer, sizeof(buffer));
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_write_variant(&writer, &variant));
@@ -105,10 +105,7 @@ void test_binary_variant_string_array_encode(void) {
     mu_binary_writer_t writer;
     mu_binary_writer_init(&writer, buffer, sizeof(buffer));
 
-    static const mu_string_t arr[2] = {
-        { 3, (const opcua_byte_t *)"foo" },
-        { 3, (const opcua_byte_t *)"bar" }
-    };
+    static const mu_string_t arr[2] = {{3, (const opcua_byte_t *)"foo"}, {3, (const opcua_byte_t *)"bar"}};
     mu_variant_t v;
     memset(&v, 0, sizeof(v));
     v.type = MU_TYPE_STRING;
@@ -138,7 +135,7 @@ void test_binary_variant_int32_array_encode(void) {
     mu_binary_writer_t writer;
     mu_binary_writer_init(&writer, buffer, sizeof(buffer));
 
-    static const opcua_int32_t arr[3] = { 10, 20, 30 };
+    static const opcua_int32_t arr[3] = {10, 20, 30};
     mu_variant_t v;
     memset(&v, 0, sizeof(v));
     v.type = MU_TYPE_INT32;

@@ -32,10 +32,9 @@ typedef struct {
 struct mu_server;
 opcua_statuscode_t mu_server_add_writer_group(struct mu_server *server, const mu_pubsub_writer_group_t *wg);
 opcua_statuscode_t mu_pubsub_poll(struct mu_server *server);
-opcua_statuscode_t mu_encode_uadp_network_message(const mu_pubsub_connection_t *conn, 
-                                                  const mu_pubsub_writer_group_t *wg,
-                                                  opcua_byte_t *buffer, size_t buffer_size, 
-                                                  size_t *bytes_written);
+opcua_statuscode_t mu_encode_uadp_network_message(const mu_pubsub_connection_t *conn,
+                                                  const mu_pubsub_writer_group_t *wg, opcua_byte_t *buffer,
+                                                  size_t buffer_size, size_t *bytes_written);
 
 #ifdef __cplusplus
 }

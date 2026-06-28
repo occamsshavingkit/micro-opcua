@@ -2,10 +2,10 @@
 #ifndef MICRO_OPCUA_SERVICES_BROWSE_H
 #define MICRO_OPCUA_SERVICES_BROWSE_H
 
-#include "micro_opcua/opcua_types.h"
-#include "micro_opcua/status.h"
 #include "micro_opcua/address_space.h"
 #include "micro_opcua/encoding.h"
+#include "micro_opcua/opcua_types.h"
+#include "micro_opcua/status.h"
 
 typedef enum {
     MU_BROWSE_DIRECTION_FORWARD = 0,
@@ -56,32 +56,22 @@ typedef struct {
 opcua_boolean_t ref_type_is_subtype_of(const mu_nodeid_t *child, const mu_nodeid_t *parent);
 
 /* Decodes the body of a BrowseRequest (after the RequestHeader) */
-opcua_statuscode_t mu_browse_request_decode(mu_binary_reader_t *reader, 
-                                            mu_browse_request_t *req,
-                                            mu_browse_description_t *desc_array,
-                                            size_t max_desc);
+opcua_statuscode_t mu_browse_request_decode(mu_binary_reader_t *reader, mu_browse_request_t *req,
+                                            mu_browse_description_t *desc_array, size_t max_desc);
 
 /* Encodes the body of a BrowseResponse (after the ResponseHeader) */
-opcua_statuscode_t mu_browse_response_encode(mu_binary_writer_t *writer, 
-                                             const mu_browse_response_t *resp);
+opcua_statuscode_t mu_browse_response_encode(mu_binary_writer_t *writer, const mu_browse_response_t *resp);
 
 /* Processes a BrowseRequest to produce a BrowseResponse */
-opcua_statuscode_t mu_browse_process(const mu_address_space_t *address_space,
-                                     const mu_address_space_t *dynamic,
-                                     const mu_browse_request_t *req,
-                                     mu_browse_result_t *results,
-                                     size_t max_results,
-                                     mu_reference_description_t *ref_pool,
-                                     size_t max_total_refs);
+opcua_statuscode_t mu_browse_process(const mu_address_space_t *address_space, const mu_address_space_t *dynamic,
+                                     const mu_browse_request_t *req, mu_browse_result_t *results, size_t max_results,
+                                     mu_reference_description_t *ref_pool, size_t max_total_refs);
 
 /* Decodes the body of a BrowseRequest (after the RequestHeader) */
-opcua_statuscode_t mu_browse_request_decode(mu_binary_reader_t *reader, 
-                                            mu_browse_request_t *req,
-                                            mu_browse_description_t *desc_array,
-                                            size_t max_desc);
+opcua_statuscode_t mu_browse_request_decode(mu_binary_reader_t *reader, mu_browse_request_t *req,
+                                            mu_browse_description_t *desc_array, size_t max_desc);
 
 /* Encodes the body of a BrowseResponse (after the ResponseHeader) */
-opcua_statuscode_t mu_browse_response_encode(mu_binary_writer_t *writer, 
-                                             const mu_browse_response_t *resp);
+opcua_statuscode_t mu_browse_response_encode(mu_binary_writer_t *writer, const mu_browse_response_t *resp);
 
 #endif /* MICRO_OPCUA_SERVICES_BROWSE_H */

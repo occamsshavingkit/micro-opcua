@@ -30,16 +30,16 @@ size_t mu_security_policy_signature_length(mu_security_policy_id_t policy);
 size_t mu_security_policy_nonce_length(mu_security_policy_id_t policy);
 
 /* Basic256Sha256 algorithm parameters (OPC 10000-7 §6.x profile table). */
-#define MU_B256S256_SIGNATURE_KEY_LENGTH      32  /* HMAC-SHA256 key (bytes) */
-#define MU_B256S256_ENCRYPTION_KEY_LENGTH     32  /* AES-256 key (bytes) */
-#define MU_B256S256_ENCRYPTION_BLOCK_SIZE     16  /* AES block / IV (bytes) */
-#define MU_B256S256_SIGNATURE_LENGTH          32  /* HMAC-SHA256 output (bytes) */
-#define MU_B256S256_NONCE_LENGTH              32  /* SecureChannelNonceLength */
-#define MU_B256S256_MIN_ASYMMETRIC_KEY_BITS   2048
-#define MU_B256S256_MAX_ASYMMETRIC_KEY_BITS   4096
+#define MU_B256S256_SIGNATURE_KEY_LENGTH 32  /* HMAC-SHA256 key (bytes) */
+#define MU_B256S256_ENCRYPTION_KEY_LENGTH 32 /* AES-256 key (bytes) */
+#define MU_B256S256_ENCRYPTION_BLOCK_SIZE 16 /* AES block / IV (bytes) */
+#define MU_B256S256_SIGNATURE_LENGTH 32      /* HMAC-SHA256 output (bytes) */
+#define MU_B256S256_NONCE_LENGTH 32          /* SecureChannelNonceLength */
+#define MU_B256S256_MIN_ASYMMETRIC_KEY_BITS 2048
+#define MU_B256S256_MAX_ASYMMETRIC_KEY_BITS 4096
 
 /* Bytes of derived key material per direction: signing key + encryption key + IV. */
-#define MU_B256S256_DERIVED_KEY_LENGTH \
+#define MU_B256S256_DERIVED_KEY_LENGTH                                                                                 \
     (MU_B256S256_SIGNATURE_KEY_LENGTH + MU_B256S256_ENCRYPTION_KEY_LENGTH + MU_B256S256_ENCRYPTION_BLOCK_SIZE)
 
 /* Classify a SecurityPolicyUri. A NULL/empty URI means None (an OPN may omit it).

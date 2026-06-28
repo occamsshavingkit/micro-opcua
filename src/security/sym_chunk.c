@@ -5,16 +5,15 @@
 #include "micro_opcua/encoding.h"
 #include <string.h>
 
-#define MU_SYM_HEADER_SIZE 16   /* type+IsFinal(4) + MessageSize(4) + SecureChannelId(4) + TokenId(4) */
-#define MU_SYM_SIG_LEN     MU_B256S256_SIGNATURE_LENGTH       /* 32 (HMAC-SHA256) */
-#define MU_SYM_BLOCK       MU_B256S256_ENCRYPTION_BLOCK_SIZE  /* 16 (AES) */
+#define MU_SYM_HEADER_SIZE 16 /* type+IsFinal(4) + MessageSize(4) + SecureChannelId(4) + TokenId(4) */
+#define MU_SYM_SIG_LEN MU_B256S256_SIGNATURE_LENGTH    /* 32 (HMAC-SHA256) */
+#define MU_SYM_BLOCK MU_B256S256_ENCRYPTION_BLOCK_SIZE /* 16 (AES) */
 
-opcua_statuscode_t mu_sym_keys_derive(const mu_crypto_adapter_t *crypto,
-                                      mu_security_policy_id_t policy,
-                                      const opcua_byte_t *secret, size_t secret_len,
-                                      const opcua_byte_t *seed, size_t seed_len,
-                                      mu_sym_keys_t *out_keys) {
-    if (!out_keys) return MU_STATUS_BAD_INTERNALERROR;
+opcua_statuscode_t mu_sym_keys_derive(const mu_crypto_adapter_t *crypto, mu_security_policy_id_t policy,
+                                      const opcua_byte_t *secret, size_t secret_len, const opcua_byte_t *seed,
+                                      size_t seed_len, mu_sym_keys_t *out_keys) {
+    if (!out_keys)
+        return MU_STATUS_BAD_INTERNALERROR;
     memset(out_keys, 0, sizeof(*out_keys));
     out_keys->policy = policy;
 
@@ -24,7 +23,8 @@ opcua_statuscode_t mu_sym_keys_derive(const mu_crypto_adapter_t *crypto,
     size_t derived_len = sig_key_len + enc_key_len + iv_len;
 
     opcua_byte_t material[128];
-    if (derived_len > sizeof(material)) return MU_STATUS_BAD_INTERNALERROR;
+    if (derived_len > sizeof(material))
+        return MU_STATUS_BAD_INTERNALERROR;
 
     opcua_statuscode_t s = mu_p_sha256(crypto, secret, secret_len, seed, seed_len, material, derived_len);
     if (s != MU_STATUS_GOOD) {
@@ -39,7 +39,8 @@ opcua_statuscode_t mu_sym_keys_derive(const mu_crypto_adapter_t *crypto,
 }
 
 void mu_sym_keys_prepare_cipher(mu_sym_keys_t *keys, const mu_crypto_adapter_t *crypto) {
-    if (!keys) return;
+    if (!keys)
+        return;
     mu_sym_keys_release_cipher(keys);
     keys->crypto = crypto;
     if (keys->policy == MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID) {
@@ -47,14 +48,14 @@ void mu_sym_keys_prepare_cipher(mu_sym_keys_t *keys, const mu_crypto_adapter_t *
         return;
     }
     if (crypto && crypto->cipher_ctx_init) {
-        opcua_statuscode_t s = crypto->cipher_ctx_init(crypto->context, keys->encrypting_key,
-                                                       keys->cipher_ctx);
+        opcua_statuscode_t s = crypto->cipher_ctx_init(crypto->context, keys->encrypting_key, keys->cipher_ctx);
         keys->cipher_ctx_valid = (s == MU_STATUS_GOOD);
     }
 }
 
 void mu_sym_keys_release_cipher(mu_sym_keys_t *keys) {
-    if (!keys) return;
+    if (!keys)
+        return;
     if (keys->cipher_ctx_valid && keys->crypto && keys->crypto->cipher_ctx_free) {
         keys->crypto->cipher_ctx_free(keys->crypto->context, keys->cipher_ctx);
     }
@@ -63,38 +64,41 @@ void mu_sym_keys_release_cipher(mu_sym_keys_t *keys) {
 }
 
 /* Write the cleartext symmetric header with a placeholder MessageSize. */
-static void write_header(opcua_byte_t *out, const char message_type[3],
-                         opcua_uint32_t scid, opcua_uint32_t token_id) {
+static void write_header(opcua_byte_t *out, const char message_type[3], opcua_uint32_t scid, opcua_uint32_t token_id) {
     out[0] = (opcua_byte_t)message_type[0];
     out[1] = (opcua_byte_t)message_type[1];
     out[2] = (opcua_byte_t)message_type[2];
     out[3] = 'F';
     /* MessageSize at [4..8) patched later. */
-    out[8]  = (opcua_byte_t)(scid);       out[9]  = (opcua_byte_t)(scid >> 8);
-    out[10] = (opcua_byte_t)(scid >> 16); out[11] = (opcua_byte_t)(scid >> 24);
-    out[12] = (opcua_byte_t)(token_id);       out[13] = (opcua_byte_t)(token_id >> 8);
-    out[14] = (opcua_byte_t)(token_id >> 16); out[15] = (opcua_byte_t)(token_id >> 24);
+    out[8] = (opcua_byte_t)(scid);
+    out[9] = (opcua_byte_t)(scid >> 8);
+    out[10] = (opcua_byte_t)(scid >> 16);
+    out[11] = (opcua_byte_t)(scid >> 24);
+    out[12] = (opcua_byte_t)(token_id);
+    out[13] = (opcua_byte_t)(token_id >> 8);
+    out[14] = (opcua_byte_t)(token_id >> 16);
+    out[15] = (opcua_byte_t)(token_id >> 24);
 }
 
 static void put_u32(opcua_byte_t *p, opcua_uint32_t v) {
-    p[0] = (opcua_byte_t)v; p[1] = (opcua_byte_t)(v >> 8);
-    p[2] = (opcua_byte_t)(v >> 16); p[3] = (opcua_byte_t)(v >> 24);
+    p[0] = (opcua_byte_t)v;
+    p[1] = (opcua_byte_t)(v >> 8);
+    p[2] = (opcua_byte_t)(v >> 16);
+    p[3] = (opcua_byte_t)(v >> 24);
 }
 static opcua_uint32_t get_u32(const opcua_byte_t *p) {
-    return (opcua_uint32_t)p[0] | ((opcua_uint32_t)p[1] << 8) |
-           ((opcua_uint32_t)p[2] << 16) | ((opcua_uint32_t)p[3] << 24);
+    return (opcua_uint32_t)p[0] | ((opcua_uint32_t)p[1] << 8) | ((opcua_uint32_t)p[2] << 16) |
+           ((opcua_uint32_t)p[3] << 24);
 }
 
-opcua_statuscode_t mu_sym_chunk_wrap(
-    const mu_crypto_adapter_t *crypto,
-    mu_message_security_mode_t mode, const mu_sym_keys_t *keys,
-    const char message_type[3],
-    opcua_uint32_t secure_channel_id, opcua_uint32_t token_id,
-    opcua_uint32_t sequence_number, opcua_uint32_t request_id,
-    const opcua_byte_t *body, size_t body_len,
-    opcua_byte_t *out, size_t out_cap, size_t *out_len)
-{
-    if (!crypto || !keys || !out || !out_len || (!body && body_len)) return MU_STATUS_BAD_INTERNALERROR;
+opcua_statuscode_t mu_sym_chunk_wrap(const mu_crypto_adapter_t *crypto, mu_message_security_mode_t mode,
+                                     const mu_sym_keys_t *keys, const char message_type[3],
+                                     opcua_uint32_t secure_channel_id, opcua_uint32_t token_id,
+                                     opcua_uint32_t sequence_number, opcua_uint32_t request_id,
+                                     const opcua_byte_t *body, size_t body_len, opcua_byte_t *out, size_t out_cap,
+                                     size_t *out_len) {
+    if (!crypto || !keys || !out || !out_len || (!body && body_len))
+        return MU_STATUS_BAD_INTERNALERROR;
     if (mode != MU_MESSAGE_SECURITY_MODE_SIGN && mode != MU_MESSAGE_SECURITY_MODE_SIGN_AND_ENCRYPT) {
         return MU_STATUS_BAD_SECURITYMODEREJECTED;
     }
@@ -104,15 +108,16 @@ opcua_statuscode_t mu_sym_chunk_wrap(
 
     if (mode == MU_MESSAGE_SECURITY_MODE_SIGN) {
         size_t total = MU_SYM_HEADER_SIZE + seqbody_len + MU_SYM_SIG_LEN;
-        if (total > out_cap) return MU_STATUS_BAD_RESPONSETOOLARGE;
+        if (total > out_cap)
+            return MU_STATUS_BAD_RESPONSETOOLARGE;
         put_u32(out + 4, (opcua_uint32_t)total);
         put_u32(out + MU_SYM_HEADER_SIZE, sequence_number);
         put_u32(out + MU_SYM_HEADER_SIZE + 4, request_id);
         memcpy(out + MU_SYM_HEADER_SIZE + 8, body, body_len);
         size_t signed_len = MU_SYM_HEADER_SIZE + seqbody_len;
         opcua_byte_t mac[MU_SYM_SIG_LEN];
-        opcua_statuscode_t s = crypto->hmac_sha256(crypto->context, keys->signing_key,
-                                                   sizeof(keys->signing_key), out, signed_len, mac);
+        opcua_statuscode_t s =
+            crypto->hmac_sha256(crypto->context, keys->signing_key, sizeof(keys->signing_key), out, signed_len, mac);
         if (s != MU_STATUS_GOOD) {
             mu_secure_zero(mac, sizeof(mac));
             return s;
@@ -129,63 +134,63 @@ opcua_statuscode_t mu_sym_chunk_wrap(
     size_t enc_len = base + pad_count;
     size_t presig_len = seqbody_len + 1 + pad_count;
     size_t total = MU_SYM_HEADER_SIZE + enc_len;
-    if (total > out_cap) return MU_STATUS_BAD_RESPONSETOOLARGE;
+    if (total > out_cap)
+        return MU_STATUS_BAD_RESPONSETOOLARGE;
 
     put_u32(out + 4, (opcua_uint32_t)total);
     put_u32(out + MU_SYM_HEADER_SIZE, sequence_number);
     put_u32(out + MU_SYM_HEADER_SIZE + 4, request_id);
     memcpy(out + MU_SYM_HEADER_SIZE + 8, body, body_len);
-    out[MU_SYM_HEADER_SIZE + seqbody_len] = (opcua_byte_t)pad_count;            /* PaddingSize */
+    out[MU_SYM_HEADER_SIZE + seqbody_len] = (opcua_byte_t)pad_count; /* PaddingSize */
     memset(out + MU_SYM_HEADER_SIZE + seqbody_len + 1, (int)pad_count, pad_count);
 
     /* Sign-then-encrypt: HMAC over [header | SeqHeader | body | paddingSize | padding]. */
     size_t signed_len = MU_SYM_HEADER_SIZE + presig_len;
     opcua_byte_t mac[MU_SYM_SIG_LEN];
-    opcua_statuscode_t s = crypto->hmac_sha256(crypto->context, keys->signing_key,
-                                               sizeof(keys->signing_key), out, signed_len, mac);
+    opcua_statuscode_t s =
+        crypto->hmac_sha256(crypto->context, keys->signing_key, sizeof(keys->signing_key), out, signed_len, mac);
     if (s != MU_STATUS_GOOD) {
         mu_secure_zero(mac, sizeof(mac));
         return s;
     }
-    memcpy(out + signed_len, mac, MU_SYM_SIG_LEN);   /* signature tails the plaintext */
+    memcpy(out + signed_len, mac, MU_SYM_SIG_LEN); /* signature tails the plaintext */
     mu_secure_zero(mac, sizeof(mac));
 
     /* Encrypt the SequenceHeader..signature region in place (AES-CBC preserves length). */
     if (keys->policy == MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID) {
         if (crypto->aes128_cbc_encrypt) {
-            s = crypto->aes128_cbc_encrypt(crypto->context, keys->encrypting_key, keys->iv,
-                                           out + MU_SYM_HEADER_SIZE, enc_len, out + MU_SYM_HEADER_SIZE);
+            s = crypto->aes128_cbc_encrypt(crypto->context, keys->encrypting_key, keys->iv, out + MU_SYM_HEADER_SIZE,
+                                           enc_len, out + MU_SYM_HEADER_SIZE);
         } else {
             return MU_STATUS_BAD_INTERNALERROR;
         }
     } else {
         if (keys->cipher_ctx_valid && crypto->aes256_cbc_encrypt_ctx) {
-            s = crypto->aes256_cbc_encrypt_ctx(crypto->context, (opcua_byte_t *)keys->cipher_ctx,
-                                               keys->iv, out + MU_SYM_HEADER_SIZE, enc_len,
-                                               out + MU_SYM_HEADER_SIZE);
+            s = crypto->aes256_cbc_encrypt_ctx(crypto->context, (opcua_byte_t *)keys->cipher_ctx, keys->iv,
+                                               out + MU_SYM_HEADER_SIZE, enc_len, out + MU_SYM_HEADER_SIZE);
         } else {
-            s = crypto->aes256_cbc_encrypt(crypto->context, keys->encrypting_key, keys->iv,
-                                           out + MU_SYM_HEADER_SIZE, enc_len, out + MU_SYM_HEADER_SIZE);
+            s = crypto->aes256_cbc_encrypt(crypto->context, keys->encrypting_key, keys->iv, out + MU_SYM_HEADER_SIZE,
+                                           enc_len, out + MU_SYM_HEADER_SIZE);
         }
     }
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     *out_len = total;
     return MU_STATUS_GOOD;
 }
 
-opcua_statuscode_t mu_sym_chunk_unwrap(
-    const mu_crypto_adapter_t *crypto,
-    mu_message_security_mode_t mode, const mu_sym_keys_t *keys,
-    opcua_byte_t *chunk, size_t chunk_len,
-    const opcua_byte_t **out_body, size_t *out_body_len,
-    mu_sym_chunk_info_t *info)
-{
-    if (!crypto || !keys || !chunk || !out_body || !out_body_len || !info) return MU_STATUS_BAD_INTERNALERROR;
-    if (chunk_len < MU_SYM_HEADER_SIZE) return MU_STATUS_BAD_DECODINGERROR;
+opcua_statuscode_t mu_sym_chunk_unwrap(const mu_crypto_adapter_t *crypto, mu_message_security_mode_t mode,
+                                       const mu_sym_keys_t *keys, opcua_byte_t *chunk, size_t chunk_len,
+                                       const opcua_byte_t **out_body, size_t *out_body_len, mu_sym_chunk_info_t *info) {
+    if (!crypto || !keys || !chunk || !out_body || !out_body_len || !info)
+        return MU_STATUS_BAD_INTERNALERROR;
+    if (chunk_len < MU_SYM_HEADER_SIZE)
+        return MU_STATUS_BAD_DECODINGERROR;
 
     size_t msg_size = get_u32(chunk + 4);
-    if (msg_size > chunk_len || msg_size < MU_SYM_HEADER_SIZE) return MU_STATUS_BAD_DECODINGERROR;
+    if (msg_size > chunk_len || msg_size < MU_SYM_HEADER_SIZE)
+        return MU_STATUS_BAD_DECODINGERROR;
 
     info->message_type[0] = (char)chunk[0];
     info->message_type[1] = (char)chunk[1];
@@ -200,37 +205,37 @@ opcua_statuscode_t mu_sym_chunk_unwrap(
        into `chunk`. */
     if (mode == MU_MESSAGE_SECURITY_MODE_SIGN_AND_ENCRYPT) {
         size_t cipher_len = msg_size - MU_SYM_HEADER_SIZE;
-        if (cipher_len == 0 || cipher_len % MU_SYM_BLOCK != 0) return MU_STATUS_BAD_DECODINGERROR;
+        if (cipher_len == 0 || cipher_len % MU_SYM_BLOCK != 0)
+            return MU_STATUS_BAD_DECODINGERROR;
         opcua_statuscode_t s;
         if (keys->policy == MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID) {
             if (crypto->aes128_cbc_decrypt) {
                 s = crypto->aes128_cbc_decrypt(crypto->context, keys->encrypting_key, keys->iv,
-                                               chunk + MU_SYM_HEADER_SIZE, cipher_len,
-                                               chunk + MU_SYM_HEADER_SIZE);
+                                               chunk + MU_SYM_HEADER_SIZE, cipher_len, chunk + MU_SYM_HEADER_SIZE);
             } else {
                 return MU_STATUS_BAD_INTERNALERROR;
             }
         } else {
             if (keys->cipher_ctx_valid && crypto->aes256_cbc_decrypt_ctx) {
-                s = crypto->aes256_cbc_decrypt_ctx(crypto->context, (opcua_byte_t *)keys->cipher_ctx,
-                                                   keys->iv, chunk + MU_SYM_HEADER_SIZE, cipher_len,
-                                                   chunk + MU_SYM_HEADER_SIZE);
+                s = crypto->aes256_cbc_decrypt_ctx(crypto->context, (opcua_byte_t *)keys->cipher_ctx, keys->iv,
+                                                   chunk + MU_SYM_HEADER_SIZE, cipher_len, chunk + MU_SYM_HEADER_SIZE);
             } else {
                 s = crypto->aes256_cbc_decrypt(crypto->context, keys->encrypting_key, keys->iv,
-                                               chunk + MU_SYM_HEADER_SIZE, cipher_len,
-                                               chunk + MU_SYM_HEADER_SIZE);
+                                               chunk + MU_SYM_HEADER_SIZE, cipher_len, chunk + MU_SYM_HEADER_SIZE);
             }
         }
-        if (s != MU_STATUS_GOOD) return s;
+        if (s != MU_STATUS_GOOD)
+            return s;
     } else if (mode != MU_MESSAGE_SECURITY_MODE_SIGN) {
         return MU_STATUS_BAD_SECURITYMODEREJECTED;
     }
 
-    if (msg_size < MU_SYM_HEADER_SIZE + 8 + MU_SYM_SIG_LEN) return MU_STATUS_BAD_DECODINGERROR;
-    size_t signed_len = msg_size - MU_SYM_SIG_LEN;   /* header + SeqHeader + body [+ pad] */
+    if (msg_size < MU_SYM_HEADER_SIZE + 8 + MU_SYM_SIG_LEN)
+        return MU_STATUS_BAD_DECODINGERROR;
+    size_t signed_len = msg_size - MU_SYM_SIG_LEN; /* header + SeqHeader + body [+ pad] */
     opcua_byte_t mac[MU_SYM_SIG_LEN];
-    opcua_statuscode_t s = crypto->hmac_sha256(crypto->context, keys->signing_key,
-                                               sizeof(keys->signing_key), chunk, signed_len, mac);
+    opcua_statuscode_t s =
+        crypto->hmac_sha256(crypto->context, keys->signing_key, sizeof(keys->signing_key), chunk, signed_len, mac);
     if (s != MU_STATUS_GOOD) {
         mu_secure_zero(mac, sizeof(mac));
         return s;
@@ -245,7 +250,8 @@ opcua_statuscode_t mu_sym_chunk_unwrap(
     size_t pad_count = 0;
     if (mode == MU_MESSAGE_SECURITY_MODE_SIGN_AND_ENCRYPT) {
         pad_count = chunk[signed_len - 1];
-        if (signed_len < MU_SYM_HEADER_SIZE + 8 + 1 + pad_count) return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+        if (signed_len < MU_SYM_HEADER_SIZE + 8 + 1 + pad_count)
+            return MU_STATUS_BAD_SECURITYCHECKSFAILED;
         for (size_t i = 1; i <= pad_count; i++) {
             if (chunk[signed_len - 1 - i] != pad_count) {
                 return MU_STATUS_BAD_SECURITYCHECKSFAILED;

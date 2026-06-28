@@ -1,6 +1,6 @@
 /* tests/integration/test_discovery_endpoint_no_session.c */
-#include "unity.h"
 #include "micro_opcua/micro_opcua.h"
+#include "unity.h"
 
 void setUp(void) {}
 void tearDown(void) {}

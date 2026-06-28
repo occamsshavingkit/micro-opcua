@@ -1,6 +1,6 @@
 /* tests/unit/test_security_policy_selection.c */
-#include "unity.h"
 #include "security/security_policy.h"
+#include "unity.h"
 #include <string.h>
 
 void setUp(void) {}
@@ -12,16 +12,16 @@ static mu_security_policy_id_t from_uri(const char *uri) {
 
 void test_modern_policies_recognized(void) {
     TEST_ASSERT_EQUAL(MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID,
-        from_uri("http://opcfoundation.org/UA/SecurityPolicy#Aes128_Sha256_RsaOaep"));
+                      from_uri("http://opcfoundation.org/UA/SecurityPolicy#Aes128_Sha256_RsaOaep"));
     TEST_ASSERT_EQUAL(MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID,
-        from_uri("http://opcfoundation.org/UA/SecurityPolicy#Aes256_Sha256_RsaPss"));
+                      from_uri("http://opcfoundation.org/UA/SecurityPolicy#Aes256_Sha256_RsaPss"));
 }
 
 void test_modern_policies_uri_roundtrip(void) {
     TEST_ASSERT_EQUAL_STRING("http://opcfoundation.org/UA/SecurityPolicy#Aes128_Sha256_RsaOaep",
-        mu_security_policy_uri(MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID));
+                             mu_security_policy_uri(MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID));
     TEST_ASSERT_EQUAL_STRING("http://opcfoundation.org/UA/SecurityPolicy#Aes256_Sha256_RsaPss",
-        mu_security_policy_uri(MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID));
+                             mu_security_policy_uri(MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID));
 }
 
 void test_modern_policies_parameters(void) {

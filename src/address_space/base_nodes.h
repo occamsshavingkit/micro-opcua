@@ -20,7 +20,7 @@
 #define MICRO_OPCUA_BASE_NODES_H
 
 #include "micro_opcua/address_space.h"
-#include "micro_opcua/platform.h"   /* mu_time_adapter_t */
+#include "micro_opcua/platform.h" /* mu_time_adapter_t */
 
 /* The const, static Base Information address space described above. Never NULL. */
 const mu_address_space_t *mu_base_address_space(void);
@@ -32,8 +32,8 @@ const mu_address_space_t *mu_base_address_space(void);
    mu_base_runtime_init. CurrentTime reads time->get_time() live; StartTime returns
    the captured start time. */
 typedef struct {
-    const mu_time_adapter_t *time;   /* CurrentTime source */
-    opcua_datetime_t start_time;     /* StartTime value (captured at init) */
+    const mu_time_adapter_t *time; /* CurrentTime source */
+    opcua_datetime_t start_time;   /* StartTime value (captured at init) */
 } mu_base_runtime_t;
 
 /* Storage for the runtime-bound dynamic Server status nodes. Place an instance in
@@ -41,7 +41,7 @@ typedef struct {
    `space` is the address-space view over the two dynamic nodes. */
 typedef struct {
     mu_base_runtime_t rt;
-    mu_node_t nodes[2];              /* CurrentTime (2258), StartTime (2257) */
+    mu_node_t nodes[2]; /* CurrentTime (2258), StartTime (2257) */
     mu_value_source_t values[2];
     mu_address_space_t space;
 } mu_base_runtime_nodes_t;
@@ -49,15 +49,12 @@ typedef struct {
 /* Populate `storage` with the CurrentTime/StartTime nodes whose value sources are
    CALLBACKs bound to `&storage->rt` (so CurrentTime reads `time` live). Call once at
    server init; `start_time` is typically time->get_time() at startup. */
-void mu_base_runtime_init(mu_base_runtime_nodes_t *storage,
-                          const mu_time_adapter_t *time, opcua_datetime_t start_time);
+void mu_base_runtime_init(mu_base_runtime_nodes_t *storage, const mu_time_adapter_t *time, opcua_datetime_t start_time);
 
 /* Resolve a NodeId against the integrator's address space first (if any), then the
    runtime-bound dynamic space `dynamic` (if any), then the const base set. `dynamic`
    may be NULL. Returns NULL if found in none. Use this in the read/browse paths. */
-const mu_node_t *mu_resolve_node(const mu_address_space_t *user,
-                                 mu_address_space_index_t *user_index,
-                                 const mu_address_space_t *dynamic,
-                                 const mu_nodeid_t *node_id);
+const mu_node_t *mu_resolve_node(const mu_address_space_t *user, mu_address_space_index_t *user_index,
+                                 const mu_address_space_t *dynamic, const mu_nodeid_t *node_id);
 
 #endif /* MICRO_OPCUA_BASE_NODES_H */
