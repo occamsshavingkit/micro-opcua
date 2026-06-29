@@ -2539,6 +2539,15 @@ static opcua_statuscode_t write_single_call_method_result(mu_server_t *server, m
         return write_resend_data_result(server, w, args[0].value.ui32);
     }
 
+#ifdef MICRO_OPCUA_SERVICE_ALARMS_CONDITIONS
+    if (nodeid_is_ns0_numeric(method_id, 9111) || nodeid_is_ns0_numeric(method_id, 9113) || nodeid_is_ns0_numeric(method_id, 9069)) {
+        mu_variant_t output_args[2];
+        size_t output_args_count = 0;
+        opcua_statuscode_t alarms_status = mu_alarms_conditions_method_dispatch(server, method_id, object_id, arg_count, args, &output_args_count, output_args);
+        return write_call_method_result(w, alarms_status, 0, NULL, output_args_count, output_args);
+    }
+#endif
+
 #ifdef MICRO_OPCUA_CUSTOM_METHODS
     /* Verify object exists in address space */
     const mu_node_t *obj_node =
@@ -2929,6 +2938,10 @@ opcua_statuscode_t handle_write(mu_server_t *server, mu_binary_reader_t *r, mu_b
     if (s != MU_STATUS_GOOD)
         return s;
 
+    if (wreq.num_nodes_to_write == 0) {
+        return MU_STATUS_BAD_NOTHINGTODO;
+    }
+
     mu_write_response_t wresp;
     opcua_statuscode_t results[MU_DISPATCH_MAX_READ_NODES];
     wresp.num_results = wreq.num_nodes_to_write;
@@ -2947,6 +2960,11 @@ opcua_statuscode_t handle_write(mu_server_t *server, mu_binary_reader_t *r, mu_b
 
         if (write_val->attribute_id != MU_ATTRIBUTEID_VALUE) {
             results[i] = MU_STATUS_BAD_NOTWRITABLE;
+            continue;
+        }
+
+        if (write_val->index_range.length > 0) {
+            results[i] = MU_STATUS_BAD_WRITENOTSUPPORTED;
             continue;
         }
 
