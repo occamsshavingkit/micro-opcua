@@ -94,6 +94,23 @@ struct mu_server {
     mu_pubsub_writer_group_t writer_groups[MU_MAX_WRITER_GROUPS];
     size_t writer_group_count;
 #endif
+
+#ifdef MICRO_OPCUA_SERVICE_NODEMANAGEMENT
+    mu_dynamic_address_space_t dynamic_address_space;
+#endif
+
+#ifdef MICRO_OPCUA_SERVICE_QUERY
+    struct {
+        struct {
+            opcua_byte_t id_buf[8];
+            mu_string_t id;
+            opcua_uint32_t session_id;
+            size_t next_index; /* Index into address space to resume from */
+            opcua_uint64_t timestamp_ms;
+        } continuation_points[MU_MAX_QUERY_CONTINUATION_POINTS];
+    } query_context;
+#endif
+
 #ifdef MICRO_OPCUA_SERVICE_ALARMS_CONDITIONS
     mu_condition_t conditions[MU_MAX_CONDITIONS];
     size_t condition_count;
