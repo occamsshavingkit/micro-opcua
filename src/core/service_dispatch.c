@@ -3180,6 +3180,84 @@ opcua_statuscode_t handle_history_update(mu_server_t *server, mu_binary_reader_t
 }
 #endif /* MICRO_OPCUA_SERVICE_HISTORY */
 
+#ifdef MICRO_OPCUA_SERVICE_NODEMANAGEMENT
+static opcua_statuscode_t handle_add_nodes(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                           size_t *response_length) {
+    mu_request_header_t req;
+    opcua_statuscode_t s = mu_request_header_decode(r, &req);
+    if (s != MU_STATUS_GOOD)
+        return s;
+
+    s = write_response_prefix(w, MU_ID_ADDNODESRESPONSE, req.request_handle, MU_STATUS_GOOD);
+    if (s != MU_STATUS_GOOD)
+        return s;
+
+    s = mu_add_nodes_process(server, r, w);
+    if (s != MU_STATUS_GOOD)
+        return s;
+
+    *response_length = w->position;
+    return MU_STATUS_GOOD;
+}
+
+static opcua_statuscode_t handle_add_references(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                                size_t *response_length) {
+    mu_request_header_t req;
+    opcua_statuscode_t s = mu_request_header_decode(r, &req);
+    if (s != MU_STATUS_GOOD)
+        return s;
+
+    s = write_response_prefix(w, MU_ID_ADDREFERENCESRESPONSE, req.request_handle, MU_STATUS_GOOD);
+    if (s != MU_STATUS_GOOD)
+        return s;
+
+    s = mu_add_references_process(server, r, w);
+    if (s != MU_STATUS_GOOD)
+        return s;
+
+    *response_length = w->position;
+    return MU_STATUS_GOOD;
+}
+
+static opcua_statuscode_t handle_delete_nodes(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                              size_t *response_length) {
+    mu_request_header_t req;
+    opcua_statuscode_t s = mu_request_header_decode(r, &req);
+    if (s != MU_STATUS_GOOD)
+        return s;
+
+    s = write_response_prefix(w, MU_ID_DELETENODESRESPONSE, req.request_handle, MU_STATUS_GOOD);
+    if (s != MU_STATUS_GOOD)
+        return s;
+
+    s = mu_delete_nodes_process(server, r, w);
+    if (s != MU_STATUS_GOOD)
+        return s;
+
+    *response_length = w->position;
+    return MU_STATUS_GOOD;
+}
+
+static opcua_statuscode_t handle_delete_references(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
+                                                   size_t *response_length) {
+    mu_request_header_t req;
+    opcua_statuscode_t s = mu_request_header_decode(r, &req);
+    if (s != MU_STATUS_GOOD)
+        return s;
+
+    s = write_response_prefix(w, MU_ID_DELETEREFERENCESRESPONSE, req.request_handle, MU_STATUS_GOOD);
+    if (s != MU_STATUS_GOOD)
+        return s;
+
+    s = mu_delete_references_process(server, r, w);
+    if (s != MU_STATUS_GOOD)
+        return s;
+
+    *response_length = w->position;
+    return MU_STATUS_GOOD;
+}
+#endif /* MICRO_OPCUA_SERVICE_NODEMANAGEMENT */
+
 opcua_statuscode_t mu_service_dispatch(mu_server_t *server, opcua_uint32_t request_id, const opcua_byte_t *request_body,
                                        size_t request_length, opcua_byte_t *response_body, size_t *response_length) {
     if (!server || !request_body || !response_body || !response_length)

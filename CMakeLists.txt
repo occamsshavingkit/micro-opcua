@@ -15,6 +15,8 @@ option(MICRO_OPCUA_SERVICE_BROWSE "Build the Browse + BrowseNext + TranslateBrow
 option(MICRO_OPCUA_SERVICE_DISCOVERY "Build GetEndpoints/FindServers" ON)
 option(MICRO_OPCUA_SERVICE_REGISTER_NODES "Build RegisterNodes/UnregisterNodes" ON)
 option(MICRO_OPCUA_SERVICE_WRITE "Build the optional Write service (Value attribute only)" ON)
+option(MICRO_OPCUA_SERVICE_QUERY "Build the Query services" ON)
+option(MICRO_OPCUA_SERVICE_NODEMANAGEMENT "Build the optional NodeManagement service set" ON)
 option(MICRO_OPCUA_SERVICE_HISTORY "Build Historical Access" ON)
 # The library's standard Base Information node set (Server object hierarchy,
 # ServerStatus, ServerCapabilities). Turn OFF if the integrator supplies a complete
