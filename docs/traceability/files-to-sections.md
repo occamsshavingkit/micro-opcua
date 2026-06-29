@@ -151,3 +151,5 @@ This document maps implementation and test files back to OPC UA normative sectio
 | `test_wolfssl_adapter.c` | Tests | Part 7 | 6.x | Test wolfSSL crypto adapter |
 | `src/security/trustlist.c` | TrustList | Part 4 | 5.6.2 | Application Authentication TrustList |
 | `include/micro_opcua/security.h` | TrustList | Part 4 | 5.6.2 | Application Authentication TrustList Header |
+| `tests/unit/test_aggregate.c` | Tests | Part 4 | 7.16 | Unit tests for MonitoredItem Aggregate Filter |
+| `specs/018-aggregate-subscriptions/spec.md` | Specification | Part 4 / 13 | 7.16 / 7.16.3 | Specification for Aggregate Subscriptions |

@@ -1116,6 +1116,9 @@ typedef struct {
     mu_deadband_type_t deadband_type;
     opcua_double_t deadband_value;
     opcua_statuscode_t filter_result;
+    opcua_boolean_t has_aggregate;
+    opcua_uint32_t aggregate_type;
+    opcua_double_t processing_interval;
 #endif
     opcua_uint32_t queue_size;
     opcua_boolean_t discard_oldest;
@@ -1275,6 +1278,67 @@ static opcua_statuscode_t read_datachange_filter_body(mu_binary_reader_t *r, siz
 
     return MU_STATUS_GOOD;
 }
+
+static opcua_statuscode_t read_aggregate_filter_body(mu_binary_reader_t *r, size_t filter_length,
+                                                     mu_monitored_item_create_body_t *body) {
+    opcua_datetime_t start_time;
+    mu_nodeid_t aggregate_type;
+    opcua_double_t processing_interval;
+    opcua_boolean_t use_defaults;
+    opcua_boolean_t treat_uncertain;
+    opcua_byte_t percent_bad;
+    opcua_byte_t percent_good;
+    opcua_boolean_t sloped_extrap;
+
+    if (filter_length == 0u) {
+        body->filter_result = MU_STATUS_BAD_DECODINGERROR;
+        return MU_STATUS_GOOD;
+    }
+    if (r->position > r->length || filter_length > r->length - r->position) {
+        body->filter_result = MU_STATUS_BAD_DECODINGERROR;
+        return MU_STATUS_BAD_DECODINGERROR;
+    }
+
+    opcua_statuscode_t s = mu_binary_read_datetime(r, &start_time);
+    if (s != MU_STATUS_GOOD) return s;
+
+    s = mu_binary_read_nodeid(r, &aggregate_type);
+    if (s != MU_STATUS_GOOD) return s;
+
+    s = mu_binary_read_double(r, &processing_interval);
+    if (s != MU_STATUS_GOOD) return s;
+
+    mu_binary_read_boolean(r, &use_defaults);
+    mu_binary_read_boolean(r, &treat_uncertain);
+    mu_binary_read_byte(r, &percent_bad);
+    mu_binary_read_byte(r, &percent_good);
+    mu_binary_read_boolean(r, &sloped_extrap);
+    if (r->status != MU_STATUS_GOOD) return r->status;
+
+    body->has_aggregate = true;
+    body->processing_interval = processing_interval;
+
+    if (aggregate_type.identifier_type == MU_NODEID_NUMERIC && aggregate_type.namespace_index == 0u) {
+        body->aggregate_type = aggregate_type.identifier.numeric;
+    } else {
+        body->filter_result = MU_STATUS_BAD_MONITOREDITEMFILTERUNSUPPORTED;
+        return MU_STATUS_GOOD;
+    }
+
+    if (body->aggregate_type != MU_ID_AGGREGATETYPE_AVERAGE &&
+        body->aggregate_type != MU_ID_AGGREGATETYPE_MINIMUM &&
+        body->aggregate_type != MU_ID_AGGREGATETYPE_MAXIMUM) {
+        body->filter_result = MU_STATUS_BAD_MONITOREDITEMFILTERUNSUPPORTED;
+        return MU_STATUS_GOOD;
+    }
+
+    if (processing_interval <= 0.0) {
+        body->filter_result = MU_STATUS_BAD_FILTERNOTALLOWED;
+        return MU_STATUS_GOOD;
+    }
+
+    return MU_STATUS_GOOD;
+}
 #endif
 
 #ifdef MICRO_OPCUA_EVENTS
@@ -1390,6 +1454,9 @@ static opcua_statuscode_t read_monitored_item_create_body(mu_binary_reader_t *r,
     body->deadband_type = MU_DEADBAND_TYPE_NONE;
     body->deadband_value = 0.0;
     body->filter_result = MU_STATUS_GOOD;
+    body->has_aggregate = false;
+    body->aggregate_type = 0u;
+    body->processing_interval = 0.0;
 #endif
 
     s = mu_binary_read_nodeid(r, &body->node_id);
@@ -1418,6 +1485,11 @@ static opcua_statuscode_t read_monitored_item_create_body(mu_binary_reader_t *r,
 #if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
     if (is_datachange_filter_binary_type(&filter_type)) {
         s = read_datachange_filter_body(r, filter_length, body);
+        if (s != MU_STATUS_GOOD)
+            return s;
+    } else if (filter_type.identifier_type == MU_NODEID_NUMERIC && filter_type.namespace_index == 0u &&
+               filter_type.identifier.numeric == MU_ID_AGGREGATEFILTER_ENCODING_DEFAULTBINARY) {
+        s = read_aggregate_filter_body(r, filter_length, body);
         if (s != MU_STATUS_GOOD)
             return s;
 #ifdef MICRO_OPCUA_EVENTS
@@ -1793,6 +1865,12 @@ static opcua_statuscode_t handle_create_monitored_items(mu_server_t *server, mu_
                 return s;
             continue;
         }
+        if (body.has_aggregate && !monitored_node_has_numeric_static_value(node)) {
+            s = write_monitored_item_create_result(w, MU_STATUS_BAD_FILTERNOTALLOWED, 0u, 0u, 0u);
+            if (s != MU_STATUS_GOOD)
+                return s;
+            continue;
+        }
 #endif
 
         mu_monitored_item_t *item = NULL;
@@ -1834,6 +1912,14 @@ static opcua_statuscode_t handle_create_monitored_items(mu_server_t *server, mu_
         item->queue_count = 0u;
         item->discard_oldest = body.discard_oldest;
         item->queue_overflow = false;
+        item->has_aggregate = body.has_aggregate;
+        if (item->has_aggregate) {
+            item->aggregate_state.aggregate_type = body.aggregate_type;
+            item->aggregate_state.processing_interval = body.processing_interval;
+            item->aggregate_state.last_calculation = now_ms;
+            item->aggregate_state.sample_count = 0u;
+            memset(&item->aggregate_state.accumulator, 0, sizeof(item->aggregate_state.accumulator));
+        }
 #endif
         if (body.attribute_id != 12u && node->value != NULL) {
             item->last_status = mu_value_source_read(node->value, &body.node_id, &item->last_value);
