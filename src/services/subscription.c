@@ -216,6 +216,79 @@ static void monitored_item_prepare_pending_queue(mu_monitored_item_t *item) {
         monitored_item_record_reported(item, &item->last_value);
     }
 }
+
+static void monitored_item_accumulate_aggregate(mu_monitored_item_t *item, const mu_variant_t *cur) {
+    opcua_double_t val_double = 0.0;
+    if (!variant_numeric_to_double(cur, &val_double)) {
+        return;
+    }
+
+    if (item->aggregate_state.aggregate_type == MU_ID_AGGREGATETYPE_AVERAGE) {
+        item->aggregate_state.accumulator.avg.sum += val_double;
+    } else if (item->aggregate_state.aggregate_type == MU_ID_AGGREGATETYPE_MINIMUM) {
+        if (item->aggregate_state.sample_count == 0u) {
+            item->aggregate_state.accumulator.min.min_val = *cur;
+        } else {
+            opcua_double_t min_double = 0.0;
+            if (variant_numeric_to_double(&item->aggregate_state.accumulator.min.min_val, &min_double)) {
+                if (val_double < min_double) {
+                    item->aggregate_state.accumulator.min.min_val = *cur;
+                }
+            } else {
+                item->aggregate_state.accumulator.min.min_val = *cur;
+            }
+        }
+    } else if (item->aggregate_state.aggregate_type == MU_ID_AGGREGATETYPE_MAXIMUM) {
+        if (item->aggregate_state.sample_count == 0u) {
+            item->aggregate_state.accumulator.max.max_val = *cur;
+        } else {
+            opcua_double_t max_double = 0.0;
+            if (variant_numeric_to_double(&item->aggregate_state.accumulator.max.max_val, &max_double)) {
+                if (val_double > max_double) {
+                    item->aggregate_state.accumulator.max.max_val = *cur;
+                }
+            } else {
+                item->aggregate_state.accumulator.max.max_val = *cur;
+            }
+        }
+    }
+
+    item->aggregate_state.sample_count++;
+}
+
+static void monitored_item_publish_aggregate(mu_monitored_item_t *item, opcua_uint64_t now_ms) {
+    mu_variant_t calc_val;
+    memset(&calc_val, 0, sizeof(calc_val));
+    opcua_statuscode_t calc_status = MU_STATUS_GOOD;
+
+    if (item->aggregate_state.sample_count == 0u) {
+        if (item->has_value) {
+            calc_val = item->last_value;
+            calc_status = item->last_status;
+        } else {
+            calc_status = MU_STATUS_BAD_NODATA;
+        }
+    } else {
+        if (item->aggregate_state.aggregate_type == MU_ID_AGGREGATETYPE_AVERAGE) {
+            calc_val.type = MU_TYPE_DOUBLE;
+            calc_val.value.d = item->aggregate_state.accumulator.avg.sum / item->aggregate_state.sample_count;
+            calc_val.is_array = false;
+        } else if (item->aggregate_state.aggregate_type == MU_ID_AGGREGATETYPE_MINIMUM) {
+            calc_val = item->aggregate_state.accumulator.min.min_val;
+        } else if (item->aggregate_state.aggregate_type == MU_ID_AGGREGATETYPE_MAXIMUM) {
+            calc_val = item->aggregate_state.accumulator.max.max_val;
+        } else {
+            calc_status = MU_STATUS_BAD_INTERNALERROR;
+        }
+    }
+
+    monitored_item_enqueue_report(item, &calc_val, calc_status);
+
+    /* Reset state */
+    item->aggregate_state.sample_count = 0u;
+    memset(&item->aggregate_state.accumulator, 0, sizeof(item->aggregate_state.accumulator));
+    item->aggregate_state.last_calculation = (opcua_datetime_t)now_ms;
+}
 #endif
 
 static opcua_statuscode_t read_monitored_item_value(const mu_monitored_item_t *item, mu_variant_t *cur) {
@@ -1481,7 +1554,20 @@ void mu_subscriptions_tick(struct mu_server *server, opcua_uint64_t now_ms) {
         }
         active_checked++;
 
-        if (item->monitoring_mode == MU_MONITORING_MODE_DISABLED || now_ms < item->next_sample_ms) {
+        if (item->monitoring_mode == MU_MONITORING_MODE_DISABLED) {
+            continue;
+        }
+
+#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+        if (item->has_aggregate) {
+            if ((opcua_double_t)(now_ms - (opcua_uint64_t)item->aggregate_state.last_calculation) >=
+                item->aggregate_state.processing_interval) {
+                monitored_item_publish_aggregate(item, now_ms);
+            }
+        }
+#endif
+
+        if (now_ms < item->next_sample_ms) {
             continue;
         }
 
@@ -1494,6 +1580,19 @@ void mu_subscriptions_tick(struct mu_server *server, opcua_uint64_t now_ms) {
         mu_variant_t cur;
         memset(&cur, 0, sizeof(cur));
         opcua_statuscode_t status = read_monitored_item_value(item, &cur);
+
+#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+        if (item->has_aggregate) {
+            if (status == MU_STATUS_GOOD) {
+                monitored_item_accumulate_aggregate(item, &cur);
+            }
+            item->last_value = cur;
+            item->last_status = status;
+            item->has_value = true;
+            advance_sample_timer(item, now_ms);
+            continue;
+        }
+#endif
 
 #if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
         if (item->has_value && (!item->has_reported || (item->pending && item->queue_count == 0u))) {

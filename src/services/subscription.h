@@ -92,6 +92,24 @@ typedef enum {
     MU_DEADBAND_TYPE_PERCENT = 2
 } mu_deadband_type_t;
 
+typedef struct {
+    opcua_double_t processing_interval; /* in milliseconds */
+    opcua_datetime_t last_calculation;  /* timestamp of last aggregate calculation */
+    union {
+        struct {
+            opcua_double_t sum;
+        } avg;
+        struct {
+            mu_variant_t min_val;
+        } min;
+        struct {
+            mu_variant_t max_val;
+        } max;
+    } accumulator;
+    opcua_uint32_t aggregate_type;      /* MU_ID_AGGREGATETYPE_AVERAGE, MINIMUM, MAXIMUM */
+    opcua_uint32_t sample_count;        /* number of samples in the current interval */
+} mu_aggregate_state_t;
+
 /* A single data MonitoredItem (OPC 10000-4 §5.13, §7.21). */
 typedef struct {
     /* 8-byte aligned fields */
@@ -99,6 +117,7 @@ typedef struct {
 #if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
     opcua_double_t deadband_value;
     opcua_double_t last_reported_numeric;
+    mu_aggregate_state_t aggregate_state;
 #endif
     const mu_node_t *resolved_node; /* cached static address-space resolution */
 
@@ -135,6 +154,7 @@ typedef struct {
 #if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
     opcua_byte_t deadband_type; /* mu_deadband_type_t */
     bool has_reported;
+    bool has_aggregate;
     opcua_byte_t queue_head;
     opcua_byte_t queue_tail;
     opcua_byte_t queue_count;

@@ -57,62 +57,32 @@ for profile in $profiles; do
     case "$profile" in
         nano)
             defs=(
-                -DMICRO_OPCUA_SECURITY=OFF
-                -DMICRO_OPCUA_SUBSCRIPTIONS=OFF
-                -DMICRO_OPCUA_CUSTOM_METHODS=OFF
-                -DMICRO_OPCUA_SERVER_DIAGNOSTICS=OFF
-                -DMICRO_OPCUA_DYNAMIC_NODES=OFF
-                -DMICRO_OPCUA_USER_AUTH=OFF
-                -DMICRO_OPCUA_SERVICE_WRITE=OFF
-                -DMICRO_OPCUA_MULTIPLE_CONNECTIONS=OFF
-                -DMICRO_OPCUA_EVENTS=OFF
+                -DMICRO_OPCUA_PROFILE=nano
             )
             ;;
         micro)
             defs=(
-                -DMICRO_OPCUA_SECURITY=OFF
-                -DMICRO_OPCUA_SUBSCRIPTIONS=ON
-                -DMICRO_OPCUA_CUSTOM_METHODS=OFF
-                -DMICRO_OPCUA_SERVER_DIAGNOSTICS=OFF
-                -DMICRO_OPCUA_DYNAMIC_NODES=OFF
-                -DMICRO_OPCUA_USER_AUTH=ON
-                -DMICRO_OPCUA_SERVICE_WRITE=ON
-                -DMICRO_OPCUA_MULTIPLE_CONNECTIONS=OFF
-                -DMICRO_OPCUA_EVENTS=OFF
+                -DMICRO_OPCUA_PROFILE=micro
             )
             ;;
         embedded)
             defs=(
-                -DMICRO_OPCUA_EMBEDDED_PROFILE=ON
+                -DMICRO_OPCUA_PROFILE=embedded
                 -DMU_MAX_SUBSCRIPTIONS=2
                 -DMU_MAX_MONITORED_ITEMS=100
                 -DMU_MAX_PUBLISH_REQUESTS=5
                 -DMU_MONITORED_QUEUE_DEPTH=2
                 -DMU_MAX_TRIGGER_LINKS=4
-                -DMICRO_OPCUA_CUSTOM_METHODS=OFF
-                -DMICRO_OPCUA_SERVER_DIAGNOSTICS=OFF
-                -DMICRO_OPCUA_DYNAMIC_NODES=OFF
-                -DMICRO_OPCUA_USER_AUTH=ON
-                -DMICRO_OPCUA_SERVICE_WRITE=ON
-                -DMICRO_OPCUA_MULTIPLE_CONNECTIONS=ON
-                -DMICRO_OPCUA_EVENTS=ON
             )
             ;;
         full-featured)
             defs=(
-                -DMICRO_OPCUA_EMBEDDED_PROFILE=ON
+                -DMICRO_OPCUA_PROFILE=full
                 -DMU_MAX_SUBSCRIPTIONS=2
                 -DMU_MAX_MONITORED_ITEMS=100
                 -DMU_MAX_PUBLISH_REQUESTS=5
                 -DMU_MONITORED_QUEUE_DEPTH=2
                 -DMU_MAX_TRIGGER_LINKS=4
-                -DMICRO_OPCUA_CUSTOM_METHODS=ON
-                -DMICRO_OPCUA_SERVER_DIAGNOSTICS=ON
-                -DMICRO_OPCUA_DYNAMIC_NODES=ON
-                -DMICRO_OPCUA_USER_AUTH=ON
-                -DMICRO_OPCUA_SERVICE_WRITE=ON
-                -DMICRO_OPCUA_MULTIPLE_CONNECTIONS=ON
-                -DMICRO_OPCUA_EVENTS=ON
             )
             ;;
     esac
