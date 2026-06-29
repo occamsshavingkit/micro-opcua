@@ -60,6 +60,10 @@ conformance-unit map.
 | Write Service | Implemented | Optional feature via `MICRO_OPCUA_SERVICE_WRITE` |
 | Alarms & Conditions (Events) | Implemented | Event notifications via `MICRO_OPCUA_EVENTS` |
 | Dynamic Nodes | Implemented | Runtime node addition via `MICRO_OPCUA_DYNAMIC_NODES` |
+| NodeManagement Services | Implemented | Dynamic NodeManagement via `MICRO_OPCUA_SERVICE_NODEMANAGEMENT` |
+| Query Services | Implemented | Search address space via `MICRO_OPCUA_SERVICE_QUERY` |
+| Historical Access (HA) | Implemented | HistoryRead/HistoryUpdate via `MICRO_OPCUA_SERVICE_HISTORY` |
+| Aggregate Subscriptions | Implemented | Average/Min/Max calculation via `MICRO_OPCUA_SUBSCRIPTIONS_STANDARD` (Feature 018) |
 
 ## Remaining
 1. **CTT verification** — run the OPC Foundation Compliance Test Tool against the

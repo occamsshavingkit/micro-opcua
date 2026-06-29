@@ -55,8 +55,8 @@ Embedded profile gates are enabled:
 - Security policies beyond None. Basic256Sha256 is available in the embedded build.
 
 TransferSubscriptions (§5.14.7) belongs to the Client Redundancy Facet and is not part
-of the selected Micro or Embedded work. Percent deadband and aggregate filters belong to
-the Data Access Server Facet; unsupported filters return a cited filter StatusCode.
+of the selected Micro or Embedded work. Percent deadband belongs to the Data Access
+Server Facet; aggregate filters (Average/Min/Max) are supported.
 
 **Concurrent ≥2 sessions** — implemented: the server multiplexes up to
 `MU_MAX_SESSIONS` (default 2) logical sessions over a single TCP connection

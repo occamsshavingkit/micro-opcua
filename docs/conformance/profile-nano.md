@@ -11,8 +11,7 @@ Core 2017 Server Facet* and requires the OPC UA TCP binary transport.
 - **Embedded** = Micro + security policies + the Standard DataChange Subscription facet
   + full type-system exposure.
 
-micro-opcua targets **Nano** and has already implemented Basic256Sha256 (an
-Embedded-tier feature) ahead of schedule; subscriptions (Micro) are out of scope.
+micro-opcua supports Nano, Micro, and Embedded UA profiles, allowing the integrator to select the desired feature set via CMake configuration profiles.
 
 ## Profile constraints honoured
 - OPC UA TCP transport only (`opc.tcp`, UA-SC, UA-Binary).

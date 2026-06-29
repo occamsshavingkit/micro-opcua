@@ -39,7 +39,8 @@ which is exactly:
 8. [`config.h` — Compile-Time Configuration](#8-configh--compile-time-configuration)
 9. [`encoding.h` — Binary Reader / Writer](#9-encodingh--binary-reader--writer)
 10. [`opcua_ids.h` — Service Node IDs](#10-opcua_idsh--service-node-ids)
-11. [Build-Time Feature Macros (CMake)](#11-build-time-feature-macros-cmake)
+11. [`services/history.h` — Historical Access](#11-serviceshistoryh--historical-access)
+12. [Build-Time Feature Macros & Profiles (CMake)](#12-build-time-feature-macros--profiles-cmake)
 
 ---
 
@@ -472,6 +473,32 @@ typedef struct {
 
     /* Static Address Space (optional) */
     const mu_address_space_t *address_space;
+    
+    /* Authorization */
+    opcua_boolean_t allow_node_management;
+
+    /* User Authentication (optional) */
+    mu_user_auth_handler_t user_auth_handler;
+    void *user_auth_handler_handle;
+
+    /* TrustList for Application Authentication (optional) */
+    const mu_trust_list_t *trust_list;
+
+#ifdef MICRO_OPCUA_PUBSUB
+    /* PubSub Configuration (optional) */
+    mu_pubsub_connection_t pubsub;
+    mu_udp_adapter_t udp_adapter;
+#endif
+
+    /* Write Service Callback (optional) */
+#ifdef MICRO_OPCUA_SERVICE_WRITE
+    mu_write_handler_t write_handler;
+    void *write_handler_handle;
+#endif
+
+#ifdef MICRO_OPCUA_SERVICE_HISTORY
+    mu_history_adapter_t history_adapter;
+#endif
 } mu_server_config_t;
 ```
 
@@ -497,10 +524,61 @@ typedef struct {
 | `persistence_adapter` | `mu_persistence_adapter_t *` | No | Optional cert/key storage; `NULL` if unsupported. |
 | `crypto_adapter` | `mu_crypto_adapter_t *` | No | Optional crypto; `NULL` for SecurityPolicy None only. |
 | `address_space` | `const mu_address_space_t *` | No | Optional static address space; `NULL` to rely on built-in base nodes only. |
+| `allow_node_management` | `opcua_boolean_t` | No | Flag indicating if dynamic node management (AddNodes, etc.) is allowed. |
+| `user_auth_handler` | `mu_user_auth_handler_t` | No | Optional callback handler for username/password authentication. |
+| `user_auth_handler_handle` | `void *` | No | Optional user context handle passed to `user_auth_handler`. |
+| `trust_list` | `const mu_trust_list_t *` | No | Optional pointer to application certificate trust list. |
+| `pubsub` | `mu_pubsub_connection_t` | No | Optional PubSub connection parameters. |
+| `udp_adapter` | `mu_udp_adapter_t` | No | Optional UDP adapter for PubSub. |
+| `write_handler` | `mu_write_handler_t` | No | Optional callback handler for custom Node write operations. |
+| `write_handler_handle` | `void *` | No | Optional user context handle passed to `write_handler`. |
+| `history_adapter` | `mu_history_adapter_t` | No | Optional history access persistence adapter. |
 
-**Note:** The three required adapters are stored **by value** in the config struct;
-the two optional adapters are stored **by pointer** and must remain valid for the
+**Note:** Required adapters are stored **by value** in the config struct;
+optional adapters/handlers are stored **by pointer/value** and must remain valid for the
 server's lifetime (`NULL` disables the feature).
+
+### 5.2.1 Callbacks & Handlers
+
+#### `mu_user_auth_handler_t`
+
+```c
+typedef opcua_statuscode_t (*mu_user_auth_handler_t)(void *handle,
+                                                     const mu_string_t *username,
+                                                     const mu_bytestring_t *password,
+                                                     const mu_string_t *policy_id);
+```
+
+#### `mu_write_handler_t`
+
+```c
+typedef opcua_statuscode_t (*mu_write_handler_t)(void *handle,
+                                                 const mu_nodeid_t *node_id,
+                                                 opcua_uint32_t attribute_id,
+                                                 const mu_variant_t *value);
+```
+
+### 5.2.2 Optional Server Extension APIs
+
+#### `mu_server_register_method_callback`
+
+```c
+#ifdef MICRO_OPCUA_CUSTOM_METHODS
+opcua_statuscode_t mu_server_register_method_callback(mu_server_t *server,
+                                                      const mu_nodeid_t *method_id,
+                                                      mu_method_callback_t callback,
+                                                      void *context);
+#endif
+```
+
+#### `mu_server_trigger_event`
+
+```c
+#ifdef MICRO_OPCUA_EVENTS
+opcua_statuscode_t mu_server_trigger_event(mu_server_t *server,
+                                           const mu_event_notification_t *event);
+#endif
+```
 
 ### 5.3 `mu_server_init`
 
@@ -1240,33 +1318,101 @@ dispatches. Useful when matching `type_id` from a decoded message header.
 
 ---
 
-## 11. Build-Time Feature Macros (CMake)
+## 11. `services/history.h` — Historical Access
 
-These are CMake options that become public compile definitions on the `micro_opcua`
-target. They change which code is built and, for two of them, the size of
-`MU_SERVER_STORAGE_BYTES`. All default **ON** unless noted.
+### 11.1 `mu_historical_data_point_t`
+
+```c
+typedef struct {
+    opcua_datetime_t source_timestamp;
+    opcua_datetime_t server_timestamp;
+    opcua_statuscode_t status;
+    mu_variant_t value;
+} mu_historical_data_point_t;
+```
+
+Represents a single historical data point stored or retrieved from persistence.
+
+### 11.2 `mu_history_adapter_t`
+
+```c
+typedef struct {
+    opcua_statuscode_t (*read_raw_modified)(
+        void *context,
+        const mu_nodeid_t *node_id,
+        opcua_boolean_t is_read_modified,
+        opcua_datetime_t start_time,
+        opcua_datetime_t end_time,
+        opcua_uint32_t num_values_per_node,
+        opcua_boolean_t return_bounds,
+        const opcua_byte_t *cp_in,
+        size_t cp_in_length,
+        opcua_byte_t *cp_out,
+        size_t *cp_out_length,
+        mu_historical_data_point_t *data_points,
+        size_t max_data_points,
+        size_t *actual_data_points
+    );
+
+    opcua_statuscode_t (*update_data)(
+        void *context,
+        const mu_nodeid_t *node_id,
+        opcua_uint32_t perform_insert_replace,
+        const mu_historical_data_point_t *data_points,
+        size_t data_points_count,
+        opcua_statuscode_t *results
+    );
+
+    opcua_statuscode_t (*delete_raw_modified)(
+        void *context,
+        const mu_nodeid_t *node_id,
+        opcua_boolean_t is_delete_modified,
+        opcua_datetime_t start_time,
+        opcua_datetime_t end_time
+    );
+    
+    void *context;
+} mu_history_adapter_t;
+```
+
+The interface mapping the server dispatcher to the platform-specific persistence engine (SD card, flash, database).
+
+---
+
+## 12. Build-Time Feature Macros & Profiles (CMake)
+
+These are CMake options that configure which code is compiled. All features default **OFF** unless activated via a profile.
 
 | CMake option | Define when ON | Default | Effect |
 |--------------|----------------|---------|--------|
-| `MICRO_OPCUA_SECURITY` | `MICRO_OPCUA_SECURITY=1` | ON | Build SecurityPolicy Basic256Sha256 (asym/sym chunk crypto, ~10 KB code). Turn OFF for a SecurityPolicy-None-only build; drops the crypto layer and the `MU_SERVER_SECURITY_STORAGE_BYTES` portion of server storage. |
-| `MICRO_OPCUA_SUBSCRIPTIONS` | `MICRO_OPCUA_SUBSCRIPTIONS=1` | ON | Build the data-change subscription engine (Micro profile: Subscription + MonitoredItem service sets). Turn OFF for a Nano-only build; drops the engine and shrinks server storage from `3072` to `1024` base bytes. Also gates the three subscription-only StatusCodes in `status.h`. |
+| `MICRO_OPCUA_PROFILE` | *(string)* | `nano` | Target OPC UA profile (`nano`, `micro`, `embedded`, `full`, `custom`). Automatically turns on the relevant set of services. |
+| `MICRO_OPCUA_SECURITY` | `MICRO_OPCUA_SECURITY=1` | OFF | Build SecurityPolicy Basic256Sha256. |
+| `MICRO_OPCUA_SUBSCRIPTIONS` | `MICRO_OPCUA_SUBSCRIPTIONS=1` | OFF | Build the data-change subscription engine. |
+| `MICRO_OPCUA_SUBSCRIPTIONS_STANDARD` | `MICRO_OPCUA_SUBSCRIPTIONS_STANDARD=1` | OFF | Build standard subscription additions. |
 | `MICRO_OPCUA_SERVICE_READ` | `MICRO_OPCUA_SERVICE_READ=1` | ON | Build the Read service. |
 | `MICRO_OPCUA_SERVICE_BROWSE` | `MICRO_OPCUA_SERVICE_BROWSE=1` | ON | Build Browse + BrowseNext + TranslateBrowsePaths. |
 | `MICRO_OPCUA_SERVICE_DISCOVERY` | `MICRO_OPCUA_SERVICE_DISCOVERY=1` | ON | Build GetEndpoints/FindServers. |
-| `MICRO_OPCUA_SERVICE_REGISTER_NODES` | `MICRO_OPCUA_SERVICE_REGISTER_NODES=1` | ON | Build RegisterNodes/UnregisterNodes. |
-| `MICRO_OPCUA_BASE_NODES` | `MICRO_OPCUA_BASE_NODES=1` | ON | Build the standard Base Information node set (Server object hierarchy, ServerStatus, ServerCapabilities). Turn OFF if you supply a complete address space and do not want the default nodes. |
-| `MICRO_OPCUA_LTO` | *(toolchain LTO)* | OFF | Enable link-time / interprocedural optimization for size-optimized firmware builds (silently skipped with a warning if IPO is unsupported by the toolchain). |
+| `MICRO_OPCUA_SERVICE_REGISTER_NODES` | `MICRO_OPCUA_SERVICE_REGISTER_NODES=1` | OFF | Build RegisterNodes/UnregisterNodes. |
+| `MICRO_OPCUA_SERVICE_WRITE` | `MICRO_OPCUA_SERVICE_WRITE=1` | OFF | Build the Write service. |
+| `MICRO_OPCUA_SERVICE_HISTORY` | `MICRO_OPCUA_SERVICE_HISTORY=1` | OFF | Build Historical Access (HistoryRead/HistoryUpdate). |
+| `MICRO_OPCUA_SERVICE_QUERY` | `MICRO_OPCUA_SERVICE_QUERY=1` | OFF | Build the Query services. |
+| `MICRO_OPCUA_SERVICE_NODEMANAGEMENT` | `MICRO_OPCUA_SERVICE_NODEMANAGEMENT=1` | OFF | Build the optional NodeManagement service set. |
+| `MICRO_OPCUA_DYNAMIC_NODES` | `MICRO_OPCUA_DYNAMIC_NODES=1` | OFF | Build AddNodes/DeleteNodes dynamic node management. |
+| `MICRO_OPCUA_PUBSUB` | `MICRO_OPCUA_PUBSUB=1` | OFF | Build Publish/Subscribe capabilities. |
+| `MICRO_OPCUA_CUSTOM_METHODS` | `MICRO_OPCUA_CUSTOM_METHODS=1` | OFF | Build support for custom method calls. |
+| `MICRO_OPCUA_SERVER_DIAGNOSTICS` | `MICRO_OPCUA_SERVER_DIAGNOSTICS=1` | OFF | Build support for server diagnostics summary nodes. |
+| `MICRO_OPCUA_EVENTS` | `MICRO_OPCUA_EVENTS=1` | OFF | Build support for event notifications. |
+| `MICRO_OPCUA_BASE_NODES` | `MICRO_OPCUA_BASE_NODES=1` | OFF | Build the standard Base Information node set. |
+| `MICRO_OPCUA_BASE_TYPE_SYSTEM` | `MICRO_OPCUA_BASE_TYPE_SYSTEM=1` | OFF | Expose the Base Info Type System node set. |
+| `MICRO_OPCUA_LTO` | *(toolchain LTO)* | OFF | Enable link-time / interprocedural optimization. |
 | `MICRO_OPCUA_OPTIMIZE_SIZE` | `-Os` | OFF | Optimize the library for size. |
 | `MICRO_OPCUA_PLATFORM` | *(string)* | `host` | Target platform: `host`, `pico`, or `arduino-skeleton`. |
 
 **Notes:**
 - OpenSecureChannel and the Session services are **always present** (not gated).
-- `MICRO_OPCUA_STATUS_STRINGS` (the `mu_status_name()` gate) is a source-level `-D`
-  knob, not a CMake option; it is left undefined unless supplied.
-- Because `MU_SERVER_STORAGE_BYTES` depends on `MICRO_OPCUA_SECURITY` and
-  `MICRO_OPCUA_SUBSCRIPTIONS`, always compile your application with the **same**
-  feature flags as the library and size storage via the macro.
+- `MICRO_OPCUA_STATUS_STRINGS` (the `mu_status_name()` gate) is a source-level `-D` knob, not a CMake option; it is left undefined unless supplied.
+- Because `MU_SERVER_STORAGE_BYTES` depends on enabled options, always compile your application with the **same** feature flags as the library.
 
 ---
 
-*Generated from the public headers in `include/micro_opcua/` on branch `004-docs`.*
+*Generated from the public headers in `include/micro_opcua/`.*

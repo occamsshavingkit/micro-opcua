@@ -34,9 +34,9 @@ are supported.
 | TransferSubscriptions | 5.14.7 | Unsupported | Above the Embedded DataChange facet (Standard tier) |
 | DeleteSubscriptions | 5.14.8 | Implemented | Deletes the subscription and its MonitoredItems |
 | SetTriggering | 5.13.5 | Implemented | Behind MICRO_OPCUA_EMBEDDED_PROFILE (links monitored items within a subscription) |
-| HistoryRead / HistoryUpdate | 5.10 | Unsupported | Not in Nano/Micro |
-| AddNodes / DeleteNodes / AddReferences / DeleteReferences | 5.7 | Unsupported | NodeManagement (not in Nano) |
-| QueryFirst / QueryNext | 5.9.x | Unsupported | Query (not in Nano) |
+| HistoryRead / HistoryUpdate | 5.10 | Implemented | Behind `MICRO_OPCUA_SERVICE_HISTORY`, persistence adapter based |
+| AddNodes / DeleteNodes / AddReferences / DeleteReferences | 5.7 | Implemented | Behind `MICRO_OPCUA_SERVICE_NODEMANAGEMENT` and `MICRO_OPCUA_DYNAMIC_NODES` |
+| QueryFirst / QueryNext | 5.9.x | Implemented | Behind `MICRO_OPCUA_SERVICE_QUERY` |
 
 The View Service Set (Browse, BrowseNext, TranslateBrowsePaths, RegisterNodes,
 UnregisterNodes) is the set of Core Server Facet "View" conformance units required
@@ -49,4 +49,5 @@ keep-alives, and Republish — all no-heap and behind the `MICRO_OPCUA_SUBSCRIPT
 build option (`tests/integration/test_subscriptions.c`). The Standard DataChange 2017
 facet is supported under `MICRO_OPCUA_EMBEDDED_PROFILE=ON`, which implements SetTriggering,
 Call (with GetMonitoredItems/ResendData methods), and larger monitored-item/queue bounds.
-The TransferSubscriptions service and event/aggregate filters remain unsupported.
+The TransferSubscriptions service remains unsupported. Aggregate filters (Average/Min/Max)
+are supported under `MICRO_OPCUA_SUBSCRIPTIONS_STANDARD` (Feature 018).

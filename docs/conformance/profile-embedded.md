@@ -30,6 +30,7 @@ but an OPC Foundation Compliance Test Tool run has not yet been performed.
 | Security Default ApplicationInstance Certificate | OPC-10000-7 §6.6.69 security CU | Satisfied | `src/security/certificate.c`, `test_certificate`, secure handshake tests |
 | Standard DataChange Subscription 2017 facet | OPC-10000-7 §6.6.17 | Implemented | `tests/unit/test_subscriptions_capacity.c`, `tests/integration/test_subscriptions.c` |
 | Monitored Items Deadband Filter | OPC-10000-4 §7.22.2 | Implemented | absolute-deadband coverage in subscription tests |
+| Monitored Items Aggregate Filter | OPC-10000-4 §7.16; OPC-10000-13 | Implemented | Average/Min/Max filters in `src/core/subscription.c`, `tests/unit/test_aggregate.c` |
 | Monitor MinQueueSize_02 | OPC-10000-4 §5.13.2, §7.20.1 | Implemented | queue/discard/overflow coverage in subscription tests |
 | Monitor Triggering | OPC-10000-4 §5.13.5, §5.13.1.6 | Implemented | SetTriggering coverage in subscription tests |
 | Subscription Minimum 02 | OPC-10000-4 §5.14.2 | Implemented | `tests/unit/test_subscriptions_capacity.c` |
@@ -39,15 +40,17 @@ but an OPC Foundation Compliance Test Tool run has not yet been performed.
 | ResendData | OPC-10000-5 §8.3.2, §9.2 | Implemented | `src/services/subscription.c`, `tests/unit/test_method_call.c` |
 | Base Info Type System | OPC-10000-5 standard NodeSet; OPC-10000-3 §7.7 | Implemented | `src/address_space/base_nodes.c`, `tests/unit/test_type_system.c` |
 | ServerProfileArray | OPC-10000-5 Server object | Implemented | Embedded profile URI in `Server.ServerCapabilities.ServerProfileArray` |
+| Events and alarms | OPC-10000-9; OPC-10000-4 §5.13.1 | Implemented | Event notifications via `mu_server_trigger_event`, `tests/unit/test_event_notifications.c` |
+| Historical Access (HA) | OPC-10000-11 | Implemented | HistoryRead/HistoryUpdate services, `tests/unit/test_history.c` |
+| Query Services | OPC-10000-4 §5.9 | Implemented | QueryFirst/QueryNext services, `tests/unit/test_query_service.c` |
 
 ## Explicitly Out of Scope
 
 | Feature | Reason | Expected behavior |
 |---|---|---|
 | TransferSubscriptions | Client Redundancy Facet, not part of the selected Embedded profile slice | Service unsupported |
-| Percent deadband / aggregate filters | Data Access Server Facet, not required by the Standard DataChange Subscription 2017 facet | Filter unsupported |
+| Percent deadband | Data Access Server Facet, not required by the Standard DataChange Subscription 2017 facet | Filter unsupported |
 | Arbitrary user methods | Only the two Base Info methods are required for this profile work | `Bad_MethodInvalid` for unknown methods |
-| Events and alarms | Not part of the selected data-change profile surface | Service/filter unsupported |
 
 ## Validation Snapshot
 
