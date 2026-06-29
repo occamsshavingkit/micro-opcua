@@ -13,6 +13,7 @@
 #ifdef MICRO_OPCUA_HAVE_OPENSSL
 #include "../../src/platform/host_crypto_adapter.h"
 #endif
+#include "micro_opcua/services/alarms_conditions.h"
 
 #ifdef MICRO_OPCUA_SERVICE_HISTORY
 static opcua_statuscode_t minimal_read_raw_modified(
@@ -159,6 +160,16 @@ int main(void) {
     }
 
     printf("Server initialized successfully. Listening on %s\n", config.endpoint_url);
+
+#ifdef MICRO_OPCUA_SERVICE_ALARMS_CONDITIONS
+    {
+        mu_condition_id_t cid;
+        cid.node_id = mu_nodeid_make_numeric(1, 12345);
+        if (mu_alarms_trigger_dialog(server, &cid, 0x03) == MU_STATUS_GOOD) {
+            printf("Triggered test dialog condition (NodeId 1:12345)\n");
+        }
+    }
+#endif
 
     /* Main loop */
     while (g_running) {

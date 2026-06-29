@@ -12,6 +12,7 @@ add_library(micro_opcua STATIC
     services/session.c
     services/service_header.c
     services/discovery.c
+    services/alarms_conditions.c
     address_space/address_space.c
     address_space/base_nodes.c
     address_space/node_id.c
@@ -44,6 +45,14 @@ if(MICRO_OPCUA_SERVICE_REGISTER_NODES)
 endif()
 if(MICRO_OPCUA_SERVICE_WRITE)
     target_compile_definitions(micro_opcua PUBLIC MICRO_OPCUA_SERVICE_WRITE=1)
+endif()
+if(MICRO_OPCUA_SERVICE_NODEMANAGEMENT)
+    target_sources(micro_opcua PRIVATE services/node_management.c)
+    target_compile_definitions(micro_opcua PUBLIC MICRO_OPCUA_SERVICE_NODEMANAGEMENT=1)
+endif()
+if(MICRO_OPCUA_SERVICE_QUERY)
+    target_sources(micro_opcua PRIVATE services/query.c encoding/binary_query.c)
+    target_compile_definitions(micro_opcua PUBLIC MICRO_OPCUA_SERVICE_QUERY=1)
 endif()
 # base_nodes.c is always compiled (it owns the always-available mu_resolve_node);
 # this flag gates the node-table *content* so the standard node set is dropped.

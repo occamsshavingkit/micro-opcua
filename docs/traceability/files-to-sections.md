@@ -11,6 +11,16 @@ This document maps implementation and test files back to OPC UA normative sectio
 | `include/micro_opcua/server.h` | Server API | Part 4 / 6 | 5.6.2.2 / 7.1.2.3 | Config & Lifecycle APIs |
 | `src/core/status.c` | StatusCodes | Part 4 / 6 | 7.38.2 / 7.1.5 | Status Helper `mu_status_name` |
 | `src/core/server.c` | Server Core | Part 4 / 6 | 5.6.2.2 / 7.1.2.3 | Init, validate, and poll implementations |
+| `include/micro_opcua/services/node_management.h` | NodeManagement | Part 4 | 5.7.2, 5.7.3, 5.7.4, 5.7.5 | NodeManagement services interface |
+| `src/services/node_management.c` | NodeManagement | Part 4 | 5.7.2, 5.7.3, 5.7.4, 5.7.5 | NodeManagement services implementation |
+| `src/services/query.h` | Query | Part 4 | 5.8 | Query services interface |
+| `src/services/query.c` | Query | Part 4 | 5.8 | Query services implementation |
+| `src/encoding/binary_query.c` | Encoding | Part 6 | 5.2 | Query service payload binary encoding |
+| `tests/unit/test_query_encoding.c` | Tests | Part 6 | 5.2 | Query binary encode/decode tests |
+| `tests/unit/test_query_service.c` | Tests | Part 4 | 5.8 | Query services tests |
+| `tests/unit/test_node_management.c` | Tests | Part 4 | 5.7 | NodeManagement positive tests |
+| `tests/unit/test_node_management_errors.c` | Tests | Part 4 | 5.7 | NodeManagement error tests |
+| `tests/unit/test_address_space_dynamic.c` | Tests | Part 4 / 5 | 5.7 / 6.3 | Dynamic Address Space tests |
 | `src/address_space/base_nodes.h` | Base Information | Part 5 | 6.3, 7 | Standard Server node set interface + resolver |
 | `src/address_space/base_nodes.c` | Base Information | Part 5 | 6.3, 7 | Default Server/ServerStatus/ServerCapabilities nodes |
 | `src/security/security_policy.h` | SecurityPolicy | Part 7 | 6.x | Policy id + Basic256Sha256 parameter table |
@@ -151,3 +161,6 @@ This document maps implementation and test files back to OPC UA normative sectio
 | `test_wolfssl_adapter.c` | Tests | Part 7 | 6.x | Test wolfSSL crypto adapter |
 | `src/security/trustlist.c` | TrustList | Part 4 | 5.6.2 | Application Authentication TrustList |
 | `include/micro_opcua/security.h` | TrustList | Part 4 | 5.6.2 | Application Authentication TrustList Header |
+| `include/micro_opcua/services/alarms_conditions.h` | Alarms and Conditions | Part 9 | 5.5, 5.7, 5.8 | Alarms & Conditions types and API |
+| `src/services/alarms_conditions.c` | Alarms and Conditions | Part 9 | 5.5, 5.7, 5.8 | Alarms & Conditions method processing |
+| `tests/unit/test_alarms_conditions.c` | Tests | Part 9 | 5.5, 5.7, 5.8 | Test Alarms & Conditions functionality |
