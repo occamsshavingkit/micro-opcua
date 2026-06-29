@@ -17,8 +17,8 @@ implementation tasks they validate.
 
 **Purpose**: Project initialization, build tooling, and traceability structure
 
-- [ ] T001 Define `MICRO_OPCUA_SERVICE_HISTORY` in `include/micro_opcua/config.h`.
-- [ ] T002 [P] Add `test_history.c` under `tests/unit/` and integrate it into `src/CMakeLists.txt`.
+- [x] T001 Define `MICRO_OPCUA_SERVICE_HISTORY` in `include/micro_opcua/config.h`.
+- [x] T002 [P] Add `test_history.c` under `tests/unit/` and integrate it into `src/CMakeLists.txt`.
 
 ---
 
@@ -28,9 +28,9 @@ implementation tasks they validate.
 
 **CRITICAL**: No user story implementation can begin until this phase is complete.
 
-- [ ] T003 Document cited OPC UA sections for Historical Access in `docs/traceability/files-to-sections.md`.
-- [ ] T004 Define `mu_historical_data_point_t` and `mu_history_adapter_t` structs in `include/micro_opcua/services/history.h`.
-- [ ] T005 [P] Add `history_adapter` to `mu_server_t` and `mu_server_config_t` structs in `src/core/server_internal.h` and `include/micro_opcua/config.h`.
+- [x] T003 Document cited OPC UA sections for Historical Access in `docs/traceability/files-to-sections.md`.
+- [x] T004 Define `mu_historical_data_point_t` and `mu_history_adapter_t` structs in `include/micro_opcua/services/history.h`.
+- [x] T005 [P] Add `history_adapter` to `mu_server_t` and `mu_server_config_t` structs in `src/core/server_internal.h` and `include/micro_opcua/config.h`.
 
 **Checkpoint**: Foundation ready - user story implementation can begin.
 
@@ -46,16 +46,16 @@ implementation tasks they validate.
 
 > Write these tests first and confirm they fail before implementation.
 
-- [ ] T006 [US1] Write test for decoding a `HistoryReadRequest` in `tests/unit/test_history.c`.
-- [ ] T007 [US1] Write test for encoding a `HistoryReadResponse` in `tests/unit/test_history.c`.
-- [ ] T008 [US1] Write test for `HistoryRead` dispatch invoking the adapter's `read_raw_modified` callback in `tests/unit/test_history.c`.
-- [ ] T009 [US1] Write test for pagination (continuation point output) in `tests/unit/test_history.c`.
+- [x] T006 [US1] Write test for decoding a `HistoryReadRequest` in `tests/unit/test_history.c`.
+- [x] T007 [US1] Write test for encoding a `HistoryReadResponse` in `tests/unit/test_history.c`.
+- [x] T008 [US1] Write test for `HistoryRead` dispatch invoking the adapter's `read_raw_modified` callback in `tests/unit/test_history.c`.
+- [x] T009 [US1] Write test for pagination (continuation point output) in `tests/unit/test_history.c`.
 
 ### Implementation for User Story 1
 
-- [ ] T010 [US1] Implement `mu_history_read_request_decode` and `mu_history_read_response_encode` in `src/services/history.c`.
-- [ ] T011 [US1] Implement `mu_history_read_process` in `src/services/history.c` to parse parameters and call the adapter.
-- [ ] T012 [US1] Update `src/core/service_dispatch.c` to dispatch `HistoryRead` requests to `mu_history_read_process`.
+- [x] T010 [US1] Implement `mu_history_read_request_decode` and `mu_history_read_response_encode` in `src/services/history.c`.
+- [x] T011 [US1] Implement `mu_history_read_process` in `src/services/history.c` to parse parameters and call the adapter.
+- [x] T012 [US1] Update `src/core/service_dispatch.c` to dispatch `HistoryRead` requests to `mu_history_read_process`.
 
 ---
 
@@ -69,14 +69,14 @@ implementation tasks they validate.
 
 > Write these tests first and confirm they fail before implementation.
 
-- [ ] T013 [US2] Write test for decoding a `HistoryUpdateRequest` in `tests/unit/test_history.c`.
-- [ ] T014 [US2] Write test for `HistoryUpdate` dispatch invoking the adapter's `update_data` callback with Insert/Replace types in `tests/unit/test_history.c`.
+- [x] T013 [US2] Write test for decoding a `HistoryUpdateRequest` in `tests/unit/test_history.c`.
+- [x] T014 [US2] Write test for `HistoryUpdate` dispatch invoking the adapter's `update_data` callback with Insert/Replace types in `tests/unit/test_history.c`.
 
 ### Implementation for User Story 2
 
-- [ ] T015 [US2] Implement `mu_history_update_request_decode` and `mu_history_update_response_encode` in `src/services/history.c`.
-- [ ] T016 [US2] Implement `mu_history_update_process` in `src/services/history.c` to handle Insert, Replace, and Delete, mapping to the adapter `update_data` callback.
-- [ ] T017 [US2] Update `src/core/service_dispatch.c` to dispatch `HistoryUpdate` requests to `mu_history_update_process`.
+- [x] T015 [US2] Implement `mu_history_update_request_decode` and `mu_history_update_response_encode` in `src/services/history.c`.
+- [x] T016 [US2] Implement `mu_history_update_process` in `src/services/history.c` to handle Insert, Replace, and Delete, mapping to the adapter `update_data` callback.
+- [x] T017 [US2] Update `src/core/service_dispatch.c` to dispatch `HistoryUpdate` requests to `mu_history_update_process`.
 
 ---
 
@@ -84,6 +84,6 @@ implementation tasks they validate.
 
 **Purpose**: Final review, cleanup, size verification, and examples
 
-- [ ] T018 Verify all unsupported `HistoryReadDetails` (e.g. Event, Processed) return `MU_STATUS_BAD_HISTORY_OPERATION_UNSUPPORTED`.
-- [ ] T019 Integrate a mock history adapter logic into `examples/minimal_server/main.c` (optional, under `#ifdef MICRO_OPCUA_SERVICE_HISTORY`).
-- [ ] T020 Run `tests/unit/test_traceability_docs.c` to ensure all new `.c` files (`history.c`) are mapped.
+- [x] T018 Verify all unsupported `HistoryReadDetails` (e.g. Event, Processed) return `MU_STATUS_BAD_HISTORY_OPERATION_UNSUPPORTED`.
+- [x] T019 Integrate a mock history adapter logic into `examples/minimal_server/main.c` (optional, under `#ifdef MICRO_OPCUA_SERVICE_HISTORY`).
+- [x] T020 Run `tests/unit/test_traceability_docs.c` to ensure all new `.c` files (`history.c`) are mapped.
