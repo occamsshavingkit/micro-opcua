@@ -33,10 +33,10 @@ This roadmap outlines the planned feature milestones and maintenance tasks for t
 ## 🔵 Phase 3: Advanced Address Space Management
 *Bringing full dynamic control of the address space to the client (where authorized).*
 
-- [ ] **Feature 014: NodeManagement Services**
+- [x] **Feature 014: NodeManagement Services**
   - Implement `AddNodes`, `DeleteNodes`, `AddReferences`, and `DeleteReferences`.
   - Allow authorized clients to dynamically build the address space at runtime.
-- [ ] **Feature 015: Query Services**
+- [x] **Feature 015: Query Services**
   - Implement `QueryFirst` and `QueryNext` to allow clients to search the address space using complex filters.
 - [ ] **Feature 016: Advanced Alarms & Conditions**
   - Expand the basic event system to support Acknowledgeable Conditions, Active/Inactive states, and Dialogs.

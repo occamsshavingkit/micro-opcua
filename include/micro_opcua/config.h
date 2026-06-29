@@ -46,9 +46,26 @@
 #define MU_DEFAULT_MAX_CHUNK_COUNT 1
 #define MU_DEFAULT_MAX_MESSAGE_SIZE 8192
 
+/**
+ * @brief Default secure channel limits
+ */
+#ifndef MU_MAX_SECURE_CHANNELS
+#define MU_MAX_SECURE_CHANNELS 2
+#endif
+
+/**
+ * @brief Dynamic address space limits
+ */
+#ifndef MU_MAX_DYNAMIC_NODES
+#define MU_MAX_DYNAMIC_NODES 32
+#endif
+
+#ifndef MU_MAX_DYNAMIC_REFERENCES
+#define MU_MAX_DYNAMIC_REFERENCES 64
+#endif
+
 /* Maximum number of sessions/channels for Nano profile */
 #define MU_MAX_SESSIONS 2
-#define MU_MAX_SECURE_CHANNELS 1
 
 #ifndef MU_MAX_CONNECTIONS
 #ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
