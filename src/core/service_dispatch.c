@@ -169,25 +169,29 @@ static opcua_statuscode_t handle_query_first(mu_server_t *server, mu_binary_read
                                              size_t *response_length) {
     mu_request_header_t req_header;
     opcua_statuscode_t status = mu_request_header_decode(r, &req_header);
-    if (status != MU_STATUS_GOOD) return status;
+    if (status != MU_STATUS_GOOD)
+        return status;
 
     mu_query_first_request_t req;
     mu_query_first_response_t resp;
-    
+
     mu_node_type_description_t node_types[4];
     mu_content_filter_element_t filter_elements[4];
     mu_filter_operand_t filter_operands[8];
     mu_query_data_set_t data_sets[16];
 
     status = mu_query_first_request_decode(r, &req, node_types, 4, filter_elements, 4, filter_operands, 8);
-    if (status != MU_STATUS_GOOD) return status;
+    if (status != MU_STATUS_GOOD)
+        return status;
 
     status = mu_query_first_process(server, &req, &resp, data_sets, 16);
-    
+
     opcua_statuscode_t wstatus = write_response_prefix(w, MU_ID_QUERYFIRSTRESPONSE, req_header.request_handle, status);
-    if (wstatus != MU_STATUS_GOOD) return wstatus;
+    if (wstatus != MU_STATUS_GOOD)
+        return wstatus;
     wstatus = mu_query_first_response_encode(w, &resp);
-    if (wstatus != MU_STATUS_GOOD) return wstatus;
+    if (wstatus != MU_STATUS_GOOD)
+        return wstatus;
 
     *response_length = w->position;
     return status;
@@ -197,21 +201,25 @@ static opcua_statuscode_t handle_query_next(mu_server_t *server, mu_binary_reade
                                             size_t *response_length) {
     mu_request_header_t req_header;
     opcua_statuscode_t status = mu_request_header_decode(r, &req_header);
-    if (status != MU_STATUS_GOOD) return status;
+    if (status != MU_STATUS_GOOD)
+        return status;
 
     mu_query_next_request_t req;
     mu_query_next_response_t resp;
     mu_query_data_set_t data_sets[16];
 
     status = mu_query_next_request_decode(r, &req);
-    if (status != MU_STATUS_GOOD) return status;
+    if (status != MU_STATUS_GOOD)
+        return status;
 
     status = mu_query_next_process(server, &req, &resp, data_sets, 16);
-    
+
     opcua_statuscode_t wstatus = write_response_prefix(w, MU_ID_QUERYNEXTRESPONSE, req_header.request_handle, status);
-    if (wstatus != MU_STATUS_GOOD) return wstatus;
+    if (wstatus != MU_STATUS_GOOD)
+        return wstatus;
     wstatus = mu_query_next_response_encode(w, &resp);
-    if (wstatus != MU_STATUS_GOOD) return wstatus;
+    if (wstatus != MU_STATUS_GOOD)
+        return wstatus;
 
     *response_length = w->position;
     return status;
@@ -1385,20 +1393,24 @@ static opcua_statuscode_t read_aggregate_filter_body(mu_binary_reader_t *r, size
     }
 
     opcua_statuscode_t s = mu_binary_read_int64(r, (opcua_int64_t *)&start_time);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     s = mu_binary_read_nodeid(r, &aggregate_type);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     s = mu_binary_read_double(r, &processing_interval);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     mu_binary_read_boolean(r, &use_defaults);
     mu_binary_read_boolean(r, &treat_uncertain);
     mu_binary_read_byte(r, &percent_bad);
     mu_binary_read_byte(r, &percent_good);
     mu_binary_read_boolean(r, &sloped_extrap);
-    if (r->status != MU_STATUS_GOOD) return r->status;
+    if (r->status != MU_STATUS_GOOD)
+        return r->status;
 
     body->has_aggregate = true;
     body->processing_interval = processing_interval;
@@ -1410,8 +1422,7 @@ static opcua_statuscode_t read_aggregate_filter_body(mu_binary_reader_t *r, size
         return MU_STATUS_GOOD;
     }
 
-    if (body->aggregate_type != MU_ID_AGGREGATETYPE_AVERAGE &&
-        body->aggregate_type != MU_ID_AGGREGATETYPE_MINIMUM &&
+    if (body->aggregate_type != MU_ID_AGGREGATETYPE_AVERAGE && body->aggregate_type != MU_ID_AGGREGATETYPE_MINIMUM &&
         body->aggregate_type != MU_ID_AGGREGATETYPE_MAXIMUM) {
         body->filter_result = MU_STATUS_BAD_MONITOREDITEMFILTERUNSUPPORTED;
         return MU_STATUS_GOOD;
@@ -3096,7 +3107,8 @@ opcua_statuscode_t handle_history_read(mu_server_t *server, mu_binary_reader_t *
                                        size_t *response_length) {
     mu_request_header_t req_header;
     opcua_statuscode_t s = mu_request_header_decode(r, &req_header);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     // Decode request
     mu_history_read_value_id_t nodes_to_read[MU_MAX_HISTORY_NODES_PER_READ];
@@ -3104,13 +3116,15 @@ opcua_statuscode_t handle_history_read(mu_server_t *server, mu_binary_reader_t *
     s = mu_history_read_request_decode(r, &req, nodes_to_read, MU_MAX_HISTORY_NODES_PER_READ);
     if (s != MU_STATUS_GOOD) {
         s = write_response_prefix(w, MU_ID_HISTORYREADRESPONSE, req_header.request_handle, s);
-        if (s == MU_STATUS_GOOD) *response_length = w->position;
+        if (s == MU_STATUS_GOOD)
+            *response_length = w->position;
         return s;
     }
 
     if (!server->config.history_adapter.read_raw_modified) {
         s = write_response_prefix(w, MU_ID_HISTORYREADRESPONSE, req_header.request_handle, MU_STATUS_BAD_NOTSUPPORTED);
-        if (s == MU_STATUS_GOOD) *response_length = w->position;
+        if (s == MU_STATUS_GOOD)
+            *response_length = w->position;
         return s;
     }
 
@@ -3125,7 +3139,7 @@ opcua_statuscode_t handle_history_read(mu_server_t *server, mu_binary_reader_t *
     for (size_t i = 0; i < req.num_nodes_to_read; i++) {
         mu_history_read_value_id_t *node = &req.nodes_to_read[i];
         mu_history_read_result_t *res = &results[i];
-        
+
         res->continuation_point.length = -1;
         res->continuation_point.data = NULL;
         res->history_data.num_data_values = 0;
@@ -3138,21 +3152,11 @@ opcua_statuscode_t handle_history_read(mu_server_t *server, mu_binary_reader_t *
         size_t actual_data_points = 0;
 
         res->status_code = server->config.history_adapter.read_raw_modified(
-            server->config.history_adapter.context,
-            &node->node_id,
-            req.details.is_read_modified,
-            req.details.start_time,
-            req.details.end_time,
-            req.details.num_values_per_node,
-            req.details.return_bounds,
+            server->config.history_adapter.context, &node->node_id, req.details.is_read_modified,
+            req.details.start_time, req.details.end_time, req.details.num_values_per_node, req.details.return_bounds,
             node->continuation_point.data,
-            node->continuation_point.length > 0 ? (size_t)node->continuation_point.length : 0,
-            cp_out_buf,
-            &cp_out_length,
-            data_points,
-            10,
-            &actual_data_points
-        );
+            node->continuation_point.length > 0 ? (size_t)node->continuation_point.length : 0, cp_out_buf,
+            &cp_out_length, data_points, 10, &actual_data_points);
 
         if (res->status_code == MU_STATUS_GOOD) {
             if (cp_out_length > 0 && cp_out_length <= sizeof(cp_out_buf)) {
@@ -3175,10 +3179,12 @@ opcua_statuscode_t handle_history_read(mu_server_t *server, mu_binary_reader_t *
     }
 
     s = write_response_prefix(w, MU_ID_HISTORYREADRESPONSE, req_header.request_handle, MU_STATUS_GOOD);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     s = mu_history_read_response_encode(w, &resp);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     *response_length = w->position;
     return MU_STATUS_GOOD;
@@ -3189,7 +3195,8 @@ opcua_statuscode_t handle_history_update(mu_server_t *server, mu_binary_reader_t
                                          size_t *response_length) {
     mu_request_header_t req_header;
     opcua_statuscode_t s = mu_request_header_decode(r, &req_header);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     // Decode request
     mu_history_update_item_t items[MU_MAX_HISTORY_UPDATE_ITEMS];
@@ -3197,7 +3204,8 @@ opcua_statuscode_t handle_history_update(mu_server_t *server, mu_binary_reader_t
     s = mu_history_update_request_decode(r, &req, items, MU_MAX_HISTORY_UPDATE_ITEMS);
     if (s != MU_STATUS_GOOD) {
         s = write_response_prefix(w, MU_ID_HISTORYUPDATERESPONSE, req_header.request_handle, s);
-        if (s == MU_STATUS_GOOD) *response_length = w->position;
+        if (s == MU_STATUS_GOOD)
+            *response_length = w->position;
         return s;
     }
 
@@ -3221,13 +3229,9 @@ opcua_statuscode_t handle_history_update(mu_server_t *server, mu_binary_reader_t
 
             res->num_operation_results = item->body.data.num_values;
             res->status_code = server->config.history_adapter.update_data(
-                server->config.history_adapter.context,
-                &item->body.data.node_id,
-                item->body.data.perform_insert_replace,
-                item->body.data.values,
-                item->body.data.num_values,
-                res->operation_results
-            );
+                server->config.history_adapter.context, &item->body.data.node_id,
+                item->body.data.perform_insert_replace, item->body.data.values, item->body.data.num_values,
+                res->operation_results);
         } else if (item->type == MU_HISTORY_UPDATE_TYPE_DELETE) {
             if (!server->config.history_adapter.delete_raw_modified) {
                 res->status_code = MU_STATUS_BAD_NOTSUPPORTED;
@@ -3235,22 +3239,21 @@ opcua_statuscode_t handle_history_update(mu_server_t *server, mu_binary_reader_t
             }
 
             res->status_code = server->config.history_adapter.delete_raw_modified(
-                server->config.history_adapter.context,
-                &item->body.delete_raw.node_id,
-                item->body.delete_raw.is_delete_modified,
-                item->body.delete_raw.start_time,
-                item->body.delete_raw.end_time
-            );
+                server->config.history_adapter.context, &item->body.delete_raw.node_id,
+                item->body.delete_raw.is_delete_modified, item->body.delete_raw.start_time,
+                item->body.delete_raw.end_time);
         } else {
             res->status_code = MU_STATUS_BAD_HISTORYOPERATIONUNSUPPORTED;
         }
     }
 
     s = write_response_prefix(w, MU_ID_HISTORYUPDATERESPONSE, req_header.request_handle, MU_STATUS_GOOD);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     s = mu_history_update_response_encode(w, &resp);
-    if (s != MU_STATUS_GOOD) return s;
+    if (s != MU_STATUS_GOOD)
+        return s;
 
     *response_length = w->position;
     return MU_STATUS_GOOD;

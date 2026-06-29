@@ -25,32 +25,32 @@ static opcua_uint64_t fake_tick_ms(void *c) {
 
 /* Define some mock variables for our address space */
 static const mu_reference_t s_empty_refs[1] = {{0}};
-static const mu_value_source_t s_numeric_value = {MU_VALUESOURCE_STATIC, {.static_value = {MU_TYPE_FLOAT, {.f = 10.0f}}}};
-static const mu_value_source_t s_string_value = {MU_VALUESOURCE_STATIC, {.static_value = {MU_TYPE_STRING, {.str = {5, (const opcua_byte_t *)"hello"}}}}};
+static const mu_value_source_t s_numeric_value = {MU_VALUESOURCE_STATIC,
+                                                  {.static_value = {MU_TYPE_FLOAT, {.f = 10.0f}}}};
+static const mu_value_source_t s_string_value = {
+    MU_VALUESOURCE_STATIC, {.static_value = {MU_TYPE_STRING, {.str = {5, (const opcua_byte_t *)"hello"}}}}};
 
-static mu_node_t s_nodes[] = {
-    {{0, MU_NODEID_NUMERIC, {85}},
-     MU_NODECLASS_OBJECT,
-     {7, (const opcua_byte_t *)"Objects"},
-     {7, (const opcua_byte_t *)"Objects"},
-     s_empty_refs,
-     0,
-     NULL},
-    {{1, MU_NODEID_NUMERIC, {1000}},
-     MU_NODECLASS_VARIABLE,
-     {10, (const opcua_byte_t *)"NumericVar"},
-     {10, (const opcua_byte_t *)"NumericVar"},
-     s_empty_refs,
-     0,
-     &s_numeric_value},
-    {{1, MU_NODEID_NUMERIC, {1001}},
-     MU_NODECLASS_VARIABLE,
-     {9, (const opcua_byte_t *)"StringVar"},
-     {9, (const opcua_byte_t *)"StringVar"},
-     s_empty_refs,
-     0,
-     &s_string_value}
-};
+static mu_node_t s_nodes[] = {{{0, MU_NODEID_NUMERIC, {85}},
+                               MU_NODECLASS_OBJECT,
+                               {7, (const opcua_byte_t *)"Objects"},
+                               {7, (const opcua_byte_t *)"Objects"},
+                               s_empty_refs,
+                               0,
+                               NULL},
+                              {{1, MU_NODEID_NUMERIC, {1000}},
+                               MU_NODECLASS_VARIABLE,
+                               {10, (const opcua_byte_t *)"NumericVar"},
+                               {10, (const opcua_byte_t *)"NumericVar"},
+                               s_empty_refs,
+                               0,
+                               &s_numeric_value},
+                              {{1, MU_NODEID_NUMERIC, {1001}},
+                               MU_NODECLASS_VARIABLE,
+                               {9, (const opcua_byte_t *)"StringVar"},
+                               {9, (const opcua_byte_t *)"StringVar"},
+                               s_empty_refs,
+                               0,
+                               &s_string_value}};
 static const mu_address_space_t s_address_space = {s_nodes, 3};
 
 static void activated_server(mu_server_t *server) {
@@ -151,26 +151,27 @@ void test_aggregate_filter_decodes_correctly(void) {
     mu_binary_write_uint32(&w, 13); /* attributeId = Value */
     mu_string_t null_str = {-1, NULL};
     mu_binary_write_string(&w, &null_str); /* indexRange */
-    mu_binary_write_uint16(&w, 0); /* dataEncoding namespace */
+    mu_binary_write_uint16(&w, 0);         /* dataEncoding namespace */
     mu_binary_write_string(&w, &null_str); /* dataEncoding name */
-    mu_binary_write_uint32(&w, 2); /* monitoringMode = Reporting */
-    mu_binary_write_uint32(&w, 42); /* clientHandle */
-    mu_binary_write_double(&w, 100.0); /* requestedSamplingInterval */
+    mu_binary_write_uint32(&w, 2);         /* monitoringMode = Reporting */
+    mu_binary_write_uint32(&w, 42);        /* clientHandle */
+    mu_binary_write_double(&w, 100.0);     /* requestedSamplingInterval */
 
     /* ExtensionObject filter: AggregateFilter */
     mu_nodeid_t filter_type = {0, MU_NODEID_NUMERIC, {MU_ID_AGGREGATEFILTER_ENCODING_DEFAULTBINARY}};
-    mu_binary_write_extension_object_header(&w, &filter_type, 8 + 8 + 5 + 5); /* estimate length or let's write correct body size */
-    
+    mu_binary_write_extension_object_header(&w, &filter_type,
+                                            8 + 8 + 5 + 5); /* estimate length or let's write correct body size */
+
     /* AggregateFilter Body */
     mu_binary_write_int64(&w, 0); /* startTime */
     mu_nodeid_t agg_type = {0, MU_NODEID_NUMERIC, {MU_ID_AGGREGATETYPE_AVERAGE}};
     mu_binary_write_nodeid(&w, &agg_type); /* aggregateType */
-    mu_binary_write_double(&w, 5000.0); /* processingInterval */
+    mu_binary_write_double(&w, 5000.0);    /* processingInterval */
     /* AggregateConfiguration */
-    mu_binary_write_boolean(&w, true); /* useServerDefaults */
+    mu_binary_write_boolean(&w, true);  /* useServerDefaults */
     mu_binary_write_boolean(&w, false); /* treatUncertainAsBad */
-    mu_binary_write_byte(&w, 0); /* percentDataBad */
-    mu_binary_write_byte(&w, 0); /* percentDataGood */
+    mu_binary_write_byte(&w, 0);        /* percentDataBad */
+    mu_binary_write_byte(&w, 0);        /* percentDataGood */
     mu_binary_write_boolean(&w, false); /* useSlopedExtrapolation */
 
     /* queueSize, discardOldest */
@@ -179,8 +180,8 @@ void test_aggregate_filter_decodes_correctly(void) {
 
     opcua_byte_t resp[512];
     size_t resp_len = sizeof(resp);
-    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-                      mu_service_dispatch(&server, MU_ID_CREATEMONITOREDITEMSREQUEST, req, w.position, resp, &resp_len));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_service_dispatch(&server, MU_ID_CREATEMONITOREDITEMSREQUEST, req, w.position,
+                                                          resp, &resp_len));
 
     mu_binary_reader_t r;
     mu_binary_reader_init(&r, resp, resp_len);
@@ -237,7 +238,7 @@ void test_aggregate_filter_fails_on_non_numeric(void) {
     /* ExtensionObject filter: AggregateFilter */
     mu_nodeid_t filter_type = {0, MU_NODEID_NUMERIC, {MU_ID_AGGREGATEFILTER_ENCODING_DEFAULTBINARY}};
     mu_binary_write_extension_object_header(&w, &filter_type, 8 + 8 + 5 + 5);
-    
+
     /* AggregateFilter Body */
     mu_binary_write_int64(&w, 0);
     mu_nodeid_t agg_type = {0, MU_NODEID_NUMERIC, {MU_ID_AGGREGATETYPE_AVERAGE}};
@@ -255,8 +256,8 @@ void test_aggregate_filter_fails_on_non_numeric(void) {
 
     opcua_byte_t resp[512];
     size_t resp_len = sizeof(resp);
-    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-                      mu_service_dispatch(&server, MU_ID_CREATEMONITOREDITEMSREQUEST, req, w.position, resp, &resp_len));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_service_dispatch(&server, MU_ID_CREATEMONITOREDITEMSREQUEST, req, w.position,
+                                                          resp, &resp_len));
 
     mu_binary_reader_t r;
     mu_binary_reader_init(&r, resp, resp_len);
@@ -303,7 +304,7 @@ void test_aggregate_filter_fails_on_unsupported_aggregate_type(void) {
     /* ExtensionObject filter: AggregateFilter */
     mu_nodeid_t filter_type = {0, MU_NODEID_NUMERIC, {MU_ID_AGGREGATEFILTER_ENCODING_DEFAULTBINARY}};
     mu_binary_write_extension_object_header(&w, &filter_type, 8 + 8 + 5 + 5);
-    
+
     /* AggregateFilter Body with unsupported type 99999 */
     mu_binary_write_int64(&w, 0);
     mu_nodeid_t agg_type = {0, MU_NODEID_NUMERIC, {99999}};
@@ -321,8 +322,8 @@ void test_aggregate_filter_fails_on_unsupported_aggregate_type(void) {
 
     opcua_byte_t resp[512];
     size_t resp_len = sizeof(resp);
-    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-                      mu_service_dispatch(&server, MU_ID_CREATEMONITOREDITEMSREQUEST, req, w.position, resp, &resp_len));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_service_dispatch(&server, MU_ID_CREATEMONITOREDITEMSREQUEST, req, w.position,
+                                                          resp, &resp_len));
 
     mu_binary_reader_t r;
     mu_binary_reader_init(&r, resp, resp_len);
@@ -368,7 +369,7 @@ void test_aggregate_filter_fails_on_invalid_interval(void) {
     /* ExtensionObject filter: AggregateFilter */
     mu_nodeid_t filter_type = {0, MU_NODEID_NUMERIC, {MU_ID_AGGREGATEFILTER_ENCODING_DEFAULTBINARY}};
     mu_binary_write_extension_object_header(&w, &filter_type, 8 + 8 + 5 + 5);
-    
+
     /* AggregateFilter Body with 0.0 processing interval */
     mu_binary_write_int64(&w, 0);
     mu_nodeid_t agg_type = {0, MU_NODEID_NUMERIC, {MU_ID_AGGREGATETYPE_AVERAGE}};
@@ -386,8 +387,8 @@ void test_aggregate_filter_fails_on_invalid_interval(void) {
 
     opcua_byte_t resp[512];
     size_t resp_len = sizeof(resp);
-    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
-                      mu_service_dispatch(&server, MU_ID_CREATEMONITOREDITEMSREQUEST, req, w.position, resp, &resp_len));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_service_dispatch(&server, MU_ID_CREATEMONITOREDITEMSREQUEST, req, w.position,
+                                                          resp, &resp_len));
 
     mu_binary_reader_t r;
     mu_binary_reader_init(&r, resp, resp_len);

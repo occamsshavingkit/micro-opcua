@@ -1560,7 +1560,8 @@ void mu_subscriptions_tick(struct mu_server *server, opcua_uint64_t now_ms) {
 
 #if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
         if (item->has_aggregate) {
-            if ((opcua_double_t)(now_ms - (opcua_uint64_t)item->aggregate_state.last_calculation) >= item->aggregate_state.processing_interval) {
+            if ((opcua_double_t)(now_ms - (opcua_uint64_t)item->aggregate_state.last_calculation) >=
+                item->aggregate_state.processing_interval) {
                 monitored_item_publish_aggregate(item, now_ms);
             }
         }
