@@ -25,8 +25,8 @@ This roadmap outlines the planned feature milestones and maintenance tasks for t
   - Implement `Aes128-Sha256-RsaOaep` and `Aes256-Sha256-RsaPss`.
   - Add basic TrustList management for rejecting unknown client certificates.
 
-**🔍 Milestone Audit A: Documentation & Size Ledger Audit**
-*Ensure PubSub and advanced security haven't bloated the `nano` core, update integration guides.*
+- [x] **🔍 Milestone Audit A: Documentation & Size Ledger Audit**
+  - Ensure PubSub and advanced security haven't bloated the `nano` core, update integration guides.
 
 ---
 
@@ -41,8 +41,8 @@ This roadmap outlines the planned feature milestones and maintenance tasks for t
 - [x] **Feature 016: Advanced Alarms & Conditions**
   - Expand the basic event system to support Acknowledgeable Conditions, Active/Inactive states, and Dialogs.
 
-**🔍 Milestone Audit B: Documentation & Memory Model Audit**
-*Verify that dynamic NodeManagement adheres to the zero-heap constraints (e.g., using a fixed-size pre-allocated node pool).*
+- [x] **🔍 Milestone Audit B: Documentation & Memory Model Audit**
+  - Verify that dynamic NodeManagement adheres to the zero-heap constraints (e.g., using a fixed-size pre-allocated node pool).
 
 ---
 

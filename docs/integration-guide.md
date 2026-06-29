@@ -391,7 +391,20 @@ Optional; leave `config.persistence_adapter = NULL` if your crypto adapter holds
 its own key material (the typical embedded case where cert/key are provisioned
 into a secure element or baked into the image).
 
-### 3.6 Wiring the adapters
+### 3.6 UDP adapter (optional — for PubSub)
+
+```c
+typedef struct mu_udp_adapter {
+    void *context;
+    opcua_statuscode_t (*init)(void *context, uint16_t port);
+    opcua_statuscode_t (*send)(void *context, const opcua_byte_t *buffer, size_t buffer_size, const char *address, uint16_t port);
+    void (*shutdown)(void *context);
+} mu_udp_adapter_t;
+```
+
+A UDP transport adapter interface to broadcast UADP NetworkMessages over UDP/IP connectionless channels. Enable this by setting `config.pubsub.enabled = true` and supplying the `udp_adapter` interface.
+
+### 3.7 Wiring the adapters
 
 Follow the skeleton convention (`platform/pico/mu_pico_adapter.c`): one init
 function that `memset`s each struct and assigns the callbacks. The host TCP
