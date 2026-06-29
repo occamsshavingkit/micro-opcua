@@ -2841,6 +2841,10 @@ opcua_statuscode_t handle_write(mu_server_t *server, mu_binary_reader_t *r, mu_b
     if (s != MU_STATUS_GOOD)
         return s;
 
+    if (wreq.num_nodes_to_write == 0) {
+        return MU_STATUS_BAD_NOTHINGTODO;
+    }
+
     mu_write_response_t wresp;
     opcua_statuscode_t results[MU_DISPATCH_MAX_READ_NODES];
     wresp.num_results = wreq.num_nodes_to_write;
@@ -2859,6 +2863,11 @@ opcua_statuscode_t handle_write(mu_server_t *server, mu_binary_reader_t *r, mu_b
 
         if (write_val->attribute_id != MU_ATTRIBUTEID_VALUE) {
             results[i] = MU_STATUS_BAD_NOTWRITABLE;
+            continue;
+        }
+
+        if (write_val->index_range.length > 0) {
+            results[i] = MU_STATUS_BAD_WRITENOTSUPPORTED;
             continue;
         }
 
