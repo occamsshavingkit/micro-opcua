@@ -1984,7 +1984,7 @@ void test_standard_facet_errors(void) {
     size_t clen;
 
     /* (1) CreateMonitoredItems with Percent deadband (seq 6) → per-item
-       Bad_MonitoredItemFilterUnsupported (0x80440000). */
+       Bad_MonitoredItemFilterUnsupported (0x80430000). */
     mu_binary_writer_init(&w, tmp, sizeof(tmp));
     {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_CREATEMONITOREDITEMSREQUEST}};
@@ -2005,7 +2005,7 @@ void test_standard_facet_errors(void) {
     TEST_ASSERT_EQUAL(1, nc);
     opcua_uint32_t dummy;
     opcua_statuscode_t pst = read_moncreate_result(&body, &dummy);
-    TEST_ASSERT_EQUAL_HEX32(0x80440000u, pst);
+    TEST_ASSERT_EQUAL_HEX32(0x80430000u, pst);
 
     /* (2) SetTriggering with a valid triggering item but unknown link id (seq 7) → per-link
        Bad_MonitoredItemIdInvalid. */

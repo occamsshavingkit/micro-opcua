@@ -1384,7 +1384,7 @@ static opcua_statuscode_t read_aggregate_filter_body(mu_binary_reader_t *r, size
         return MU_STATUS_BAD_DECODINGERROR;
     }
 
-    opcua_statuscode_t s = mu_binary_read_datetime(r, &start_time);
+    opcua_statuscode_t s = mu_binary_read_int64(r, (opcua_int64_t *)&start_time);
     if (s != MU_STATUS_GOOD) return s;
 
     s = mu_binary_read_nodeid(r, &aggregate_type);
@@ -2001,7 +2001,7 @@ static opcua_statuscode_t handle_create_monitored_items(mu_server_t *server, mu_
         if (item->has_aggregate) {
             item->aggregate_state.aggregate_type = body.aggregate_type;
             item->aggregate_state.processing_interval = body.processing_interval;
-            item->aggregate_state.last_calculation = now_ms;
+            item->aggregate_state.last_calculation = (opcua_datetime_t)now_ms;
             item->aggregate_state.sample_count = 0u;
             memset(&item->aggregate_state.accumulator, 0, sizeof(item->aggregate_state.accumulator));
         }

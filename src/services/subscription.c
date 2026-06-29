@@ -287,7 +287,7 @@ static void monitored_item_publish_aggregate(mu_monitored_item_t *item, opcua_ui
     /* Reset state */
     item->aggregate_state.sample_count = 0u;
     memset(&item->aggregate_state.accumulator, 0, sizeof(item->aggregate_state.accumulator));
-    item->aggregate_state.last_calculation = now_ms;
+    item->aggregate_state.last_calculation = (opcua_datetime_t)now_ms;
 }
 #endif
 
@@ -1560,7 +1560,7 @@ void mu_subscriptions_tick(struct mu_server *server, opcua_uint64_t now_ms) {
 
 #if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
         if (item->has_aggregate) {
-            if ((opcua_double_t)(now_ms - item->aggregate_state.last_calculation) >= item->aggregate_state.processing_interval) {
+            if ((opcua_double_t)(now_ms - (opcua_uint64_t)item->aggregate_state.last_calculation) >= item->aggregate_state.processing_interval) {
                 monitored_item_publish_aggregate(item, now_ms);
             }
         }
