@@ -404,6 +404,37 @@ typedef struct mu_udp_adapter {
 
 A UDP transport adapter interface to broadcast UADP NetworkMessages over UDP/IP connectionless channels. Enable this by setting `config.pubsub.enabled = true` and supplying the `udp_adapter` interface.
 
+The current PubSub surface is a scoped UADP/UDP Publisher. It encodes one
+DataSetWriter per WriterGroup with a UADP PayloadHeader, a sized Data Key Frame,
+and scalar fields encoded as OPC UA Binary Variants. The field array is
+caller-owned and must outlive the registered writer group:
+
+```c
+static mu_pubsub_field_t fields[] = {
+    {.value = {MU_TYPE_DOUBLE, {.d = 23.5}}},
+};
+
+config.pubsub.enabled = true;
+config.pubsub.port = 4840;
+config.pubsub.publisher_id = 0x12345678u;
+config.pubsub.address = "239.0.0.1"; /* NULL defaults to broadcast */
+
+mu_pubsub_writer_group_t wg = {
+    .writer_group_id = 1,
+    .publishing_interval_ms = 1000,
+    .dataset_writer = {
+        .data_set_writer_id = 1,
+        .fields = fields,
+        .field_count = 1,
+    },
+};
+mu_server_add_writer_group(server, &wg);
+```
+
+Unsupported in this slice: Subscriber behavior, PubSub security, MQTT/AMQP/JSON
+mappings, dynamic PublishedDataSet management, arrays, and multiple
+DataSetWriters per WriterGroup.
+
 ### 3.7 Wiring the adapters
 
 Follow the skeleton convention (`platform/pico/mu_pico_adapter.c`): one init

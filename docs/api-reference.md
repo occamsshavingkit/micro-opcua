@@ -530,6 +530,14 @@ typedef struct {
 | `trust_list` | `const mu_trust_list_t *` | No | Optional pointer to application certificate trust list. |
 | `pubsub` | `mu_pubsub_connection_t` | No | Optional PubSub connection parameters. |
 | `udp_adapter` | `mu_udp_adapter_t` | No | Optional UDP adapter for PubSub. |
+
+When `MICRO_OPCUA_PUBSUB` is enabled, PubSub is scoped to a UADP/UDP Publisher.
+`mu_pubsub_connection_t.address` selects the unicast, multicast, or broadcast
+destination; `NULL` keeps the default IPv4 broadcast destination. A
+`mu_pubsub_writer_group_t` contains one `mu_pubsub_dataset_writer_t`; its
+`fields` array is caller-owned and must outlive the registered writer group.
+Fields are encoded as scalar OPC UA Binary Variants in a UADP Data Key Frame
+(OPC-10000-14 sections 7.2.4.4.2, 7.2.4.5.2, 7.2.4.5.4, and 7.2.4.5.5).
 | `write_handler` | `mu_write_handler_t` | No | Optional callback handler for custom Node write operations. |
 | `write_handler_handle` | `void *` | No | Optional user context handle passed to `write_handler`. |
 | `history_adapter` | `mu_history_adapter_t` | No | Optional history access persistence adapter. |

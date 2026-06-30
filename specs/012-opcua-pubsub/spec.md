@@ -38,15 +38,15 @@ A sensor device needs to broadcast its current temperature every 1 second over U
 ### OPC UA Normative Scope *(mandatory for protocol features)*
 
 - **OPC-001**: Target OPC UA role is PubSub Publisher over UADP/UDP (OPC 10000-14).
-- **OPC-002**: Implemented features are UADP NetworkMessage mapping (OPC 10000-14 section 7.2).
+- **OPC-002**: Implemented features are scoped UADP NetworkMessage mapping with UInt32 PublisherId, PayloadHeader, one DataSetWriterId, one sized Data Key Frame DataSetMessage, and scalar Variant field encoding (OPC-10000-14 sections 7.2.4.4.2, 7.2.4.5.2, 7.2.4.5.4, and 7.2.4.5.5).
 - **OPC-003**: Subscriber capabilities (receiving PubSub messages) are out of scope for v1.
 - **OPC-004**: Wire encoding requirements cite OPC-10000-14 section 7.2.2.
 
 ### Scope Boundaries *(mandatory)*
 
-- **In Scope**: UADP Publisher over UDP (Unicast and Multicast).
-- **Out of Scope**: UADP Subscriber, MQTT/JSON mapping, AMQP mapping, Security for UADP.
-- **Compatibility Claim**: OPC UA PubSub UADP UDP Publisher.
+- **In Scope**: UADP Publisher over UDP (unicast, multicast, or broadcast destination selected by adapter/configuration), one DataSetWriter per WriterGroup, caller-owned scalar Variant fields.
+- **Out of Scope**: UADP Subscriber, PubSub security, MQTT/JSON mapping, AMQP mapping, dynamic PublishedDataSet management, arrays, multiple DataSetWriters per WriterGroup, and metadata/discovery NetworkMessages.
+- **Compatibility Claim**: Scoped OPC UA PubSub UADP/UDP Publisher, profile-targeting only.
 - **Application Headroom Goal**: Less than 3KB of flash and 500 bytes of RAM.
 
 ### Key Entities
@@ -66,5 +66,5 @@ A sensor device needs to broadcast its current temperature every 1 second over U
 
 ## Assumptions
 
-- No PubSub security (encryption/signing) is required for this initial MVP.
+- No PubSub security (encryption/signing) is required for this scoped publisher.
 - Multicast support depends on the platform adapter's UDP socket capabilities.

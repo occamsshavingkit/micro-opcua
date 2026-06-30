@@ -14,10 +14,10 @@ This document maps implementation and test files back to OPC UA normative sectio
 | `src/core/service_dispatch.c` | Service Dispatch | OPC-10000-4 / OPC-10000-6 / OPC-10000-13 | 5.5.2.2, 5.5.4.2, 5.6.2, 5.7.2, 5.7.3, 5.11.4.2, 5.13.2.4, 5.13.3.4, 5.14.5, 7.22.4, 7.38.2 / 5.2.2.15, 5.2.5 / 5.4.3.5, 5.4.3.10, 5.4.3.11 | Service request validation, dispatch, malformed-input rejection, filters, and exact StatusCodes |
 | `src/core/message_chunk.c` | MessageChunk | OPC-10000-6 | 6.7.2, 7.1.2.2 | TCP message type, chunk finality, abort chunk, and MessageHeader validation |
 | `src/core/tcp_connection.c` | OPC UA TCP | OPC-10000-6 | 7.1.2.3, 7.1.2.4, 7.2 | Hello/Acknowledge parsing, endpoint URL limits, and negotiated buffer bounds |
-| `include/micro_opcua/services/node_management.h` | NodeManagement | Part 4 | 5.7.2, 5.7.3, 5.7.4, 5.7.5 | NodeManagement services interface |
+| `include/micro_opcua/services/node_management.h` | NodeManagement | OPC-10000-4 | 5.8.2, 5.8.3, 5.8.4, 5.8.5 | NodeManagement services interface |
 | `src/services/node_management.c` | NodeManagement | OPC-10000-4 | 5.8.2.2, 5.8.3.2, 7.24.2 | AddNodes/AddReferences decoding and bounded ownership of persistent node data |
-| `src/services/query.h` | Query | Part 4 | 5.8 | Query services interface |
-| `src/services/query.c` | Query | OPC-10000-4 | 5.8, B.2.4, 7.9 | QueryNext continuation-point validation |
+| `src/services/query.h` | Query | OPC-10000-4 | B.2.3, B.2.4, 7.7.1, 7.9 | Query services interface |
+| `src/services/query.c` | Query | OPC-10000-4 | B.2.3, B.2.4, 7.9 | QueryFirst processing and QueryNext continuation-point validation |
 | `src/services/discovery.c` | Discovery | OPC-10000-4 | 5.5.2.2, 5.5.4.2, 7.40.2.1 | FindServers/GetEndpoints endpoint metadata and user identity token advertisement |
 | `src/services/history.c` | Historical Access | OPC-10000-4 / OPC-10000-6 | 5.11.3.2, 7.9 / 5.2.2.15 | HistoryRead details ExtensionObject bounds and owned continuation-point storage |
 | `src/services/session.c` | Session | OPC-10000-4 | 5.7.2.1, 5.7.2.2, 5.7.2.3, 5.7.3, 7.38.2 | Session token/nonce generation, SecureChannel binding, and session StatusCodes |
@@ -27,9 +27,9 @@ This document maps implementation and test files back to OPC UA normative sectio
 | `src/encoding/binary_query.c` | Query Encoding | OPC-10000-4 / OPC-10000-6 | B.2.3, 7.7.1 / 5.2.2.15 | QueryFirst ContentFilter and operand ExtensionObject decoding |
 | `tests/unit/test_query_encoding.c` | Tests | Part 6 | 5.2 | Query binary encode/decode tests |
 | `tests/unit/test_query_service.c` | Tests | OPC-10000-4 | B.2.3, B.2.4, 7.7.1, 7.9 | QueryFirst ContentFilter capacity and QueryNext continuation-point tests |
-| `tests/unit/test_node_management.c` | Tests | Part 4 | 5.7 | NodeManagement positive tests |
+| `tests/unit/test_node_management.c` | Tests | OPC-10000-4 | 5.8.2, 5.8.3, 5.8.4, 5.8.5 | NodeManagement positive tests |
 | `tests/unit/test_node_management_errors.c` | Tests | OPC-10000-4 | 5.8.2.2, 5.8.3.2, 7.24.2 | AddNodes/AddReferences decode and persistent-data lifetime tests |
-| `tests/unit/test_address_space_dynamic.c` | Tests | Part 4 / 5 | 5.7 / 6.3 | Dynamic Address Space tests |
+| `tests/unit/test_address_space_dynamic.c` | Tests | OPC-10000-4 / OPC-10000-5 | 5.8, 5.9.2 / 6.3 | Dynamic Address Space tests |
 | `tests/unit/test_binary_array_errors.c` | Tests | OPC-10000-6 | 5.2.5 | Null, empty, positive, and malformed array-length decoder tests |
 | `tests/unit/test_binary_extension_object_errors.c` | Tests | OPC-10000-6 | 5.2.2.15 | ExtensionObject declared-body overrun and underrun tests |
 | `tests/unit/test_binary_string_errors.c` | Tests | OPC-10000-6 | 5.2 | String and ByteString declared-length boundary tests |
@@ -139,10 +139,13 @@ This document maps implementation and test files back to OPC UA normative sectio
 | `binary_nodeid.c` | Traceability mapped | OPC UA Part 4 / 6 | 5.5.4.2, 5.7, 5.11, 5.13, 5.14 / 5.2, 6.7, 7.2 | Placeholder replaced; see feature-specific rows and tests for exact service/encoding coverage |
 | `src/encoding/binary_variant.c` | OPC UA Part 6 | 5.3.13 | Variant encoding | Variant support |
 | `src/encoding/binary_datavalue.c` | OPC UA Part 6 | 5.3.14 | DataValue encoding | DataValue support |
-| `src/encoding/uadp_encoder.c` | OPC UA Part 14 | 6.x | PubSub UADP encoding | PubSub UADP |
-| `src/core/pubsub.c` | OPC UA Part 14 | 6.x | PubSub engine | PubSub runtime |
-| `src/platform/host_udp_adapter.c` | OPC UA Part 14 | 6.x | UDP transport | PubSub network |
-| `include/micro_opcua/pubsub.h` | OPC UA Part 14 | 6.x | PubSub headers | PubSub network |
+| `src/encoding/uadp_encoder.c` | OPC UA Part 14 / Part 6 | 7.2.4.4.2, 7.2.4.5.2, 7.2.4.5.4, 7.2.4.5.5 / 5.2.2.16 | Scoped UADP NetworkMessage, PayloadHeader, Data Key Frame, and Variant field encoding | PubSub UADP |
+| `src/core/pubsub.c` | OPC UA Part 14 | 5.4.6.2.2, 7.3.2.1 | Cooperative UADP/UDP publisher timing and UDP send dispatch | PubSub runtime |
+| `src/core/server.c` | OPC UA Part 14 | 5.4.6.2.2, 7.3.2.1 | `mu_server_poll()` drives connectionless PubSub publishing independent of TCP Sessions | PubSub runtime |
+| `src/platform/host_udp_adapter.c` | OPC UA Part 14 | 7.3.2.1 | Host UDP datagram transport for UADP | PubSub network |
+| `include/micro_opcua/pubsub.h` | OPC UA Part 14 | 7.2.4.4.2, 7.2.4.5.2, 7.2.4.5.4, 7.2.4.5.5, 7.3.2.1 | Scoped PubSub Publisher API and caller-owned field contract | PubSub network |
+| `tests/unit/test_uadp_encoding.c` | OPC UA Part 14 / Part 6 | 7.2.4.4.2, 7.2.4.5.2, 7.2.4.5.4, 7.2.4.5.5 / 5.2.2.16 | Byte-level UADP encoder coverage | PubSub UADP tests |
+| `tests/unit/test_pubsub.c` | OPC UA Part 14 | 5.4.6.2.2, 7.3.2.1 | Publisher timing, destination address, and connectionless poll coverage | PubSub runtime tests |
 | `binary_extension_object.c` | Traceability mapped | OPC UA Part 4 / 6 | 5.5.4.2, 5.7, 5.11, 5.13, 5.14 / 5.2, 6.7, 7.2 | Placeholder replaced; see feature-specific rows and tests for exact service/encoding coverage |
 | `binary_datavalue.c` | Traceability mapped | OPC UA Part 4 / 6 | 5.5.4.2, 5.7, 5.11, 5.13, 5.14 / 5.2, 6.7, 7.2 | Placeholder replaced; see feature-specific rows and tests for exact service/encoding coverage |
 | `binary_reader.c` | Traceability mapped | OPC UA Part 4 / 6 | 5.5.4.2, 5.7, 5.11, 5.13, 5.14 / 5.2, 6.7, 7.2 | Placeholder replaced; see feature-specific rows and tests for exact service/encoding coverage |

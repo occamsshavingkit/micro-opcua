@@ -16,16 +16,16 @@
 
 **Purpose**: Project initialization, build tooling, and traceability structure
 
-- [ ] T001 Define dynamic node and reference capacities in `include/micro_opcua/config.h` (e.g. `MU_MAX_DYNAMIC_NODES`, `MU_MAX_DYNAMIC_REFERENCES`)
-- [ ] T002 Add `mu_dynamic_address_space_t` struct to `src/core/server_internal.h` and attach to `mu_server_t`
-- [ ] T003 Initialize dynamic address space memory blocks during `mu_server_init` in `src/core/server.c`
+- [X] T001 Define dynamic node and reference capacities in `include/micro_opcua/config.h` (e.g. `MU_MAX_DYNAMIC_NODES`, `MU_MAX_DYNAMIC_REFERENCES`)
+- [X] T002 Add `mu_dynamic_address_space_t` struct to `src/core/server_internal.h` and attach to `mu_server_t`
+- [X] T003 Initialize dynamic address space memory blocks during `mu_server_init` in `src/core/server.c`
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
 **Purpose**: Core infrastructure that MUST be complete before user story work
 
-- [ ] T004 Document target OPC UA profile (NodeManagement Service Set) and cited sections in `docs/traceability/014-node-management.md`
-- [ ] T005 [P] Add new service handlers to the dispatch table in `src/core/service_dispatch.c` for `AddNodes`, `DeleteNodes`, `AddReferences`, `DeleteReferences`
+- [X] T004 Document target OPC UA profile (NodeManagement Service Set) and cited sections in `docs/traceability/014-node-management.md`
+- [X] T005 [P] Add new service handlers to the dispatch table in `src/core/service_dispatch.c` for `AddNodes`, `DeleteNodes`, `AddReferences`, `DeleteReferences`
 
 ---
 
@@ -37,17 +37,17 @@
 
 ### Tests for User Story 1
 
-- [ ] T006 [P] [US1] Add round-trip unit test for AddNodes/DeleteNodes encoders/decoders in `tests/unit/test_node_management.c`
-- [ ] T007 [P] [US1] Add boundary/error unit test for AddNodes/DeleteNodes (OOM, InvalidNodeClass) in `tests/unit/test_node_management_errors.c`
-- [ ] T008 [P] [US1] Add unit test for searching/browsing dynamic nodes alongside static nodes in `tests/unit/test_address_space.c`
+- [X] T006 [P] [US1] Add round-trip unit test for AddNodes/DeleteNodes encoders/decoders in `tests/unit/test_node_management.c`
+- [X] T007 [P] [US1] Add boundary/error unit test for AddNodes/DeleteNodes (OOM, InvalidNodeClass) in `tests/unit/test_node_management_errors.c`
+- [X] T008 [P] [US1] Add unit test for searching/browsing dynamic nodes alongside static nodes in `tests/unit/test_address_space_dynamic.c`
 
 ### Implementation for User Story 1
 
-- [ ] T009 [P] [US1] Implement `mu_add_nodes_request_decode`, `mu_add_nodes_response_encode`, `mu_delete_nodes_request_decode`, `mu_delete_nodes_response_encode` in `src/services/node_management.c`
-- [ ] T010 [US1] Implement `mu_add_nodes_process` and `mu_delete_nodes_process` in `src/services/node_management.c` to update the dynamic address space
-- [ ] T011 [US1] Update `mu_address_space_find_node` in `src/address_space/address_space.c` to search the dynamic node array as a fallback
-- [ ] T012 [US1] Enforce authorization check (or admin flag) and return `Bad_UserAccessDenied` if unauthorized
-- [ ] T013 [US1] Map unsupported cases to cited OPC UA StatusCodes in `src/core/status.c`
+- [X] T009 [P] [US1] Implement `mu_add_nodes_request_decode`, `mu_add_nodes_response_encode`, `mu_delete_nodes_request_decode`, `mu_delete_nodes_response_encode` in `src/services/node_management.c`
+- [X] T010 [US1] Implement `mu_add_nodes_process` and `mu_delete_nodes_process` in `src/services/node_management.c` to update the dynamic address space
+- [X] T011 [US1] Update `mu_address_space_find_node` / dynamic address-space lookup paths to search the dynamic node array as a fallback
+- [X] T012 [US1] Enforce `allow_node_management` authorization check and return `Bad_UserAccessDenied` if unauthorized
+- [X] T013 [US1] Map unsupported/error cases to cited OPC UA StatusCodes in `src/services/node_management.c`
 
 ---
 
@@ -59,16 +59,16 @@
 
 ### Tests for User Story 2
 
-- [ ] T014 [P] [US2] Add round-trip unit test for AddReferences/DeleteReferences encoders/decoders in `tests/unit/test_node_management.c`
-- [ ] T015 [P] [US2] Add boundary/error unit test for AddReferences/DeleteReferences (OOM, TargetNotExists) in `tests/unit/test_node_management_errors.c`
-- [ ] T016 [P] [US2] Add unit test for Browse service yielding dynamic references in `tests/unit/test_browse.c`
+- [X] T014 [P] [US2] Add round-trip unit test for AddReferences/DeleteReferences encoders/decoders in `tests/unit/test_node_management.c`
+- [X] T015 [P] [US2] Add boundary/error unit test for AddReferences/DeleteReferences (OOM, persistent target storage) in `tests/unit/test_node_management_errors.c`
+- [X] T016 [P] [US2] Add unit test for Browse/address-space paths yielding dynamic references in `tests/unit/test_address_space_dynamic.c`
 
 ### Implementation for User Story 2
 
-- [ ] T017 [P] [US2] Implement `mu_add_references_request_decode`, `mu_add_references_response_encode`, `mu_delete_references_request_decode`, `mu_delete_references_response_encode` in `src/services/node_management.c`
-- [ ] T018 [US2] Implement `mu_add_references_process` and `mu_delete_references_process` in `src/services/node_management.c`
-- [ ] T019 [US2] Update Browse service in `src/services/browse.c` to iterate over dynamic references in addition to static references
-- [ ] T020 [US2] Ensure `DeleteNodes` implementation also deletes all target references to the deleted node in the dynamic array
+- [X] T017 [P] [US2] Implement `mu_add_references_request_decode`, `mu_add_references_response_encode`, `mu_delete_references_request_decode`, `mu_delete_references_response_encode` in `src/services/node_management.c`
+- [X] T018 [US2] Implement `mu_add_references_process` and `mu_delete_references_process` in `src/services/node_management.c`
+- [X] T019 [US2] Update Browse service in `src/services/browse.c` to iterate over dynamic references in addition to static references
+- [X] T020 [US2] Ensure `DeleteNodes` implementation also deletes all target references to the deleted node in the dynamic array
 
 ---
 
@@ -79,8 +79,8 @@
 - [ ] T021 Run host unit and integration tests (ctest)
 - [ ] T022 Run formatting and static analysis (clang-format, cppcheck)
 - [ ] T023 Measure flash/RAM impact using `./scripts/measure_size.sh` and compare with plan.md budget
-- [ ] T024 Verify docs/traceability/ maps each implementation and test file to OPC UA sections
-- [ ] T025 Update `docs/integration-guide.md` with dynamic address space configuration notes
+- [X] T024 Verify docs/traceability/ maps each implementation and test file to OPC UA sections
+- [X] T025 Update `docs/integration-guide.md` with dynamic address space configuration notes
 
 ---
 
