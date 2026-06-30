@@ -1,10 +1,16 @@
 #ifndef MICRO_OPCUA_SERVICES_HISTORY_INTERNAL_H
 #define MICRO_OPCUA_SERVICES_HISTORY_INTERNAL_H
 
-#include "micro_opcua/services/history.h"
 #include "micro_opcua/encoding.h"
+#include "micro_opcua/services/history.h"
 
 #ifdef MICRO_OPCUA_SERVICE_HISTORY
+
+#ifndef MU_MAX_HISTORY_READ_CONTINUATION_POINT_LENGTH
+#define MU_MAX_HISTORY_READ_CONTINUATION_POINT_LENGTH 32
+#elif MU_MAX_HISTORY_READ_CONTINUATION_POINT_LENGTH < 1
+#error "MU_MAX_HISTORY_READ_CONTINUATION_POINT_LENGTH must be at least 1"
+#endif
 
 typedef struct {
     opcua_boolean_t is_read_modified;
@@ -19,6 +25,7 @@ typedef struct {
     mu_string_t index_range;
     mu_qualified_name_t data_encoding;
     mu_bytestring_t continuation_point;
+    opcua_byte_t continuation_point_storage[MU_MAX_HISTORY_READ_CONTINUATION_POINT_LENGTH];
 } mu_history_read_value_id_t;
 
 typedef struct {
@@ -100,7 +107,8 @@ typedef struct {
 opcua_statuscode_t mu_history_update_request_decode(mu_binary_reader_t *reader, mu_history_update_request_t *req,
                                                     mu_history_update_item_t *items_array, size_t max_items);
 
-opcua_statuscode_t mu_history_update_response_encode(mu_binary_writer_t *writer, const mu_history_update_response_t *resp);
+opcua_statuscode_t mu_history_update_response_encode(mu_binary_writer_t *writer,
+                                                     const mu_history_update_response_t *resp);
 
 #endif /* MICRO_OPCUA_SERVICE_HISTORY */
 

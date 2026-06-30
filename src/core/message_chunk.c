@@ -1,6 +1,7 @@
 /* src/core/message_chunk.c */
 #include "message_chunk.h"
 #include "micro_opcua/encoding.h"
+#include "uasc.h"
 
 opcua_statuscode_t mu_parse_message_header(const opcua_byte_t *buffer, size_t length, mu_message_header_t *header) {
     if (!buffer || !header)
@@ -16,6 +17,7 @@ opcua_statuscode_t mu_parse_message_header(const opcua_byte_t *buffer, size_t le
     header->message_type[2] = buffer[2];
     header->chunk_type = buffer[3];
 
+    /* OPC-10000-6 6.7.2 and 7.1.2.2 define the accepted 3-byte MessageType values. */
     if (!(header->message_type[0] == 'H' && header->message_type[1] == 'E' && header->message_type[2] == 'L') &&
         !(header->message_type[0] == 'A' && header->message_type[1] == 'C' && header->message_type[2] == 'K') &&
         !(header->message_type[0] == 'E' && header->message_type[1] == 'R' && header->message_type[2] == 'R') &&
@@ -39,6 +41,11 @@ opcua_statuscode_t mu_parse_message_header(const opcua_byte_t *buffer, size_t le
     if (header->message_size > length)
         return MU_STATUS_BAD_TCPMESSAGETOOLARGE;
 
+    if (header->chunk_type == 'C') {
+        /* OPC-10000-6 section 6.7.2: single-chunk mode rejects continuation chunks before MessageBody dispatch. */
+        return MU_STATUS_BAD_TCPINTERNALERROR;
+    }
+
     if (header->message_type[0] == 'H' || header->message_type[0] == 'A' || header->message_type[0] == 'E') {
         header->secure_channel_id = 0;
         return MU_STATUS_GOOD;
@@ -52,6 +59,24 @@ opcua_statuscode_t mu_parse_message_header(const opcua_byte_t *buffer, size_t le
     status = mu_binary_read_uint32(&reader, &header->secure_channel_id);
     if (status != MU_STATUS_GOOD)
         return status;
+
+    if (header->chunk_type == 'A') {
+        /* OPC-10000-6 section 6.7.2: abort chunks carry Error/Reason, not service MessageBody bytes. */
+        if (header->message_type[0] == 'O') {
+            return MU_STATUS_BAD_TCPINTERNALERROR;
+        }
+        if (header->message_size < (MU_UASC_SYMMETRIC_HEADER_SIZE + 4u)) {
+            return MU_STATUS_BAD_TCPINTERNALERROR;
+        }
+
+        reader.position = MU_UASC_SYMMETRIC_HEADER_SIZE;
+        opcua_statuscode_t abort_status = MU_STATUS_GOOD;
+        status = mu_binary_read_statuscode(&reader, &abort_status);
+        if (status != MU_STATUS_GOOD) {
+            return status;
+        }
+        return abort_status == MU_STATUS_GOOD ? MU_STATUS_BAD_TCPINTERNALERROR : abort_status;
+    }
 
     return MU_STATUS_GOOD;
 }

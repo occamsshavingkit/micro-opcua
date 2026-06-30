@@ -103,6 +103,38 @@ void test_read_service_scalar_values(void) {
     TEST_ASSERT_EQUAL(42, val);
 }
 
+void test_read_service_rejects_invalid_timestamps_to_return(void) {
+    mu_node_t node;
+    node.node_id =
+        (mu_nodeid_t){.identifier_type = MU_NODEID_NUMERIC, .namespace_index = 0, .identifier.numeric = 2253};
+    node.node_class = MU_NODECLASS_VARIABLE;
+    node.reference_count = 0;
+
+    mu_value_source_t value_source;
+    value_source.type = MU_VALUESOURCE_STATIC;
+    value_source.data.static_value.type = MU_TYPE_INT32;
+    value_source.data.static_value.is_array = false;
+    value_source.data.static_value.value.i32 = 42;
+    node.value = &value_source;
+
+    mu_address_space_t address_space = {.nodes = &node, .node_count = 1};
+    mu_read_value_id_t node_to_read = {.node_id = node.node_id, .attribute_id = MU_ATTRIBUTEID_VALUE};
+
+    /* OPC-10000-4 5.11.2.3 defines Read parameters, 7.39 limits
+       TimestampsToReturn request values, and 7.38.2 defines
+       Bad_TimestampsToReturnInvalid for invalid enum values. */
+    mu_read_request_t req = {.max_age = 0,
+                             .timestamps_to_return = MU_TIMESTAMPS_TO_RETURN_INVALID,
+                             .nodes_to_read = &node_to_read,
+                             .num_nodes_to_read = 1};
+
+    mu_read_response_t resp;
+    mu_datavalue_t result_dv;
+
+    TEST_ASSERT_EQUAL(MU_STATUS_BAD_TIMESTAMPSTORETURNINVALID,
+                      mu_read_process(&address_space, NULL, &req, &resp, &result_dv, 1));
+}
+
 /* BrowseName and DisplayName are mandatory readable Attributes of every Node
    (OPC 10000-3 5.2.4/5.2.5), returned as QualifiedName and LocalizedText. Reading
    Value on a non-Variable Node is Bad_AttributeIdInvalid. */
@@ -151,6 +183,7 @@ int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_read_service_request_decode);
     RUN_TEST(test_read_service_scalar_values);
+    RUN_TEST(test_read_service_rejects_invalid_timestamps_to_return);
     RUN_TEST(test_read_service_browsename_displayname);
     return UNITY_END();
 }

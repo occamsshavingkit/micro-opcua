@@ -2,9 +2,9 @@
 #ifndef MICRO_OPCUA_NODE_MANAGEMENT_H
 #define MICRO_OPCUA_NODE_MANAGEMENT_H
 
-#include "micro_opcua/server.h"
 #include "../core/server_internal.h"
 #include "micro_opcua/encoding.h"
+#include "micro_opcua/server.h"
 
 #ifdef MICRO_OPCUA_SERVICE_NODEMANAGEMENT
 
@@ -15,12 +15,12 @@ typedef struct {
     mu_expanded_nodeid_t requested_new_node_id;
     mu_qualified_name_t browse_name;
     opcua_uint32_t node_class; /* mu_nodeclass_t enum encoded as UInt32 */
-    
+
     /* ExtensionObject for nodeAttributes. We store the payload reference. */
     mu_nodeid_t node_attributes_type_id;
     size_t node_attributes_len;
     const opcua_byte_t *node_attributes;
-    
+
     mu_expanded_nodeid_t type_definition;
 } mu_add_nodes_item_t;
 
@@ -38,7 +38,6 @@ typedef struct {
     mu_add_nodes_result_t *results;
     size_t count;
 } mu_add_nodes_response_t;
-
 
 /* AddReferencesItem */
 typedef struct {
@@ -64,7 +63,6 @@ typedef struct {
     size_t count;
 } mu_add_references_response_t;
 
-
 /* DeleteNodesItem */
 typedef struct {
     mu_nodeid_t node_id;
@@ -80,7 +78,6 @@ typedef struct {
     opcua_statuscode_t *results;
     size_t count;
 } mu_delete_nodes_response_t;
-
 
 /* DeleteReferencesItem */
 typedef struct {
@@ -102,18 +99,25 @@ typedef struct {
 } mu_delete_references_response_t;
 
 /* Decoder / Encoder prototypes */
-opcua_statuscode_t mu_add_nodes_request_decode(mu_binary_reader_t *r, mu_add_nodes_item_t *items, size_t max_items, size_t *out_count);
-opcua_statuscode_t mu_add_nodes_response_encode(mu_binary_writer_t *w, const mu_add_nodes_result_t *results, size_t count);
+opcua_statuscode_t mu_add_nodes_request_decode(mu_binary_reader_t *r, mu_add_nodes_item_t *items, size_t max_items,
+                                               size_t *out_count);
+opcua_statuscode_t mu_add_nodes_response_encode(mu_binary_writer_t *w, const mu_add_nodes_result_t *results,
+                                                size_t count);
 
-opcua_statuscode_t mu_add_references_request_decode(mu_binary_reader_t *r, mu_add_references_item_t *items, size_t max_items, size_t *out_count);
-opcua_statuscode_t mu_add_references_response_encode(mu_binary_writer_t *w, const mu_add_references_result_t *results, size_t count);
+opcua_statuscode_t mu_add_references_request_decode(mu_binary_reader_t *r, mu_add_references_item_t *items,
+                                                    size_t max_items, size_t *out_count);
+opcua_statuscode_t mu_add_references_response_encode(mu_binary_writer_t *w, const mu_add_references_result_t *results,
+                                                     size_t count);
 
-opcua_statuscode_t mu_delete_nodes_request_decode(mu_binary_reader_t *r, mu_delete_nodes_item_t *items, size_t max_items, size_t *out_count);
-opcua_statuscode_t mu_delete_nodes_response_encode(mu_binary_writer_t *w, const opcua_statuscode_t *results, size_t count);
+opcua_statuscode_t mu_delete_nodes_request_decode(mu_binary_reader_t *r, mu_delete_nodes_item_t *items,
+                                                  size_t max_items, size_t *out_count);
+opcua_statuscode_t mu_delete_nodes_response_encode(mu_binary_writer_t *w, const opcua_statuscode_t *results,
+                                                   size_t count);
 
-opcua_statuscode_t mu_delete_references_request_decode(mu_binary_reader_t *r, mu_delete_references_item_t *items, size_t max_items, size_t *out_count);
-opcua_statuscode_t mu_delete_references_response_encode(mu_binary_writer_t *w, const opcua_statuscode_t *results, size_t count);
-
+opcua_statuscode_t mu_delete_references_request_decode(mu_binary_reader_t *r, mu_delete_references_item_t *items,
+                                                       size_t max_items, size_t *out_count);
+opcua_statuscode_t mu_delete_references_response_encode(mu_binary_writer_t *w, const opcua_statuscode_t *results,
+                                                        size_t count);
 
 /* Process functions used by dispatch */
 opcua_statuscode_t mu_add_nodes_process(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w);

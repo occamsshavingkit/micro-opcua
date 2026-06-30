@@ -349,7 +349,7 @@ void test_secure_handshake_read(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_ACTIVATESESSIONREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 4);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, 4);
     {
         mu_string_t ns = {-1, NULL};
         mu_bytestring_t nb = {-1, NULL};
@@ -369,7 +369,7 @@ void test_secure_handshake_read(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_READREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 5);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, 5);
     mu_binary_write_double(&w, 0.0);
     mu_binary_write_uint32(&w, 3);
     mu_binary_write_int32(&w, 1);

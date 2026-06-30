@@ -2,6 +2,7 @@
 #include "../../src/core/server_internal.h"
 #include "fake_platform.h"
 #include "micro_opcua/micro_opcua.h"
+#include "service_builders.h"
 #include "unity.h"
 #include <string.h>
 
@@ -131,7 +132,7 @@ static opcua_statuscode_t test_auth_handler(void *handle, const mu_string_t *use
     return MU_STATUS_BAD_IDENTITYTOKENREJECTED;
 }
 
-void test_encrypted_user_auth_flow(void) {
+void test_encrypted_username_token_over_security_policy_none_is_rejected(void) {
     mock_t mock;
     memset(&mock, 0, sizeof(mock));
 
@@ -201,7 +202,7 @@ void test_encrypted_user_auth_flow(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_CREATESESSIONREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 0, 2);
+    test_write_create_session_body(&w, 2, 60000.0);
     clen = build_msg(chunk, sizeof(chunk), 2, 2, tmp, w.position);
     enqueue(&mock, chunk, clen);
 
@@ -211,7 +212,7 @@ void test_encrypted_user_auth_flow(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_ACTIVATESESSIONREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 3);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, 3);
     {
         mu_string_t ns = {-1, NULL};
         mu_bytestring_t nb = {-1, NULL};
@@ -304,7 +305,7 @@ void test_encrypted_user_auth_flow(void) {
     mu_server_poll(server); /* OPN -> Response */
     mu_server_poll(server); /* CreateSession -> Response */
 
-    mu_server_poll(server); /* ActivateSession -> Response (Success) */
+    mu_server_poll(server); /* ActivateSession -> Response (rejected on SecurityPolicy#None) */
 
     mu_binary_reader_t r;
     mu_binary_reader_init(&r, mock.last_write, mock.last_write_len);
@@ -318,11 +319,11 @@ void test_encrypted_user_auth_flow(void) {
     mu_binary_read_int64(&r, &ts);
     mu_binary_read_uint32(&r, &h);
     mu_binary_read_statuscode(&r, &res);
-    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, res);
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_BAD_IDENTITYTOKENREJECTED, res);
 }
 
 int main(void) {
     UNITY_BEGIN();
-    RUN_TEST(test_encrypted_user_auth_flow);
+    RUN_TEST(test_encrypted_username_token_over_security_policy_none_is_rejected);
     return UNITY_END();
 }

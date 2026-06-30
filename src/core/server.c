@@ -179,6 +179,13 @@ static void send_buffer_chunk(mu_server_t *server, size_t total) {
     }
 }
 
+static void send_tcp_error_chunk(mu_server_t *server, opcua_statuscode_t error_code) {
+    size_t err_len = server->config.send_buffer_size;
+    if (mu_tcp_create_error_message(error_code, NULL, server->config.send_buffer, &err_len) == MU_STATUS_GOOD) {
+        send_buffer_chunk(server, err_len);
+    }
+}
+
 #if MICRO_OPCUA_SUBSCRIPTIONS
 opcua_statuscode_t mu_server_emit_message(mu_server_t *server, opcua_uint32_t request_id, const opcua_byte_t *body,
                                           size_t body_len) {
@@ -526,10 +533,14 @@ static void process_message(mu_server_t *server, opcua_byte_t *msg, size_t msg_l
         return;
     }
 
-    mu_message_header_t header;
+    mu_message_header_t header = {{0, 0, 0}, 0, 0, 0};
     status = mu_parse_message_header(msg, msg_len, &header);
-    if (status != MU_STATUS_GOOD)
+    if (status != MU_STATUS_GOOD) {
+        if (header.chunk_type == 'C') {
+            send_tcp_error_chunk(server, status);
+        }
         return;
+    }
 
     bool is_opn = header.message_type[0] == 'O' && header.message_type[1] == 'P' && header.message_type[2] == 'N';
     bool is_msg = header.message_type[0] == 'M' && header.message_type[1] == 'S' && header.message_type[2] == 'G';

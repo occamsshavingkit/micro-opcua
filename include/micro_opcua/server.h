@@ -61,7 +61,7 @@ typedef struct {
 
     /* Static Address Space (optional) */
     const mu_address_space_t *address_space;
-    
+
     /* Authorization */
     opcua_boolean_t allow_node_management;
 

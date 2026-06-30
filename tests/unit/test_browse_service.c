@@ -90,9 +90,31 @@ void test_browse_service_response_encode(void) {
     TEST_ASSERT_EQUAL(1, num_refs);
 }
 
+void test_browse_service_rejects_invalid_browse_direction(void) {
+    mu_browse_description_t desc = {
+        .node_id = {.identifier_type = MU_NODEID_NUMERIC, .namespace_index = 0, .identifier.numeric = 84},
+        .browse_direction = 3,
+        .reference_type_id = {.identifier_type = MU_NODEID_NUMERIC, .namespace_index = 0, .identifier.numeric = 0},
+        .include_subtypes = true,
+        .node_class_mask = 0,
+        .result_mask = 0x3F};
+
+    /* OPC-10000-4 section 5.9.2.4 lists Bad_BrowseDirectionInvalid for Browse
+       results, and section 7.38.2 defines it for invalid BrowseDirection values. */
+    mu_browse_request_t req = {
+        .requested_max_references_per_node = 0, .nodes_to_browse = &desc, .num_nodes_to_browse = 1};
+    mu_browse_result_t result;
+    mu_reference_description_t ref_pool[4];
+
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_browse_process(NULL, NULL, &req, &result, 1, ref_pool, 4));
+    TEST_ASSERT_EQUAL(MU_STATUS_BAD_BROWSEDIRECTIONINVALID, result.status_code);
+    TEST_ASSERT_EQUAL(0, result.num_references);
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_browse_service_static_references);
     RUN_TEST(test_browse_service_response_encode);
+    RUN_TEST(test_browse_service_rejects_invalid_browse_direction);
     return UNITY_END();
 }

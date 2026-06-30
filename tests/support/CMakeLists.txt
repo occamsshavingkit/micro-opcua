@@ -1,6 +1,7 @@
 # tests/support/CMakeLists.txt
 add_library(micro_opcua_test_support STATIC
     fake_platform.c
+    service_builders.c
 )
 
 target_include_directories(micro_opcua_test_support PUBLIC

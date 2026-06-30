@@ -3,6 +3,7 @@
 #include "../../src/services/subscription.h"
 #include "fake_platform.h"
 #include "micro_opcua/micro_opcua.h"
+#include "service_builders.h"
 #include "unity.h"
 #include <string.h>
 
@@ -174,7 +175,7 @@ static void enqueue_connect(mock_t *mock) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_CREATESESSIONREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 0, 2);
+    test_write_create_session_body(&w, 2, 60000.0);
     clen = build_msg(chunk, sizeof(chunk), 2, 2, tmp, w.position);
     enqueue(mock, chunk, clen);
 
@@ -184,7 +185,7 @@ static void enqueue_connect(mock_t *mock) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_ACTIVATESESSIONREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 3);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, 3);
     {
         mu_string_t ns = {-1, NULL};
         mu_bytestring_t nb = {-1, NULL};
@@ -248,7 +249,7 @@ static void enqueue_create_subscription(mock_t *mock, opcua_uint32_t seq, opcua_
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_CREATESUBSCRIPTIONREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, seq);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, seq);
     mu_binary_write_double(&w, interval);
     mu_binary_write_uint32(&w, 100);
     mu_binary_write_uint32(&w, 10);
@@ -316,7 +317,7 @@ static void enqueue_create_monitored_item(mock_t *mock, opcua_uint32_t seq, opcu
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_CREATEMONITOREDITEMSREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, seq);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, seq);
     mu_binary_write_uint32(&w, sub_id);
     mu_binary_write_uint32(&w, 3);
     mu_binary_write_int32(&w, 1);
@@ -334,7 +335,7 @@ static void enqueue_publish(mock_t *m, opcua_uint32_t seq) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_PUBLISHREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, seq);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, seq);
     mu_binary_write_int32(&w, 0);
     clen = build_msg(chunk, sizeof(chunk), seq, seq, tmp, w.position);
     enqueue(m, chunk, clen);

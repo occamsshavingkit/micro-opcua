@@ -5,6 +5,7 @@
 #include "../../src/core/server_internal.h"
 #include "fake_platform.h"
 #include "micro_opcua/micro_opcua.h"
+#include "service_builders.h"
 #include "unity.h"
 #include <string.h>
 
@@ -200,7 +201,7 @@ static void enqueue_connect(mock_t *mock) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_CREATESESSIONREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 0, 2);
+    test_write_create_session_body(&w, 2, 60000.0);
     clen = build_msg(chunk, sizeof(chunk), 2, 2, tmp, w.position);
     enqueue(mock, chunk, clen);
 
@@ -209,7 +210,7 @@ static void enqueue_connect(mock_t *mock) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_ACTIVATESESSIONREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 3);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, 3);
     {
         mu_string_t ns = {-1, NULL};
         mu_bytestring_t nb = {-1, NULL};
@@ -271,7 +272,7 @@ void test_register_and_unregister_nodes(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_REGISTERNODESREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 4);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, 4);
     mu_binary_write_int32(&w, 1);
     {
         mu_nodeid_t n = {1, MU_NODEID_NUMERIC, {1000}};
@@ -286,7 +287,7 @@ void test_register_and_unregister_nodes(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_UNREGISTERNODESREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 5);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, 5);
     mu_binary_write_int32(&w, 1);
     {
         mu_nodeid_t n = {1, MU_NODEID_NUMERIC, {1000}};
@@ -342,7 +343,7 @@ void test_browse_next_invalid_continuation_point(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_BROWSENEXTREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 4);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, 4);
     mu_binary_write_boolean(&w, false); /* releaseContinuationPoints */
     mu_binary_write_int32(&w, 1);       /* continuationPoints[] count */
     {
@@ -437,7 +438,7 @@ void test_translate_browse_paths(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_TRANSLATEBROWSEPATHSREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 4);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, 4);
     mu_binary_write_int32(&w, 2); /* browsePaths count */
     write_browse_path(&w, "MyVar1");
     write_browse_path(&w, "Nope");
@@ -501,7 +502,7 @@ void test_base_information_default_nodes(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_READREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 4);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, 4);
     mu_binary_write_double(&w, 0.0); /* maxAge */
     mu_binary_write_uint32(&w, 3);   /* TimestampsToReturn Neither */
     mu_binary_write_int32(&w, 1);    /* nodesToRead count */
@@ -523,7 +524,7 @@ void test_base_information_default_nodes(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_BROWSEREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 5);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, 5);
     {
         mu_nodeid_t e = {0, MU_NODEID_NUMERIC, {0}};
         mu_binary_write_nodeid(&w, &e);
@@ -605,7 +606,7 @@ void test_server_status_current_time_is_live(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_READREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 4);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, 4);
     mu_binary_write_double(&w, 0.0);
     mu_binary_write_uint32(&w, 3);
     mu_binary_write_int32(&w, 1);

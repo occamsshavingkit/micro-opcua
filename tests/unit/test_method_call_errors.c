@@ -40,15 +40,13 @@ void tearDown(void) {}
 #endif
 
 static const mu_reference_t s_empty_refs[1] = {{0}};
-static const mu_node_t s_user_nodes[] = {
-    {{0, MU_NODEID_NUMERIC, {ID_SERVER_OBJECT}},
-     MU_NODECLASS_OBJECT,
-     {6, (const opcua_byte_t *)"Server"},
-     {6, (const opcua_byte_t *)"Server"},
-     s_empty_refs,
-     0,
-     NULL}
-};
+static const mu_node_t s_user_nodes[] = {{{0, MU_NODEID_NUMERIC, {ID_SERVER_OBJECT}},
+                                          MU_NODECLASS_OBJECT,
+                                          {6, (const opcua_byte_t *)"Server"},
+                                          {6, (const opcua_byte_t *)"Server"},
+                                          s_empty_refs,
+                                          0,
+                                          NULL}};
 static const mu_address_space_t s_user_space = {s_user_nodes, sizeof(s_user_nodes) / sizeof(s_user_nodes[0])};
 
 static void prepare_server(mu_server_t *server) {

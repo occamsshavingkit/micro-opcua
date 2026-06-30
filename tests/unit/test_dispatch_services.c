@@ -30,6 +30,8 @@ static opcua_statuscode_t fake_entropy(void *c, opcua_byte_t *buf, size_t len) {
         memset(buf, 0x42, len);
     return MU_STATUS_GOOD;
 }
+#define TEST_ENTROPY_FIRST_SESSION_ID 0x42424242u
+#define TEST_ENTROPY_FIRST_AUTH_TOKEN 0xE7E7E7E7u
 
 /* Write a RequestHeader (OPC 10000-4 7.32) with the given requestHandle. */
 static void write_request_header(mu_binary_writer_t *w, opcua_uint32_t handle) {
@@ -68,6 +70,7 @@ void test_dispatch_open_secure_channel(void) {
     memset(&server, 0, sizeof(server));
     mu_secure_channel_init(&server.secure_channel);
     server.config.time_adapter.get_time = fake_time;
+    server.config.entropy_adapter.generate_random = fake_entropy;
 
     /* Build the OpenSecureChannelRequest body (after the request-type NodeId). */
     opcua_byte_t req[256];
@@ -173,6 +176,44 @@ void test_dispatch_create_session_honors_timeout(void) {
     TEST_ASSERT_EQUAL(1200000, (opcua_int64_t)revised); /* the client's requested timeout, honored */
 }
 
+void test_dispatch_truncated_create_session_body_returns_bad_decodingerror_without_session_mutation(void) {
+    mu_server_t server;
+    memset(&server, 0, sizeof(server));
+    server.secure_channel.is_open = true;
+    mu_session_init(&server.sessions[0]);
+    server.config.time_adapter.get_time = fake_time;
+    server.config.entropy_adapter.generate_random = fake_entropy;
+
+    mu_session_t sessions_before[MU_MAX_SESSIONS];
+    memcpy(sessions_before, server.sessions, sizeof(sessions_before));
+    mu_session_t *active_session_before = server.active_session;
+
+    opcua_byte_t req[256];
+    size_t full_req_len = build_create_session_body(req, sizeof(req), 1200000.0);
+    TEST_ASSERT_TRUE(full_req_len > 1u);
+    size_t truncated_req_len = full_req_len - 1u;
+
+    opcua_byte_t resp[1024];
+    size_t resp_len = sizeof(resp);
+
+    /* OPC-10000-4 section 7.38.2: Bad_DecodingError covers invalid stream data;
+       a truncated mandatory service body must reject before creating session state. */
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_BAD_DECODINGERROR, mu_service_dispatch(&server, MU_ID_CREATESESSIONREQUEST, req,
+                                                                             truncated_req_len, resp, &resp_len));
+    TEST_ASSERT_EQUAL_PTR(active_session_before, server.active_session);
+    for (size_t i = 0; i < MU_MAX_SESSIONS; ++i) {
+        TEST_ASSERT_EQUAL(sessions_before[i].state, server.sessions[i].state);
+        TEST_ASSERT_EQUAL(sessions_before[i].session_id, server.sessions[i].session_id);
+        TEST_ASSERT_EQUAL(sessions_before[i].auth_token, server.sessions[i].auth_token);
+        TEST_ASSERT_EQUAL(sessions_before[i].revised_session_timeout_ms, server.sessions[i].revised_session_timeout_ms);
+        TEST_ASSERT_EQUAL_MEMORY(sessions_before[i].server_nonce, server.sessions[i].server_nonce,
+                                 sizeof(sessions_before[i].server_nonce));
+#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+        TEST_ASSERT_EQUAL(sessions_before[i].secure_channel_id, server.sessions[i].secure_channel_id);
+#endif
+    }
+}
+
 void test_dispatch_create_session(void) {
     mu_server_t server;
     memset(&server, 0, sizeof(server));
@@ -181,12 +222,8 @@ void test_dispatch_create_session(void) {
     server.config.time_adapter.get_time = fake_time;
     server.config.entropy_adapter.generate_random = fake_entropy;
 
-    /* CreateSessionRequest body: just the RequestHeader is parsed in the thin path. */
     opcua_byte_t req[256];
-    mu_binary_writer_t w;
-    mu_binary_writer_init(&w, req, sizeof(req));
-    write_request_header(&w, 7);
-    size_t req_len = w.position;
+    size_t req_len = build_create_session_body(req, sizeof(req), 0.0);
 
     opcua_byte_t resp[1024]; /* CreateSessionResponse now carries ServerEndpoints */
     size_t resp_len = sizeof(resp);
@@ -211,8 +248,8 @@ void test_dispatch_create_session(void) {
     mu_binary_read_nodeid(&r, &auth_token);
     opcua_double_t revised;
     mu_binary_read_double(&r, &revised);
-    TEST_ASSERT_EQUAL(1, session_id.identifier.numeric);
-    TEST_ASSERT_EQUAL(12345, auth_token.identifier.numeric);
+    TEST_ASSERT_EQUAL_HEX32(TEST_ENTROPY_FIRST_SESSION_ID, session_id.identifier.numeric);
+    TEST_ASSERT_EQUAL_HEX32(TEST_ENTROPY_FIRST_AUTH_TOKEN, auth_token.identifier.numeric);
     TEST_ASSERT_EQUAL(10000, (opcua_int64_t)revised); /* revised session timeout, bounded to min */
 
     mu_string_t server_nonce;
@@ -553,6 +590,48 @@ void test_dispatch_delete_subscriptions_rejects_too_many_operations_before_resul
     TEST_ASSERT_EQUAL_UINT8(0xA5, resp[0]);
 }
 
+#ifdef MICRO_OPCUA_SERVICE_WRITE
+static opcua_statuscode_t counting_write_handler(void *handle, const mu_nodeid_t *node_id, opcua_uint32_t attribute_id,
+                                                 const mu_variant_t *value) {
+    int *count = (int *)handle;
+    (void)node_id;
+    (void)attribute_id;
+    (void)value;
+    ++(*count);
+    return MU_STATUS_GOOD;
+}
+
+void test_dispatch_truncated_write_body_returns_bad_decodingerror_without_callback(void) {
+    mu_server_t server;
+    activated_server(&server);
+
+    int callback_count = 0;
+    server.config.write_handler = counting_write_handler;
+    server.config.write_handler_handle = &callback_count;
+
+    opcua_byte_t req[256];
+    mu_binary_writer_t w;
+    mu_binary_writer_init(&w, req, sizeof(req));
+    write_request_header(&w, 31);
+    mu_binary_write_int32(&w, 1); /* nodesToWrite */
+    mu_nodeid_t var = {1, MU_NODEID_NUMERIC, {1000}};
+    mu_string_t null_str = {-1, NULL};
+    mu_binary_write_nodeid(&w, &var);
+    mu_binary_write_int32(&w, MU_ATTRIBUTEID_VALUE);
+    mu_binary_write_string(&w, &null_str);
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, w.status);
+
+    opcua_byte_t resp[256];
+    size_t resp_len = sizeof(resp);
+
+    /* OPC-10000-4 section 7.38.2: Bad_DecodingError covers invalid stream data;
+       a truncated mandatory service body must reject before application callbacks. */
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_BAD_DECODINGERROR,
+                            mu_service_dispatch(&server, MU_ID_WRITEREQUEST, req, w.position, resp, &resp_len));
+    TEST_ASSERT_EQUAL(0, callback_count);
+}
+#endif
+
 void test_dispatch_read_value(void) {
     mu_server_t server;
     activated_server(&server);
@@ -704,6 +783,12 @@ void test_dispatch_find_servers(void) {
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, req, sizeof(req));
     write_request_header(&w, 4);
+    {
+        mu_string_t null_str = {-1, NULL};
+        mu_binary_write_string(&w, &null_str); /* endpointUrl */
+        mu_binary_write_int32(&w, 0);          /* localeIds[] */
+        mu_binary_write_int32(&w, 0);          /* serverUris[] */
+    }
     size_t req_len = w.position;
 
     opcua_byte_t resp[512];
@@ -746,17 +831,38 @@ void test_service_fault_encode(void) {
     TEST_ASSERT_EQUAL(MU_STATUS_BAD_SERVICEUNSUPPORTED, res);
 }
 
+void test_dispatch_unsupported_service_returns_bad_serviceunsupported(void) {
+    mu_server_t server;
+    memset(&server, 0, sizeof(server));
+    server.secure_channel.is_open = true;
+
+    opcua_byte_t req[1] = {0};
+    opcua_byte_t resp[64];
+    size_t resp_len = sizeof(resp);
+    enum { unsupported_request_id = 437u }; /* RegisterServerRequest_Encoding_DefaultBinary */
+
+    /* OPC-10000-4 sections 6.3.1 and 7.38.2: a Server that does not support
+       the requested Service returns Bad_ServiceUnsupported. */
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_BAD_SERVICEUNSUPPORTED,
+                            mu_service_dispatch(&server, unsupported_request_id, req, sizeof(req), resp, &resp_len));
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_service_fault_encode);
+    RUN_TEST(test_dispatch_unsupported_service_returns_bad_serviceunsupported);
     RUN_TEST(test_dispatch_open_secure_channel);
     RUN_TEST(test_dispatch_create_session);
     RUN_TEST(test_dispatch_create_session_honors_timeout);
+    RUN_TEST(test_dispatch_truncated_create_session_body_returns_bad_decodingerror_without_session_mutation);
     RUN_TEST(test_dispatch_activate_session);
     RUN_TEST(test_dispatch_close_session);
     RUN_TEST(test_dispatch_delete_subscriptions_rejects_too_many_operations_before_results);
 #if MICRO_OPCUA_SUBSCRIPTIONS
     RUN_TEST(test_dispatch_create_monitored_item_caches_resolved_node);
+#endif
+#ifdef MICRO_OPCUA_SERVICE_WRITE
+    RUN_TEST(test_dispatch_truncated_write_body_returns_bad_decodingerror_without_callback);
 #endif
     RUN_TEST(test_dispatch_read_value);
     RUN_TEST(test_dispatch_browse);

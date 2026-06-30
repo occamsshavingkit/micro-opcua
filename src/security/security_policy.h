@@ -28,6 +28,7 @@ size_t mu_security_policy_encryption_key_length(mu_security_policy_id_t policy);
 size_t mu_security_policy_encryption_block_size(mu_security_policy_id_t policy);
 size_t mu_security_policy_signature_length(mu_security_policy_id_t policy);
 size_t mu_security_policy_nonce_length(mu_security_policy_id_t policy);
+int mu_security_policy_allows_username_password_tokens(mu_security_policy_id_t policy);
 
 /* Basic256Sha256 algorithm parameters (OPC 10000-7 §6.x profile table). */
 #define MU_B256S256_SIGNATURE_KEY_LENGTH 32  /* HMAC-SHA256 key (bytes) */

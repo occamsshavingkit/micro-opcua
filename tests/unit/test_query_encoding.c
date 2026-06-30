@@ -1,6 +1,6 @@
-#include "unity.h"
-#include "micro_opcua/encoding.h"
 #include "../../src/services/query.h"
+#include "micro_opcua/encoding.h"
+#include "unity.h"
 #include <string.h>
 
 void setUp(void) {}
@@ -24,7 +24,7 @@ void test_content_filter_decode(void) {
     mu_content_filter_t filter;
     mu_content_filter_element_t elements[1];
     mu_filter_operand_t operands[1];
-    
+
     opcua_statuscode_t status = mu_content_filter_decode(&reader, &filter, elements, 1, operands, 1);
     TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, status);
     TEST_ASSERT_EQUAL_UINT32(0, filter.elements_count);
@@ -32,7 +32,7 @@ void test_content_filter_decode(void) {
 
 void test_query_next_request_decode(void) {
     opcua_byte_t buf[] = {
-        0x01, /* release_continuation_point = true */
+        0x01,                                      /* release_continuation_point = true */
         0x04, 0x00, 0x00, 0x00, 'T', 'e', 's', 't' /* continuation_point = "Test" */
     };
     mu_binary_reader_t reader;

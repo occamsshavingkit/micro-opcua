@@ -251,6 +251,12 @@ opcua_statuscode_t mu_browse_process_with_user_index(const mu_address_space_t *a
         res->num_references = 0;
         res->references = NULL;
 
+        /* OPC-10000-4 sections 5.9.2.4 and 7.38.2 */
+        if (desc->browse_direction > MU_BROWSE_DIRECTION_BOTH) {
+            res->status_code = MU_STATUS_BAD_BROWSEDIRECTIONINVALID;
+            continue;
+        }
+
         const mu_node_t *node =
             mu_resolve_node(address_space, (mu_address_space_index_t *)user_index, dynamic, &desc->node_id);
         if (!node) {

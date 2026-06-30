@@ -2,22 +2,55 @@
 #include "micro_opcua/micro_opcua.h"
 #include "unity.h"
 
+opcua_statuscode_t mu_binary_read_array_length(mu_binary_reader_t *reader, opcua_int32_t *length);
+
 void setUp(void) {}
 void tearDown(void) {}
 
-void test_binary_array_invalid_length(void) {
-    opcua_byte_t buffer[4] = {0xFF, 0xFF, 0xFF, 0xFF}; /* Length -1 is valid for null array, but let's test length -2 */
-    opcua_byte_t buffer2[4] = {0xFE, 0xFF, 0xFF, 0xFF}; /* -2 */
+void test_binary_array_null_length_is_accepted(void) {
+    opcua_byte_t buffer[4] = {0xFF, 0xFF, 0xFF, 0xFF};
     mu_binary_reader_t reader;
-    mu_binary_reader_init(&reader, buffer2, sizeof(buffer2));
+    mu_binary_reader_init(&reader, buffer, sizeof(buffer));
 
     opcua_int32_t length;
-    opcua_statuscode_t status = mu_binary_read_int32(&reader, &length);
-    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, status);
-    TEST_ASSERT_EQUAL(-2, length);
-    /* In OPC UA, array length < -1 is Bad_DecodingError, handled by array decoder */
-    /* Wait, the array decoder isn't in binary_reader.c, arrays are read per type. */
-    /* We just test primitive array reading logic. */
+    /* OPC-10000-6 section 5.2.5: Int32 length -1 encodes a null array. */
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_array_length(&reader, &length));
+    TEST_ASSERT_EQUAL_INT32(-1, length);
+    TEST_ASSERT_EQUAL_size_t(sizeof(buffer), reader.position);
+}
+
+void test_binary_array_empty_length_is_accepted(void) {
+    opcua_byte_t buffer[4] = {0x00, 0x00, 0x00, 0x00};
+    mu_binary_reader_t reader;
+    mu_binary_reader_init(&reader, buffer, sizeof(buffer));
+
+    opcua_int32_t length;
+    /* OPC-10000-6 section 5.2.5: Int32 length 0 encodes an empty array. */
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_array_length(&reader, &length));
+    TEST_ASSERT_EQUAL_INT32(0, length);
+    TEST_ASSERT_EQUAL_size_t(sizeof(buffer), reader.position);
+}
+
+void test_binary_array_positive_length_is_accepted(void) {
+    opcua_byte_t buffer[4] = {0x03, 0x00, 0x00, 0x00};
+    mu_binary_reader_t reader;
+    mu_binary_reader_init(&reader, buffer, sizeof(buffer));
+
+    opcua_int32_t length;
+    /* OPC-10000-6 section 5.2.5: positive Int32 length encodes the element count. */
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_array_length(&reader, &length));
+    TEST_ASSERT_EQUAL_INT32(3, length);
+    TEST_ASSERT_EQUAL_size_t(sizeof(buffer), reader.position);
+}
+
+void test_binary_array_length_below_minus_one_is_rejected(void) {
+    opcua_byte_t buffer[4] = {0xFE, 0xFF, 0xFF, 0xFF};
+    mu_binary_reader_t reader;
+    mu_binary_reader_init(&reader, buffer, sizeof(buffer));
+
+    opcua_int32_t length = 0;
+    /* OPC-10000-6 section 5.2.5: only -1 encodes a null array; lower counts are malformed. */
+    TEST_ASSERT_EQUAL(MU_STATUS_BAD_DECODINGERROR, mu_binary_read_array_length(&reader, &length));
 }
 
 void test_binary_array_truncated(void) {
@@ -39,7 +72,10 @@ void test_binary_array_truncated(void) {
 
 int main(void) {
     UNITY_BEGIN();
-    RUN_TEST(test_binary_array_invalid_length);
+    RUN_TEST(test_binary_array_null_length_is_accepted);
+    RUN_TEST(test_binary_array_empty_length_is_accepted);
+    RUN_TEST(test_binary_array_positive_length_is_accepted);
+    RUN_TEST(test_binary_array_length_below_minus_one_is_rejected);
     RUN_TEST(test_binary_array_truncated);
     return UNITY_END();
 }

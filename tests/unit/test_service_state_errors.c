@@ -275,6 +275,73 @@ void test_read_before_activate_session(void) {
                       mu_service_dispatch(&server, MU_ID_READREQUEST, req, 1, resp, &resp_len));
 }
 
+void test_read_with_known_inactive_session_returns_bad_sessionnotactivated(void) {
+    mu_server_t server;
+    opcua_uint32_t auth_token;
+    prepare_created_session(&server, &auth_token);
+    TEST_ASSERT_EQUAL(MU_SESSION_STATE_CREATED, server.sessions[0].state);
+    TEST_ASSERT_EQUAL(auth_token, server.sessions[0].auth_token);
+
+    opcua_byte_t request[256];
+    mu_binary_writer_t w;
+    mu_binary_writer_init(&w, request, sizeof(request));
+    mu_nodeid_t auth = {0, MU_NODEID_NUMERIC, {auth_token}};
+    write_request_header(&w, &auth, 88);
+    mu_string_t null_str = {-1, NULL};
+    mu_binary_write_double(&w, 0.0); /* MaxAge */
+    mu_binary_write_uint32(&w, 3);   /* TimestampsToReturn = Neither */
+    mu_binary_write_int32(&w, 1);    /* NodesToRead */
+    mu_nodeid_t objects = {0, MU_NODEID_NUMERIC, {85}};
+    mu_binary_write_nodeid(&w, &objects);
+    mu_binary_write_uint32(&w, 13);        /* AttributeId = Value */
+    mu_binary_write_string(&w, &null_str); /* IndexRange */
+    mu_binary_write_uint16(&w, 0);         /* DataEncoding.namespaceIndex */
+    mu_binary_write_string(&w, &null_str); /* DataEncoding.name */
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, w.status);
+
+    opcua_byte_t response[256];
+    size_t response_len = sizeof(response);
+    /* OPC-10000-4 section 7.38.2: a valid, known Session that has not been
+       activated must be rejected as Bad_SessionNotActivated, not unknown. */
+    TEST_ASSERT_EQUAL_HEX32(
+        MU_STATUS_BAD_SESSIONNOTACTIVATED,
+        mu_service_dispatch(&server, MU_ID_READREQUEST, request, w.position, response, &response_len));
+}
+
+void test_read_with_unknown_session_token_returns_bad_sessionidinvalid(void) {
+    mu_server_t server;
+    opcua_uint32_t known_auth_token;
+    prepare_created_session(&server, &known_auth_token);
+    TEST_ASSERT_EQUAL(MU_SESSION_STATE_CREATED, server.sessions[0].state);
+
+    opcua_uint32_t unknown_auth_token = known_auth_token + 1u;
+    TEST_ASSERT_NOT_EQUAL(known_auth_token, unknown_auth_token);
+
+    opcua_byte_t request[256];
+    mu_binary_writer_t w;
+    mu_binary_writer_init(&w, request, sizeof(request));
+    mu_nodeid_t auth = {0, MU_NODEID_NUMERIC, {unknown_auth_token}};
+    write_request_header(&w, &auth, 89);
+    mu_string_t null_str = {-1, NULL};
+    mu_binary_write_double(&w, 0.0); /* MaxAge */
+    mu_binary_write_uint32(&w, 3);   /* TimestampsToReturn = Neither */
+    mu_binary_write_int32(&w, 1);    /* NodesToRead */
+    mu_nodeid_t objects = {0, MU_NODEID_NUMERIC, {85}};
+    mu_binary_write_nodeid(&w, &objects);
+    mu_binary_write_uint32(&w, 13);        /* AttributeId = Value */
+    mu_binary_write_string(&w, &null_str); /* IndexRange */
+    mu_binary_write_uint16(&w, 0);         /* DataEncoding.namespaceIndex */
+    mu_binary_write_string(&w, &null_str); /* DataEncoding.name */
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, w.status);
+
+    opcua_byte_t response[256];
+    size_t response_len = sizeof(response);
+    /* OPC-10000-4 section 7.38.2: a request with an unknown Session
+       authentication token is rejected as Bad_SessionIdInvalid. */
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_BAD_SESSIONIDINVALID, mu_service_dispatch(&server, MU_ID_READREQUEST, request,
+                                                                                w.position, response, &response_len));
+}
+
 void test_session_before_secure_channel(void) {
     mu_server_t server;
     memset(&server, 0, sizeof(server));
@@ -420,6 +487,8 @@ int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_browse_before_activate_session);
     RUN_TEST(test_read_before_activate_session);
+    RUN_TEST(test_read_with_known_inactive_session_returns_bad_sessionnotactivated);
+    RUN_TEST(test_read_with_unknown_session_token_returns_bad_sessionidinvalid);
     RUN_TEST(test_session_before_secure_channel);
     RUN_TEST(test_service_before_hello);
     RUN_TEST(test_request_type_non_numeric_nodeid_rejected_with_bad_decodingerror);

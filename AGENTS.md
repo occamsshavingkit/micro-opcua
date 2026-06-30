@@ -1,5 +1,5 @@
 <!-- SPECKIT START -->
 For project-wide constraints, read `.specify/memory/constitution.md`.
 For the active feature's technologies, project structure, shell commands, and
-other planning context, read `specs/019-fix-conformance-size/plan.md`.
+other planning context, read `specs/020-audit-hardening/plan.md`.
 <!-- SPECKIT END -->

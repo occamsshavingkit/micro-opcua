@@ -68,20 +68,24 @@ opcua_statuscode_t mu_tcp_process_hello(mu_tcp_connection_t *connection, const o
     if (endpoint_url.length >= 4096)
         return MU_STATUS_BAD_TCPENDPOINTURLINVALID;
 
-    /* Minimum values */
-    if (receive_buffer_size < 8192)
-        receive_buffer_size = 8192;
-    if (send_buffer_size < 8192)
-        send_buffer_size = 8192;
+    /* OPC-10000-6 sections 7.1.2.3/7.1.2.4: HEL/ACK buffer sizes below the
+       minimum chunk size are unsupported by this fixed-buffer implementation. */
+    if (receive_buffer_size < MU_MIN_CHUNK_SIZE || send_buffer_size < MU_MIN_CHUNK_SIZE)
+        return MU_STATUS_BAD_TCPNOTENOUGHRESOURCES;
+
+    /* OPC-10000-6 section 7.1.2.4: ACK buffer sizes are capped by the peer's
+       HEL limits and this server's configured transport buffers. */
+    opcua_uint32_t ack_receive_buffer_size = send_buffer_size < (opcua_uint32_t)config->receive_buffer_size
+                                                 ? send_buffer_size
+                                                 : (opcua_uint32_t)config->receive_buffer_size;
+    opcua_uint32_t ack_send_buffer_size = receive_buffer_size < (opcua_uint32_t)config->send_buffer_size
+                                              ? receive_buffer_size
+                                              : (opcua_uint32_t)config->send_buffer_size;
 
     /* Negotiate values */
     connection->protocol_version = protocol_version;
-    connection->receive_buffer_size = receive_buffer_size < (opcua_uint32_t)config->send_buffer_size
-                                          ? receive_buffer_size
-                                          : (opcua_uint32_t)config->send_buffer_size;
-    connection->send_buffer_size = send_buffer_size < (opcua_uint32_t)config->receive_buffer_size
-                                       ? send_buffer_size
-                                       : (opcua_uint32_t)config->receive_buffer_size;
+    connection->receive_buffer_size = ack_send_buffer_size;
+    connection->send_buffer_size = ack_receive_buffer_size;
     connection->max_message_size =
         max_message_size < config->max_message_size ? max_message_size : config->max_message_size;
     connection->max_chunk_count = max_chunk_count < config->max_chunk_count ? max_chunk_count : config->max_chunk_count;

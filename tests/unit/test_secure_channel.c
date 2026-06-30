@@ -77,6 +77,13 @@ static opcua_statuscode_t test_write(void *context, void *handle, const opcua_by
     return MU_STATUS_GOOD;
 }
 
+static opcua_statuscode_t failing_entropy(void *context, opcua_byte_t *buffer, size_t len) {
+    (void)context;
+    (void)buffer;
+    (void)len;
+    return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+}
+
 static void enqueue_request(secure_channel_transport_t *transport, const opcua_byte_t *bytes, size_t len) {
     TEST_ASSERT_TRUE(transport->inbound_count < TEST_MAX_INBOUND);
     TEST_ASSERT_TRUE(len <= sizeof(transport->inbound[0]));
@@ -258,6 +265,48 @@ static void assert_opn_rejected(const opcua_byte_t *policy_uri, opcua_int32_t po
     TEST_ASSERT_FALSE(server->secure_channel.is_open);
 }
 
+static void assert_opn_entropy_failure_returns_security_checks_failed(void) {
+    static const opcua_byte_t policy_uri[] = "http://opcfoundation.org/UA/SecurityPolicy#None";
+    secure_channel_transport_t transport;
+    opcua_byte_t chunk[512];
+    mu_server_config_t config;
+    opcua_byte_t rx[8192];
+    opcua_byte_t tx[8192];
+    union {
+        _Alignas(8) opcua_byte_t bytes[MU_SERVER_STORAGE_BYTES];
+        struct mu_server align;
+    } storage;
+    mu_server_t *server = NULL;
+    size_t len;
+    opcua_uint32_t response_type;
+    opcua_statuscode_t service_result;
+
+    memset(&transport, 0, sizeof(transport));
+
+    len = build_hello(chunk, sizeof(chunk));
+    enqueue_request(&transport, chunk, len);
+    len = build_opn(chunk, sizeof(chunk), policy_uri, (opcua_int32_t)(sizeof(policy_uri) - 1u),
+                    MU_MESSAGE_SECURITY_MODE_NONE);
+    enqueue_request(&transport, chunk, len);
+
+    configure_transport_server(&config, &transport, rx, tx);
+    config.entropy_adapter.generate_random = failing_entropy;
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_server_init(storage.bytes, sizeof(storage.bytes), &config, &server));
+
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_server_poll(server));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_server_poll(server));
+    TEST_ASSERT_EQUAL_MEMORY("ACKF", transport.writes[0], 4);
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_server_poll(server));
+
+    TEST_ASSERT_EQUAL(2, transport.write_count);
+    TEST_ASSERT_EQUAL_MEMORY("OPNF", transport.writes[1], 4);
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, read_opn_response_service_result(transport.writes[1], transport.write_len[1],
+                                                                       &response_type, &service_result));
+    TEST_ASSERT_TRUE(response_type == MU_ID_SERVICEFAULT || response_type == MU_ID_OPENSECURECHANNELRESPONSE);
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_BAD_SECURITYCHECKSFAILED, service_result);
+    TEST_ASSERT_FALSE(server->secure_channel.is_open);
+}
+
 void test_secure_channel_open_none(void) {
     mu_secure_channel_t channel;
     mu_secure_channel_init(&channel);
@@ -362,6 +411,13 @@ void test_opn_rejects_signing_modes_for_security_policy_none(void) {
     }
 }
 
+void test_opn_entropy_failure_returns_bad_security_checks_failed(void) {
+    /* OPC-10000-4 section 5.6.2.3 requires OpenSecureChannel security check
+       failures to reject the request; section 7.38.2 defines
+       Bad_SecurityChecksFailed as 0x80130000. */
+    assert_opn_entropy_failure_returns_security_checks_failed();
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_secure_channel_open_none);
@@ -371,5 +427,6 @@ int main(void) {
 #endif
     RUN_TEST(test_opn_rejects_unacceptable_security_policy_without_crypto_adapter);
     RUN_TEST(test_opn_rejects_signing_modes_for_security_policy_none);
+    RUN_TEST(test_opn_entropy_failure_returns_bad_security_checks_failed);
     return UNITY_END();
 }
