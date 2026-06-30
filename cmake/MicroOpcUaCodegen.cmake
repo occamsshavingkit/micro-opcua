@@ -7,9 +7,11 @@
 # and export --gc-sections as an INTERFACE link option, so every executable that
 # links micro_opcua strips unreferenced code automatically.
 #
-# MICRO_OPCUA_OPTIMIZE_SIZE additionally compiles with -Os.
+# MICRO_OPCUA_OPTIMIZE_SIZE additionally compiles with -Os. It defaults ON
+# because this library targets flash-constrained devices; use
+# -DMICRO_OPCUA_OPTIMIZE_SIZE=OFF for local debug or speed-oriented experiments.
 
-option(MICRO_OPCUA_OPTIMIZE_SIZE "Optimize the library for size (-Os)" OFF)
+option(MICRO_OPCUA_OPTIMIZE_SIZE "Optimize the library for size (-Os)" ON)
 
 # Apply size-friendly compile options to a target the library owns.
 function(micro_opcua_apply_codegen target_name)

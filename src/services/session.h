@@ -3,6 +3,7 @@
 #define MICRO_OPCUA_SERVICES_SESSION_H
 
 #include "micro_opcua/opcua_types.h"
+#include "micro_opcua/platform.h"
 #include "micro_opcua/status.h"
 #include <stddef.h>
 
@@ -35,6 +36,26 @@ mu_session_t *mu_session_find_free(mu_session_t *sessions, size_t count);
 opcua_statuscode_t mu_session_create(mu_session_t *session, opcua_uint64_t requested_timeout_bits,
                                      opcua_uint64_t *revised_timeout_bits, opcua_uint32_t *session_id,
                                      opcua_uint32_t *auth_token);
+
+opcua_statuscode_t mu_session_generate_session_id(const mu_session_t *sessions, size_t count,
+                                                  const mu_entropy_adapter_t *entropy, opcua_uint32_t *session_id);
+
+opcua_statuscode_t mu_session_generate_authentication_token(const mu_session_t *sessions, size_t count,
+                                                            const mu_entropy_adapter_t *entropy,
+                                                            opcua_uint32_t *auth_token);
+
+opcua_statuscode_t mu_session_generate_server_nonce(const mu_entropy_adapter_t *entropy, opcua_byte_t *server_nonce,
+                                                    size_t server_nonce_len);
+
+opcua_statuscode_t mu_session_create_with_identifiers(mu_session_t *session, opcua_uint64_t requested_timeout_bits,
+                                                      opcua_uint32_t assigned_session_id,
+                                                      opcua_uint32_t assigned_auth_token,
+                                                      opcua_uint32_t creating_secure_channel_id,
+                                                      opcua_uint64_t *revised_timeout_bits, opcua_uint32_t *session_id,
+                                                      opcua_uint32_t *auth_token);
+
+opcua_statuscode_t mu_session_validate_secure_channel(const mu_session_t *session,
+                                                      opcua_uint32_t active_secure_channel_id);
 
 opcua_statuscode_t mu_session_activate(mu_session_t *session, opcua_uint32_t auth_token,
                                        opcua_uint32_t identity_token_encoding_id);

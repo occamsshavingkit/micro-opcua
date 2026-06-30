@@ -4,8 +4,20 @@ This server targets the **Embedded 2017 UA Server Profile**
 (`http://opcfoundation.org/UA-Profile/Server/EmbeddedUA2017`, OPC-10000-7 §6.6.69)
 when built with `make embedded` or `-DMICRO_OPCUA_EMBEDDED_PROFILE=ON`.
 
-Status is **profile-targeting**. The implementation is mapped to the profile surface below,
-but an OPC Foundation Compliance Test Tool run has not yet been performed.
+Status is **profile-targeting**. OPC-10000-7 §4.2 governs conformance-unit and
+conformance-group claims, and OPC-10000-7 §4.3 governs profile claims. This
+document is a traceability map for the selected embedded target; the repo is not
+profile-compliant and not CTT-verified without external CTT evidence.
+
+## Transport and Encoding
+
+The embedded build targets OPC UA TCP over `opc.tcp` with UA Secure Conversation
+and OPC UA Binary. The transport claim is scoped to OPC-10000-6 §7.2 OPC UA TCP,
+with the OPC UA TCP message header from OPC-10000-6 §7.1.2.2, Hello negotiation
+from OPC-10000-6 §7.1.2.3, and Acknowledge negotiation from OPC-10000-6 §7.1.2.4.
+Service payloads and scalar/container values are encoded with OPC UA Binary per
+OPC-10000-6 §5.2. XML, JSON, HTTPS, WebSocket, and alternate transport profile
+claims are out of scope for this profile-targeting build.
 
 ## Build Surface
 
@@ -23,7 +35,8 @@ but an OPC Foundation Compliance Test Tool run has not yet been performed.
 
 | Group / unit | OPC-10000 citation | Status | Evidence |
 |---|---|---|---|
-| Profile membership | OPC-10000-7 §6.6.69 | Targeted | `MICRO_OPCUA_EMBEDDED_PROFILE`, `make embedded`, `docs/traceability/005-embedded-profile-completion.md` |
+| Profile claim basis | OPC-10000-7 §4.2, §4.3, §6.6.69 | Profile-targeting only | `MICRO_OPCUA_EMBEDDED_PROFILE`, `make embedded`, `docs/traceability/005-embedded-profile-completion.md`; no external CTT evidence |
+| Transport / encoding | OPC-10000-6 §5.2, §7.1.2.2, §7.1.2.3, §7.1.2.4, §7.2 | Implemented target surface | `src/core/tcp_connection.c`, `src/core/message_chunk.c`, `src/encoding/*`, `tests/unit/test_tcp_connection.c`, `tests/unit/test_message_chunk_errors.c` |
 | Micro 2017 base | OPC-10000-7 Micro profile definition | Implemented | `profile-micro.md`, `test_subscriptions`, `test_session`, `test_single_client_limit` |
 | SecurityPolicy None | OPC-10000-7 Core/Nano security baseline | Implemented | `profile-nano.md`, handshake/interoperability tests |
 | SecurityPolicy Basic256Sha256 | OPC-10000-7 Embedded security policy support | Implemented | `src/security/*`, `test_asym_chunk`, `test_sym_chunk`, `test_server_handshake_secure` |
@@ -39,7 +52,7 @@ but an OPC Foundation Compliance Test Tool run has not yet been performed.
 | GetMonitoredItems | OPC-10000-5 §8.3.2, §9.1 | Implemented | `src/services/subscription.c`, `tests/unit/test_method_call.c` |
 | ResendData | OPC-10000-5 §8.3.2, §9.2 | Implemented | `src/services/subscription.c`, `tests/unit/test_method_call.c` |
 | Base Info Type System | OPC-10000-5 standard NodeSet; OPC-10000-3 §7.7 | Implemented | `src/address_space/base_nodes.c`, `tests/unit/test_type_system.c` |
-| ServerProfileArray | OPC-10000-5 Server object | Implemented | Embedded profile URI in `Server.ServerCapabilities.ServerProfileArray` |
+| ServerProfileArray | OPC-10000-5 Server object; OPC-10000-7 §4.3 | Implemented target metadata | Embedded target URI in `Server.ServerCapabilities.ServerProfileArray`; not external CTT evidence |
 | Events and alarms | OPC-10000-9; OPC-10000-4 §5.13.1 | Implemented | Event notifications via `mu_server_trigger_event`, `tests/unit/test_event_notifications.c` |
 | Historical Access (HA) | OPC-10000-11 | Implemented | HistoryRead/HistoryUpdate services, `tests/unit/test_history.c` |
 | Query Services | OPC-10000-4 §5.9 | Implemented | QueryFirst/QueryNext services, `tests/unit/test_query_service.c` |
@@ -60,4 +73,6 @@ but an OPC Foundation Compliance Test Tool run has not yet been performed.
 - ASan focused Call suite: `ASAN_OPTIONS=detect_leaks=0 ctest --test-dir build/us3-call-asan --output-on-failure -R 'test_method_call'` -> 2/2 passed.
 - Fuzz target: `fuzz_call` builds with Clang 18.1.3 and passes fixed-input smoke.
 
-CTT remains the external evidence gate before any compliance claim is made.
+CTT remains the external evidence gate. Do not claim profile-compliant status
+without an external CTT evidence report. Do not claim CTT-verified status without
+an external CTT evidence report.

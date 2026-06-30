@@ -9,6 +9,7 @@
 #if MICRO_OPCUA_SUBSCRIPTIONS
 
 #include "../core/server_internal.h"
+#include "../core/service_dispatch.h"
 #include "micro_opcua/address_space.h"
 #include "service_header.h"
 
@@ -1066,6 +1067,24 @@ static void store_retransmit(mu_subscription_t *sub, opcua_uint32_t sequence_num
     sub->retransmit.valid = true;
 }
 
+static bool publish_response_oversize_status(opcua_statuscode_t status) {
+    return status == MU_STATUS_BAD_ENCODINGERROR || status == MU_STATUS_BAD_OUTOFMEMORY ||
+           status == MU_STATUS_BAD_RESPONSETOOLARGE;
+}
+
+static opcua_statuscode_t emit_publish_response_too_large_fault(struct mu_server *server,
+                                                                const mu_publish_request_t *request,
+                                                                opcua_byte_t *buffer, size_t buffer_size) {
+    size_t fault_length = buffer_size;
+    opcua_statuscode_t s =
+        mu_write_service_fault(buffer, &fault_length, request->request_handle, MU_STATUS_BAD_RESPONSETOOLARGE);
+    if (s != MU_STATUS_GOOD) {
+        return s;
+    }
+
+    return mu_server_emit_message(server, request->request_id, buffer, fault_length);
+}
+
 static void advance_publish_timer(mu_subscription_t *sub, opcua_uint64_t now_ms) {
     opcua_uint64_t interval = sub->publishing_interval_ms;
     const opcua_uint64_t max = ~(opcua_uint64_t)0;
@@ -1141,13 +1160,20 @@ static void publish_due(struct mu_server *server, opcua_uint64_t now_ms) {
                 size_t message_end = 0u;
                 opcua_uint32_t sequence_number = current_sequence_number(sub);
                 opcua_datetime_t publish_time = publish_time_now(server);
+                bool sent_response_too_large_fault = false;
                 opcua_statuscode_t s =
                     build_publish_response(server, sub, &request, sequence_number, true, report_count, publish_time,
                                            body, sizeof(body), &body_length, &message_start, &message_end);
                 if (s == MU_STATUS_GOOD) {
                     s = mu_server_emit_message(server, request.request_id, body, body_length);
                 }
-                if (s == MU_STATUS_GOOD) {
+                /* OPC-10000-4 §§5.3/5.14.5.1: an oversized Publish response is
+                   completed with Bad_ResponseTooLarge, not silently dropped. */
+                if (publish_response_oversize_status(s)) {
+                    s = emit_publish_response_too_large_fault(server, &request, body, sizeof(body));
+                    sent_response_too_large_fault = (s == MU_STATUS_GOOD);
+                }
+                if (s == MU_STATUS_GOOD && !sent_response_too_large_fault) {
 #if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
                     clear_reported_items(server, sub, report_count);
 #else
@@ -1181,13 +1207,18 @@ static void publish_due(struct mu_server *server, opcua_uint64_t now_ms) {
                     size_t body_length = 0u;
                     opcua_uint32_t sequence_number = current_sequence_number(sub);
                     opcua_datetime_t publish_time = publish_time_now(server);
+                    bool sent_response_too_large_fault = false;
                     opcua_statuscode_t s =
                         build_publish_response(server, sub, &request, sequence_number, false, 0, publish_time, body,
                                                sizeof(body), &body_length, NULL, NULL);
                     if (s == MU_STATUS_GOOD) {
                         s = mu_server_emit_message(server, request.request_id, body, body_length);
                     }
-                    if (s == MU_STATUS_GOOD) {
+                    if (publish_response_oversize_status(s)) {
+                        s = emit_publish_response_too_large_fault(server, &request, body, sizeof(body));
+                        sent_response_too_large_fault = (s == MU_STATUS_GOOD);
+                    }
+                    if (s == MU_STATUS_GOOD && !sent_response_too_large_fault) {
                         sub->keep_alive_counter = 0u;
                     }
                 }

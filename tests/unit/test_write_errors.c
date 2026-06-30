@@ -1,7 +1,7 @@
 /* tests/unit/test_write_errors.c */
 /* Normative References:
- * - OPC-10000-4 §5.11.4.2 (WriteValue parameters)
- * - OPC-10000-4 §5.11.4.3 (Write Service level results)
+ * - OPC-10000-4 section 5.11.4.2 (WriteValue parameters)
+ * - OPC-10000-4 section 5.11.4.3 (Write Service level results)
  */
 
 #include "core/server_internal.h"
@@ -20,6 +20,18 @@ static opcua_statuscode_t dummy_write_handler(void *handle, const mu_nodeid_t *n
     (void)node_id;
     (void)attribute_id;
     (void)value;
+    return MU_STATUS_GOOD;
+}
+
+static opcua_statuscode_t counting_write_handler(void *handle, const mu_nodeid_t *node_id, opcua_uint32_t attribute_id,
+                                                 const mu_variant_t *value) {
+    int *callback_count = (int *)handle;
+    (void)node_id;
+    (void)attribute_id;
+    (void)value;
+    if (callback_count) {
+        (*callback_count)++;
+    }
     return MU_STATUS_GOOD;
 }
 
@@ -57,8 +69,97 @@ void test_write_service_empty_array(void) {
     size_t resp_len = 0;
     opcua_statuscode_t status = handle_write(&server, &reader, &resp_writer, &resp_len);
 
-    /* Citing OPC-10000-4 §5.11.4.3: empty nodesToWrite returns Bad_NothingToDo */
+    /* Citing OPC-10000-4 section 5.11.4.3: empty nodesToWrite returns Bad_NothingToDo */
     TEST_ASSERT_EQUAL(MU_STATUS_BAD_NOTHINGTODO, status);
+}
+
+void test_write_datavalue_without_value_returns_type_mismatch_without_callback(void) {
+    mu_server_t server;
+    memset(&server, 0, sizeof(server));
+
+    mu_node_t node;
+    memset(&node, 0, sizeof(node));
+    node.node_id = (mu_nodeid_t){1, MU_NODEID_NUMERIC, {.numeric = 5001}};
+    node.node_class = MU_NODECLASS_VARIABLE;
+    node.browse_name = (mu_string_t){4, (const opcua_byte_t *)"Test"};
+    node.display_name = (mu_string_t){4, (const opcua_byte_t *)"Test"};
+
+    mu_address_space_t address_space = {&node, 1};
+    int callback_count = 0;
+    server.config.address_space = &address_space;
+    server.config.write_handler = counting_write_handler;
+    server.config.write_handler_handle = &callback_count;
+    memset(&server.user_address_space_index, 0, sizeof(server.user_address_space_index));
+
+    opcua_byte_t req_buffer[128];
+    mu_binary_writer_t writer;
+    mu_binary_writer_init(&writer, req_buffer, sizeof(req_buffer));
+
+    /* RequestHeader */
+    mu_nodeid_t auth_token = {0, MU_NODEID_NUMERIC, {0}};
+    mu_binary_write_nodeid(&writer, &auth_token);
+    mu_binary_write_int64(&writer, 0);
+    mu_binary_write_uint32(&writer, 42);
+    mu_binary_write_uint32(&writer, 0);
+    mu_string_t audit_id = {-1, NULL};
+    mu_binary_write_string(&writer, &audit_id);
+    mu_binary_write_uint32(&writer, 10000);
+    mu_nodeid_t null_id = {0, MU_NODEID_NUMERIC, {0}};
+    mu_binary_write_extension_object_header(&writer, &null_id, 0);
+
+    /* nodesToWrite size = 1 */
+    mu_binary_write_int32(&writer, 1);
+
+    /* OPC-10000-4 section 5.11.4.2 requires WriteValue.value for the Value Attribute. */
+    mu_binary_write_nodeid(&writer, &node.node_id);
+    mu_binary_write_int32(&writer, 13);
+    mu_binary_write_string(&writer, &audit_id);
+
+    /* DataValue encoding mask with no Value bit present. */
+    mu_binary_write_byte(&writer, 0);
+
+    mu_binary_reader_t reader;
+    mu_binary_reader_init(&reader, req_buffer, writer.position);
+
+    opcua_byte_t resp_buffer[128];
+    mu_binary_writer_t resp_writer;
+    mu_binary_writer_init(&resp_writer, resp_buffer, sizeof(resp_buffer));
+
+    size_t resp_len = 0;
+    opcua_statuscode_t status = handle_write(&server, &reader, &resp_writer, &resp_len);
+
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, status);
+    TEST_ASSERT_EQUAL(0, callback_count);
+
+    mu_binary_reader_t resp_reader;
+    mu_binary_reader_init(&resp_reader, resp_buffer, resp_len);
+
+    mu_nodeid_t resp_type;
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_nodeid(&resp_reader, &resp_type));
+    opcua_int64_t ts;
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_int64(&resp_reader, &ts));
+    opcua_uint32_t handle;
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_uint32(&resp_reader, &handle));
+    opcua_statuscode_t s_res;
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_statuscode(&resp_reader, &s_res));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, s_res);
+
+    opcua_byte_t diag;
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_byte(&resp_reader, &diag));
+    opcua_int32_t str_tbl;
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_int32(&resp_reader, &str_tbl));
+    mu_nodeid_t ext_id;
+    size_t ext_len;
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_extension_object_header(&resp_reader, &ext_id, &ext_len));
+
+    opcua_int32_t results_len;
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_int32(&resp_reader, &results_len));
+    TEST_ASSERT_EQUAL(1, results_len);
+
+    opcua_statuscode_t item_status;
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_statuscode(&resp_reader, &item_status));
+    /* OPC-10000-4 section 5.11.4.4 reports operation-level failures in results[]. */
+    TEST_ASSERT_EQUAL(MU_STATUS_BAD_TYPEMISMATCH, item_status);
 }
 
 void test_write_service_non_value_attribute(void) {
@@ -268,6 +369,7 @@ int main(void) {
     UNITY_BEGIN();
 #ifdef MICRO_OPCUA_SERVICE_WRITE
     RUN_TEST(test_write_service_empty_array);
+    RUN_TEST(test_write_datavalue_without_value_returns_type_mismatch_without_callback);
     RUN_TEST(test_write_service_non_value_attribute);
     RUN_TEST(test_write_service_index_range);
 #endif

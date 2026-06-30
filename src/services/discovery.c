@@ -139,6 +139,13 @@ opcua_statuscode_t mu_discovery_get_application_description(const mu_server_conf
 static void fill_endpoint(const mu_server_config_t *config, mu_endpoint_description_t *desc,
                           mu_message_security_mode_t mode, const char *policy_uri, const opcua_byte_t *cert,
                           size_t cert_len, opcua_byte_t level) {
+#ifdef MICRO_OPCUA_USER_AUTH
+    mu_security_policy_id_t policy = MU_SECURITY_POLICY_INVALID_ID;
+    if (policy_uri != NULL) {
+        policy = mu_security_policy_from_uri((const opcua_byte_t *)policy_uri, strlen(policy_uri));
+    }
+#endif
+
     desc->endpoint_url = config->endpoint_url;
     mu_discovery_get_application_description(config, &desc->server);
     desc->server_certificate = cert;
@@ -154,12 +161,16 @@ static void fill_endpoint(const mu_server_config_t *config, mu_endpoint_descript
     desc->user_identity_tokens[0].security_policy_uri = NULL;
 
 #ifdef MICRO_OPCUA_USER_AUTH
-    desc->user_identity_tokens[desc->num_user_identity_tokens].policy_id = "username";
-    desc->user_identity_tokens[desc->num_user_identity_tokens].token_type = MU_USER_TOKEN_TYPE_USERNAME;
-    desc->user_identity_tokens[desc->num_user_identity_tokens].issued_token_type = NULL;
-    desc->user_identity_tokens[desc->num_user_identity_tokens].issuer_endpoint_url = NULL;
-    desc->user_identity_tokens[desc->num_user_identity_tokens].security_policy_uri = NULL;
-    desc->num_user_identity_tokens++;
+    /* OPC-10000-4 sections 5.5.4.2 and 7.40.2.1: advertise username/password
+       tokens only on endpoints whose SecurityPolicy can protect those secrets. */
+    if (mu_security_policy_allows_username_password_tokens(policy)) {
+        desc->user_identity_tokens[desc->num_user_identity_tokens].policy_id = "username";
+        desc->user_identity_tokens[desc->num_user_identity_tokens].token_type = MU_USER_TOKEN_TYPE_USERNAME;
+        desc->user_identity_tokens[desc->num_user_identity_tokens].issued_token_type = NULL;
+        desc->user_identity_tokens[desc->num_user_identity_tokens].issuer_endpoint_url = NULL;
+        desc->user_identity_tokens[desc->num_user_identity_tokens].security_policy_uri = NULL;
+        desc->num_user_identity_tokens++;
+    }
 #endif
 
     desc->transport_profile_uri = "http://opcfoundation.org/UA-Profile/Transport/uatcp-uasc-uabinary";

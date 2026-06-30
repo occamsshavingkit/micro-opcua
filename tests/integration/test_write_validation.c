@@ -224,7 +224,7 @@ void test_integration_write_errors(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_ACTIVATESESSIONREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 3);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, 3);
     {
         mu_string_t ns = {-1, NULL};
         mu_bytestring_t nb = {-1, NULL};
@@ -246,7 +246,7 @@ void test_integration_write_errors(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_WRITEREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 4);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, 4);
 
     mu_binary_write_int32(&w, 1);
     mu_binary_write_nodeid(&w, &nodes[0].node_id);

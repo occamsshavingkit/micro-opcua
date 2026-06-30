@@ -15,6 +15,7 @@
  */
 #include "fake_platform.h"
 #include "micro_opcua/micro_opcua.h"
+#include "service_builders.h"
 #include "unity.h"
 #include <stdio.h>
 #include <string.h>
@@ -197,7 +198,7 @@ static void enqueue_connect(mock_t *mock) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_CREATESESSIONREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 0, 2);
+    test_write_create_session_body(&w, 2, 60000.0);
     clen = build_msg(chunk, sizeof(chunk), 2, 2, tmp, w.position);
     enqueue(mock, chunk, clen);
 
@@ -206,7 +207,7 @@ static void enqueue_connect(mock_t *mock) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_ACTIVATESESSIONREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 3);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, 3);
     {
         mu_string_t ns = {-1, NULL};
         mu_bytestring_t nb = {-1, NULL};
@@ -231,7 +232,7 @@ static void enqueue_browse_objects(mock_t *mock, opcua_uint32_t seq) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_BROWSEREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, seq);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, seq);
     {
         mu_nodeid_t view = {0, MU_NODEID_NUMERIC, {0}};
         mu_binary_write_nodeid(&w, &view);
@@ -261,7 +262,7 @@ static void enqueue_read_myvar1(mock_t *mock, opcua_uint32_t seq) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_READREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, seq);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, seq);
     mu_binary_write_double(&w, 0.0);
     mu_binary_write_uint32(&w, 3);
     mu_binary_write_int32(&w, 1);
@@ -292,7 +293,7 @@ static void enqueue_create_subscription(mock_t *mock, opcua_uint32_t seq) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_CREATESUBSCRIPTIONREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, seq);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, seq);
     mu_binary_write_double(&w, 100.0);
     mu_binary_write_uint32(&w, 30);
     mu_binary_write_uint32(&w, 1);
@@ -310,7 +311,7 @@ static void enqueue_publish(mock_t *mock, opcua_uint32_t seq) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_PUBLISHREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, seq);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, seq);
     mu_binary_write_int32(&w, 0);
     enqueue(mock, chunk, build_msg(chunk, sizeof(chunk), seq, seq, tmp, w.position));
 }

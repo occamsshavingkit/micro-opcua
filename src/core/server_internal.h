@@ -6,8 +6,8 @@
 #include "../services/secure_channel.h"
 #include "../services/session.h"
 #include "../services/subscription.h"
-#include "micro_opcua/services/alarms_conditions.h"
 #include "micro_opcua/server.h"
+#include "micro_opcua/services/alarms_conditions.h"
 #include "service_dispatch.h"
 #include "tcp_connection.h"
 
@@ -19,9 +19,18 @@ typedef struct {
 
 typedef struct {
     mu_node_t nodes[MU_MAX_DYNAMIC_NODES];
+    opcua_byte_t browse_name_storage[MU_MAX_DYNAMIC_NODES][MU_MAX_DYNAMIC_BROWSE_NAME_LENGTH];
+    opcua_byte_t display_name_storage[MU_MAX_DYNAMIC_NODES][MU_MAX_DYNAMIC_DISPLAY_NAME_LENGTH];
+    opcua_byte_t string_nodeid_storage[MU_MAX_DYNAMIC_NODES][MU_MAX_DYNAMIC_STRING_NODEID_LENGTH];
     size_t nodes_count;
-    
+
     mu_dynamic_reference_t references[MU_MAX_DYNAMIC_REFERENCES];
+    opcua_byte_t reference_source_nodeid_storage[MU_MAX_DYNAMIC_REFERENCES]
+                                                [MU_MAX_DYNAMIC_REFERENCE_STRING_NODEID_LENGTH];
+    opcua_byte_t reference_type_nodeid_storage[MU_MAX_DYNAMIC_REFERENCES]
+                                              [MU_MAX_DYNAMIC_REFERENCE_STRING_NODEID_LENGTH];
+    opcua_byte_t reference_target_nodeid_storage[MU_MAX_DYNAMIC_REFERENCES]
+                                                [MU_MAX_DYNAMIC_REFERENCE_STRING_NODEID_LENGTH];
     size_t references_count;
 } mu_dynamic_address_space_t;
 #endif

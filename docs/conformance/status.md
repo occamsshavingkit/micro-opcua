@@ -8,6 +8,63 @@ build. `nano` and `micro` remain available as lower-tier profile builds.
 Foundation Compliance Test Tool (CTT); a compliance claim is withheld
 until a CTT run passes (project policy, plan.md).
 
+## StatusCode names
+
+The following StatusCode names are the canonical identifiers used by
+`include/micro_opcua/status.h` for the audit-hardening StatusCode surface. Name
+spelling is grounded in OPC-10000-4 section 7.38.2 Common StatusCodes; numeric
+values are listed below.
+
+| StatusCode name | Implementation constant | Audit-hardening use | OPC UA reference |
+|---|---|---|---|
+| `Good` | `MU_STATUS_GOOD` | Successful service or operation result | OPC-10000-4 section 7.38.2 |
+| `Bad_DecodingError` | `MU_STATUS_BAD_DECODINGERROR` | Malformed or truncated binary input | OPC-10000-4 section 7.38.2 |
+| `Bad_EncodingLimitsExceeded` | `MU_STATUS_BAD_ENCODINGLIMITSEXCEEDED` | Encoded input exceeds supported limits | OPC-10000-4 section 7.38.2 |
+| `Bad_ServiceUnsupported` | `MU_STATUS_BAD_SERVICEUNSUPPORTED` | Unsupported service request | OPC-10000-4 section 7.38.2 |
+| `Bad_MonitoredItemFilterUnsupported` | `MU_STATUS_BAD_MONITOREDITEMFILTERUNSUPPORTED` | Unsupported monitored item filter | OPC-10000-4 section 7.38.2 |
+| `Bad_MonitoredItemFilterInvalid` | `MU_STATUS_BAD_MONITOREDITEMFILTERINVALID` | Invalid monitored item filter parameters | OPC-10000-4 section 7.38.2 |
+| `Bad_FilterNotAllowed` | `MU_STATUS_BAD_FILTERNOTALLOWED` | Filter supplied where the service disallows one | OPC-10000-4 section 7.38.2 |
+| `Bad_TimestampsToReturnInvalid` | `MU_STATUS_BAD_TIMESTAMPSTORETURNINVALID` | Invalid TimestampsToReturn value | OPC-10000-4 section 7.38.2 |
+| `Bad_BrowseDirectionInvalid` | `MU_STATUS_BAD_BROWSEDIRECTIONINVALID` | Invalid BrowseDirection value | OPC-10000-4 section 7.38.2 |
+| `Bad_SessionNotActivated` | `MU_STATUS_BAD_SESSIONNOTACTIVATED` | Existing session used before activation | OPC-10000-4 section 7.38.2 |
+| `Bad_SessionIdInvalid` | `MU_STATUS_BAD_SESSIONIDINVALID` | Missing, unknown, or invalid session id | OPC-10000-4 section 7.38.2 |
+| `Bad_SecureChannelIdInvalid` | `MU_STATUS_BAD_SECURECHANNELIDINVALID` | Service request not bound to a valid SecureChannel | OPC-10000-4 section 7.38.2 |
+| `Bad_SecurityChecksFailed` | `MU_STATUS_BAD_SECURITYCHECKSFAILED` | Security check failure | OPC-10000-4 section 7.38.2 |
+| `Bad_IdentityTokenRejected` | `MU_STATUS_BAD_IDENTITYTOKENREJECTED` | Rejected user identity token | OPC-10000-4 section 7.38.2 |
+| `Bad_ResponseTooLarge` | `MU_STATUS_BAD_RESPONSETOOLARGE` | Response would exceed supported response limits | OPC-10000-4 section 7.38.2 |
+| `Bad_TcpMessageTypeInvalid` | `MU_STATUS_BAD_TCPMESSAGETYPEINVALID` | Invalid OPC UA TCP message type | OPC-10000-4 section 7.38.2 |
+| `Bad_TooManyOperations` | `MU_STATUS_BAD_TOOMANYOPERATIONS` | Request contains more operations than supported | OPC-10000-4 section 7.38.2 |
+| `Bad_TypeMismatch` | `MU_STATUS_BAD_TYPEMISMATCH` | Value type does not match the target attribute | OPC-10000-4 section 7.38.2 |
+| `Bad_ContinuationPointInvalid` | `MU_STATUS_BAD_CONTINUATIONPOINTINVALID` | Invalid continuation point supplied by the client | OPC-10000-4 section 7.38.2 |
+
+## StatusCode numeric values
+
+The following hexadecimal values are the exact `include/micro_opcua/status.h`
+constants used by the audit-hardening StatusCode surface. Symbolic names are
+grounded in OPC-10000-4 section 7.38.2 Common StatusCodes.
+
+| StatusCode name | Numeric value | Implementation constant | OPC UA reference |
+|---|---:|---|---|
+| `Good` | `0x00000000` | `MU_STATUS_GOOD` | OPC-10000-4 section 7.38.2 |
+| `Bad_DecodingError` | `0x80070000` | `MU_STATUS_BAD_DECODINGERROR` | OPC-10000-4 section 7.38.2 |
+| `Bad_EncodingLimitsExceeded` | `0x80080000` | `MU_STATUS_BAD_ENCODINGLIMITSEXCEEDED` | OPC-10000-4 section 7.38.2 |
+| `Bad_ServiceUnsupported` | `0x800B0000` | `MU_STATUS_BAD_SERVICEUNSUPPORTED` | OPC-10000-4 section 7.38.2 |
+| `Bad_MonitoredItemFilterUnsupported` | `0x80440000` | `MU_STATUS_BAD_MONITOREDITEMFILTERUNSUPPORTED` | OPC-10000-4 section 7.38.2 |
+| `Bad_MonitoredItemFilterInvalid` | `0x80430000` | `MU_STATUS_BAD_MONITOREDITEMFILTERINVALID` | OPC-10000-4 section 7.38.2 |
+| `Bad_FilterNotAllowed` | `0x80450000` | `MU_STATUS_BAD_FILTERNOTALLOWED` | OPC-10000-4 section 7.38.2 |
+| `Bad_TimestampsToReturnInvalid` | `0x802A0000` | `MU_STATUS_BAD_TIMESTAMPSTORETURNINVALID` | OPC-10000-4 section 7.38.2 |
+| `Bad_BrowseDirectionInvalid` | `0x804D0000` | `MU_STATUS_BAD_BROWSEDIRECTIONINVALID` | OPC-10000-4 section 7.38.2 |
+| `Bad_SessionNotActivated` | `0x80270000` | `MU_STATUS_BAD_SESSIONNOTACTIVATED` | OPC-10000-4 section 7.38.2 |
+| `Bad_SessionIdInvalid` | `0x80250000` | `MU_STATUS_BAD_SESSIONIDINVALID` | OPC-10000-4 section 7.38.2 |
+| `Bad_SecureChannelIdInvalid` | `0x80220000` | `MU_STATUS_BAD_SECURECHANNELIDINVALID` | OPC-10000-4 section 7.38.2 |
+| `Bad_SecurityChecksFailed` | `0x80130000` | `MU_STATUS_BAD_SECURITYCHECKSFAILED` | OPC-10000-4 section 7.38.2 |
+| `Bad_IdentityTokenRejected` | `0x80210000` | `MU_STATUS_BAD_IDENTITYTOKENREJECTED` | OPC-10000-4 section 7.38.2 |
+| `Bad_ResponseTooLarge` | `0x80B90000` | `MU_STATUS_BAD_RESPONSETOOLARGE` | OPC-10000-4 section 7.38.2 |
+| `Bad_TcpMessageTypeInvalid` | `0x807E0000` | `MU_STATUS_BAD_TCPMESSAGETYPEINVALID` | OPC-10000-4 section 7.38.2 |
+| `Bad_TooManyOperations` | `0x80100000` | `MU_STATUS_BAD_TOOMANYOPERATIONS` | OPC-10000-4 section 7.38.2 |
+| `Bad_TypeMismatch` | `0x80740000` | `MU_STATUS_BAD_TYPEMISMATCH` | OPC-10000-4 section 7.38.2 |
+| `Bad_ContinuationPointInvalid` | `0x804A0000` | `MU_STATUS_BAD_CONTINUATIONPOINTINVALID` | OPC-10000-4 section 7.38.2 |
+
 Conformance-unit status (Core 2017 Server Facet groups; see [services.md](services.md)):
 
 | Conformance group / unit | Status | Evidence |

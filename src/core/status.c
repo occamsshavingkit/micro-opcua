@@ -3,6 +3,7 @@
 
 #ifdef MICRO_OPCUA_STATUS_STRINGS
 const char *mu_status_name(opcua_statuscode_t status) {
+    /* Common StatusCode names are defined by OPC-10000-4 section 7.38.2. */
     switch (status) {
     case MU_STATUS_GOOD:
         return "Good";
@@ -32,6 +33,8 @@ const char *mu_status_name(opcua_statuscode_t status) {
         return "Bad_ResponseTooLarge";
     case MU_STATUS_BAD_SESSIONIDINVALID:
         return "Bad_SessionIdInvalid";
+    case MU_STATUS_BAD_SESSIONNOTACTIVATED:
+        return "Bad_SessionNotActivated";
     case MU_STATUS_BAD_IDENTITYTOKENINVALID:
         return "Bad_IdentityTokenInvalid";
     case MU_STATUS_BAD_IDENTITYTOKENREJECTED:
@@ -70,6 +73,8 @@ const char *mu_status_name(opcua_statuscode_t status) {
         return "Bad_TooManyOperations";
     case MU_STATUS_BAD_NOCONTINUATIONPOINTS:
         return "Bad_NoContinuationPoints";
+    case MU_STATUS_BAD_CONTINUATIONPOINTINVALID:
+        return "Bad_ContinuationPointInvalid";
     case MU_STATUS_BAD_TOOMANYMONITOREDITEMS:
         return "Bad_TooManyMonitoredItems";
     case MU_STATUS_BAD_TOOMANYSUBSCRIPTIONS:
@@ -115,6 +120,12 @@ const char *mu_status_name(opcua_statuscode_t status) {
         return "Bad_MonitoredItemFilterUnsupported";
     case MU_STATUS_BAD_MONITOREDITEMFILTERINVALID:
         return "Bad_MonitoredItemFilterInvalid";
+    case MU_STATUS_BAD_FILTERNOTALLOWED:
+        return "Bad_FilterNotAllowed";
+    case MU_STATUS_BAD_TIMESTAMPSTORETURNINVALID:
+        return "Bad_TimestampsToReturnInvalid";
+    case MU_STATUS_BAD_BROWSEDIRECTIONINVALID:
+        return "Bad_BrowseDirectionInvalid";
     case MU_STATUS_BAD_CERTIFICATEINVALID:
         return "Bad_CertificateInvalid";
     case MU_STATUS_BAD_CERTIFICATEUNTRUSTED:

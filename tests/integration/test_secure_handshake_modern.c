@@ -132,6 +132,20 @@ static void secure_call(mock_t *mock, mu_server_t *server, mu_crypto_adapter_t *
     TEST_ASSERT_EQUAL(expect_type, type);
 }
 
+static opcua_uint32_t parse_create_session_auth_token(mu_binary_reader_t *resp) {
+    mu_nodeid_t session_id;
+    mu_nodeid_t auth_token;
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_nodeid(resp, &session_id));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_nodeid(resp, &auth_token));
+    TEST_ASSERT_EQUAL(MU_NODEID_NUMERIC, session_id.identifier_type);
+    TEST_ASSERT_EQUAL(0, session_id.namespace_index);
+    TEST_ASSERT_NOT_EQUAL(0, session_id.identifier.numeric);
+    TEST_ASSERT_EQUAL(MU_NODEID_NUMERIC, auth_token.identifier_type);
+    TEST_ASSERT_EQUAL(0, auth_token.namespace_index);
+    TEST_ASSERT_NOT_EQUAL(0, auth_token.identifier.numeric);
+    return auth_token.identifier.numeric;
+}
+
 static void run_handshake_for_policy(mu_security_policy_id_t policy_id) {
     mock_t mock;
     memset(&mock, 0, sizeof(mock));
@@ -331,6 +345,7 @@ static void run_handshake_for_policy(mu_security_policy_id_t policy_id) {
     }
     secure_call(&mock, server, &client_crypto, &c2s, &s2c, scid, token_id, 3, tmp, w.position,
                 MU_ID_CREATESESSIONRESPONSE, &resp);
+    opcua_uint32_t session_auth_token = parse_create_session_auth_token(&resp);
 
     /* ActivateSession (anonymous). */
     mu_binary_writer_init(&w, tmp, sizeof(tmp));
@@ -338,7 +353,7 @@ static void run_handshake_for_policy(mu_security_policy_id_t policy_id) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_ACTIVATESESSIONREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 4);
+    write_request_header(&w, session_auth_token, 4);
     {
         mu_string_t ns = {-1, NULL};
         mu_bytestring_t nb = {-1, NULL};
@@ -358,7 +373,7 @@ static void run_handshake_for_policy(mu_security_policy_id_t policy_id) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_READREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 5);
+    write_request_header(&w, session_auth_token, 5);
     mu_binary_write_double(&w, 0.0);
     mu_binary_write_uint32(&w, 3);
     mu_binary_write_int32(&w, 1);

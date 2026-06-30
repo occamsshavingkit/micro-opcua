@@ -172,6 +172,422 @@ Caller-provided storage for the embedded profile:
 This is the expected mandated RAM growth from the Standard DataChange Subscription 2017 capacity
 minima. It is caller-provided, not heap, and the core library still contributes no `.bss`.
 
+### Feature 020 US4 blocker-remediation refresh
+
+Updated 2026-06-30 after the T102b blocker fixes. This section supersedes the
+historical T088/T099/T100 attempts below for the active audit-hardening blocker
+rows. Older failed rows are retained as pre-remediation evidence.
+
+Current host/full default size evidence:
+
+| Artifact | text | data | bss | dec | Baseline | Delta / status |
+|---|---:|---:|---:|---:|---|---|
+| `build/audit-host-size-default/src/libmicro_opcua.a` (`MICRO_OPCUA_PROFILE=full`, default `MICRO_OPCUA_OPTIMIZE_SIZE=ON`) | 96,398 B | 6,224 B | 0 B | 102,622 B | host archive baseline `text=152,709 B`, `data=6,224 B`, `bss=0 B` | text `-56,311 B`; data `+0 B`; bss `+0 B`; **PASS** for the +8 KiB host/full text budget |
+| `build/audit-host-size-off/src/libmicro_opcua.a` (`MICRO_OPCUA_OPTIMIZE_SIZE=OFF`) | 166,784 B | 6,224 B | 0 B | 173,008 B | host archive baseline above | reference-only opt-out build; not the constrained-device default |
+
+Current ARM Cortex-M0+ profile matrix:
+
+| Profile | text | data | bss | dec | Status |
+|---|---:|---:|---:|---:|---|
+| nano | 16,366 B | 0 B | 0 B | 16,366 B | PASS; current value recorded |
+| micro | 23,873 B | 0 B | 0 B | 23,873 B | PASS; current value recorded |
+| embedded | 43,078 B | 0 B | 0 B | 43,078 B | PASS; current value recorded |
+| full-featured | 51,172 B | 0 B | 0 B | 51,172 B | PASS; current value recorded |
+
+Current Pico embedded-profile artifacts:
+
+| Artifact | File size / section totals | Status |
+|---|---:|---|
+| `build/t089a-pico-embedded/src/libmicro_opcua.a` | 703,784 B file size | PASS; archive produced |
+| `build/t089a-pico-embedded/platform/pico/pico_minimal_server.elf` | 1,014,188 B file size; `text=73,428`, `data=0`, `bss=119,340`, `dec=192,768` | PASS; ELF produced and measured |
+| `build/t089a-pico-embedded/platform/pico/pico_minimal_server.uf2` | 138,752 B file size | PASS; UF2 produced |
+
+Current RAM, heap, and stack evidence:
+
+| Check | Current evidence | Status |
+|---|---|---|
+| Host/full archive static RAM | `.data=6,224 B`, `.bss=0 B`, flat against baseline; `nm -S --size-sort build/src/libmicro_opcua.a \| rg ' [BbDd] '` reports initialized data only and no BSS symbols. | PASS for archive static RAM |
+| Caller-provided storage | Host/full `sizeof(struct mu_server)=116,040 B`, `MU_SERVER_STORAGE_BYTES=125,020 B`, `sizeof(mu_connection_t)=8,560 B`, `MU_CONNECTION_RX_BUFFER_SIZE=8,192 B`, `MU_CONNECTION_BASE_STORAGE_BYTES=1,328 B`; ARM embedded `sizeof(struct mu_server)=85,040 B`, `MU_SERVER_STORAGE_BYTES=98,520 B`, `sizeof(mu_connection_t)=9,480 B`; ARM nano `sizeof(struct mu_server)=664 B`, `MU_SERVER_STORAGE_BYTES=1,280 B`. | Absolute storage evidence recorded; no unbaselined delta is invented |
+| Protocol hot-path heap | Source review found no allocator calls in `src/core`, `src/encoding`, or `src/services`; remaining matches are `mu_session_find_free` false positives or adapter cleanup hooks such as `cipher_ctx_free`. | PASS for the core protocol hot path |
+| Host secured OPN stack | `scripts/check_stack_usage.sh --build-dir build/audit-embedded-stack --threshold 10240` reports `3,040 B`; threshold `10,240 B`. | PASS |
+| Pico secured OPN stack | `scripts/check_stack_usage.sh --build-dir build/t089b-pico-stack --threshold 10240` reports `2,776 B` with 35 `.su` files; threshold `10,240 B`. | PASS |
+
+Application-headroom conclusion for the active T102b refresh: the repository now
+has current passing evidence for the host/full default flash budget, ARM
+profile matrix, Pico build artifacts, archive static RAM, core protocol hot-path
+heap claim, and host/Pico stack thresholds. T102c closes the source-ID ledger
+gap separately in `docs/validation/audit-hardening-triage-ledger.md`.
+
+### Historical Feature 020 US4 host/full audit-hardening evidence
+
+Measured 2026-06-30 for `020-audit-hardening` task T088a before the T102b
+blocker-remediation refresh. This is a host/full
+profile proxy for the active `build` tree, not the ARM Cortex-M0+ matrix. It
+records the current absolute host evidence and the available comparison against
+`docs/size/audit-hardening-baseline.md`; it does not close the full resource
+gate because embedded/nano/stack evidence is tracked by separate tasks.
+
+Build/profile knobs from `build/CMakeCache.txt`:
+`MICRO_OPCUA_PROFILE=full`, `MICRO_OPCUA_BUILD_TESTS=ON`,
+`MICRO_OPCUA_PLATFORM=host`, `MICRO_OPCUA_OPTIMIZE_SIZE=OFF`,
+`MICRO_OPCUA_LTO=OFF`, `CMAKE_BUILD_TYPE=` empty, `CMAKE_C_FLAGS=` empty,
+compiler `/usr/bin/cc`, full-profile services enabled, OpenSSL detected through
+`MICRO_OPCUA_HAVE_OPENSSL=1`, and capacity overrides
+`MU_MAX_MONITORED_ITEMS=100`, `MU_MAX_SUBSCRIPTIONS=2`,
+`MU_MAX_PUBLISH_REQUESTS=5`, `MU_MONITORED_QUEUE_DEPTH=2`,
+`MU_MAX_TRIGGER_LINKS=4`.
+
+Commands and transcripts:
+
+```sh
+cmake --build build
+./scripts/size-report.sh build/src/libmicro_opcua.a
+size -t build/src/libmicro_opcua.a
+nm -S --size-sort build/src/libmicro_opcua.a | rg ' [BbDd] '
+rg -n 'malloc|calloc|realloc|free\(|OPENSSL_malloc' src include tests
+```
+
+- Size/build transcript: `/tmp/micro-opcua-size/t088a-host-full-size.log`
+  (`cmake --build build` exit code `0`; `size-report.sh` exit code `0`).
+- Totals transcript: `/tmp/micro-opcua-size/t088a-host-full-size-totals.log`
+  (`size -t` exit code `0`; GNU binutils `size` 2.42).
+- Data/BSS symbol transcript:
+  `/tmp/micro-opcua-size/t088a-host-full-nm-data-bss.log` (`nm`/`rg` exit code
+  `0`; GNU binutils `nm` 2.42).
+- Heap-review transcript: `/tmp/micro-opcua-size/t088a-heap-grep.log` (`rg`
+  exit code `0`).
+- Caller-storage measurement helper was compiled from stdin with the same
+  compile definitions as `build/src/libmicro_opcua.a`; build/run transcript:
+  `/tmp/micro-opcua-size/t088a-sizeof-server.build.log`; output:
+  `/tmp/micro-opcua-size/t088a-sizeof-server.run.log`; compile/run exit codes
+  `0`/`0`.
+
+T099b raw size-report evidence from T099a:
+
+- Build transcript: `/tmp/micro-opcua-t099a/t099a-build.log`
+  (`cmake --build build` exit code `0`; produced
+  `build/src/libmicro_opcua.a`).
+- Size-report transcript: `/tmp/micro-opcua-t099a/t099a-size-report.log`
+  (`./scripts/size-report.sh build/src/libmicro_opcua.a` exit code `0`).
+- `size-report.sh` emitted per-object rows only, not a totals row. The summed
+  raw row values are `text=166,738 B`, `data=6,224 B`, `bss=0 B`,
+  `dec=172,962 B`. This preserves the known host/full budget failure recorded
+  below; T099c owns the formal budget comparison.
+
+```text
+command: ./scripts/size-report.sh build/src/libmicro_opcua.a
+started: 2026-06-30T08:49:57+02:00
+Size report for: build/src/libmicro_opcua.a
+   text	   data	    bss	    dec	    hex	filename
+  11243	      0	      0	  11243	   2beb	server.c.o (ex build/src/libmicro_opcua.a)
+     32	      0	      0	     32	     20	status.c.o (ex build/src/libmicro_opcua.a)
+   1966	      0	      0	   1966	    7ae	tcp_connection.c.o (ex build/src/libmicro_opcua.a)
+   1718	      0	      0	   1718	    6b6	message_chunk.c.o (ex build/src/libmicro_opcua.a)
+    309	      0	      0	    309	    135	sequence.c.o (ex build/src/libmicro_opcua.a)
+    472	      0	      0	    472	    1d8	service_message.c.o (ex build/src/libmicro_opcua.a)
+  45691	    816	      0	  46507	   b5ab	service_dispatch.c.o (ex build/src/libmicro_opcua.a)
+   1022	      0	      0	   1022	    3fe	uasc.c.o (ex build/src/libmicro_opcua.a)
+   1077	      0	      0	   1077	    435	secure_channel.c.o (ex build/src/libmicro_opcua.a)
+   2808	      0	      0	   2808	    af8	session.c.o (ex build/src/libmicro_opcua.a)
+    694	      0	      0	    694	    2b6	service_header.c.o (ex build/src/libmicro_opcua.a)
+   3256	      0	      0	   3256	    cb8	discovery.c.o (ex build/src/libmicro_opcua.a)
+     32	      0	      0	     32	     20	alarms_conditions.c.o (ex build/src/libmicro_opcua.a)
+    531	      0	      0	    531	    213	address_space.c.o (ex build/src/libmicro_opcua.a)
+   6080	   5408	      0	  11488	   2ce0	base_nodes.c.o (ex build/src/libmicro_opcua.a)
+   2270	      0	      0	   2270	    8de	node_id.c.o (ex build/src/libmicro_opcua.a)
+    529	      0	      0	    529	    211	value_source.c.o (ex build/src/libmicro_opcua.a)
+   3118	      0	      0	   3118	    c2e	binary_reader.c.o (ex build/src/libmicro_opcua.a)
+   2248	      0	      0	   2248	    8c8	binary_writer.c.o (ex build/src/libmicro_opcua.a)
+    987	      0	      0	    987	    3db	binary_string.c.o (ex build/src/libmicro_opcua.a)
+   1730	      0	      0	   1730	    6c2	binary_nodeid.c.o (ex build/src/libmicro_opcua.a)
+   1138	      0	      0	   1138	    472	binary_extension_object.c.o (ex build/src/libmicro_opcua.a)
+   2644	      0	      0	   2644	    a54	binary_variant.c.o (ex build/src/libmicro_opcua.a)
+    941	      0	      0	    941	    3ad	binary_datavalue.c.o (ex build/src/libmicro_opcua.a)
+   1200	      0	      0	   1200	    4b0	security_policy.c.o (ex build/src/libmicro_opcua.a)
+     32	      0	      0	     32	     20	opcua_ids.c.o (ex build/src/libmicro_opcua.a)
+   1965	      0	      0	   1965	    7ad	read.c.o (ex build/src/libmicro_opcua.a)
+   4286	      0	      0	   4286	   10be	browse.c.o (ex build/src/libmicro_opcua.a)
+  10937	      0	      0	  10937	   2ab9	node_management.c.o (ex build/src/libmicro_opcua.a)
+   2281	      0	      0	   2281	    8e9	query.c.o (ex build/src/libmicro_opcua.a)
+   3013	      0	      0	   3013	    bc5	binary_query.c.o (ex build/src/libmicro_opcua.a)
+  21205	      0	      0	  21205	   52d5	subscription.c.o (ex build/src/libmicro_opcua.a)
+    749	      0	      0	    749	    2ed	pubsub.c.o (ex build/src/libmicro_opcua.a)
+    323	      0	      0	    323	    143	uadp_encoder.c.o (ex build/src/libmicro_opcua.a)
+    596	      0	      0	    596	    254	host_udp_adapter.c.o (ex build/src/libmicro_opcua.a)
+    710	      0	      0	    710	    2c6	write.c.o (ex build/src/libmicro_opcua.a)
+   4416	      0	      0	   4416	   1140	history.c.o (ex build/src/libmicro_opcua.a)
+   1219	      0	      0	   1219	    4c3	key_derivation.c.o (ex build/src/libmicro_opcua.a)
+    492	      0	      0	    492	    1ec	certificate.c.o (ex build/src/libmicro_opcua.a)
+   7051	      0	      0	   7051	   1b8b	asym_chunk.c.o (ex build/src/libmicro_opcua.a)
+   4232	      0	      0	   4232	   1088	sym_chunk.c.o (ex build/src/libmicro_opcua.a)
+    278	      0	      0	    278	    116	trustlist.c.o (ex build/src/libmicro_opcua.a)
+   1636	      0	      0	   1636	    664	host_tcp_adapter.c.o (ex build/src/libmicro_opcua.a)
+   7581	      0	      0	   7581	   1d9d	host_crypto_adapter.c.o (ex build/src/libmicro_opcua.a)
+exit_code: 0
+finished: 2026-06-30T08:49:57+02:00
+```
+
+T099c host/full budget comparison:
+
+| Artifact | Current raw size-report totals | Baseline host archive | Delta | Plan budget | Budget result |
+|---|---:|---:|---:|---|---|
+| `build/src/libmicro_opcua.a` | text 166,738 B; data 6,224 B; bss 0 B; dec 172,962 B | text 152,709 B; data 6,224 B; bss 0 B | text +14,029 B; data +0 B; bss +0 B | Host/full `.text` growth under +8 KiB (`< 8,192 B`); no new default static RAM beyond existing storage | **FAIL**: text growth exceeds the host/full flash budget by 5,837 B. Data and BSS are flat, but that does not make the resource gate pass. |
+
+T099c conclusion: host/full flash is over budget because `+14,029 B` is greater
+than the `< 8,192 B` limit in `specs/020-audit-hardening/plan.md`. Archive
+static RAM is flat against the available baseline (`data +0 B`, `bss +0 B`),
+but this is only the static-RAM portion of the evidence. ARM/Pico/nano/embedded
+size evidence remains blocked or incomplete as recorded below, so this ledger
+does not claim SC-007, release resource-gate passage, or full Feature 020
+resource passage.
+
+T088a host/full archive comparison:
+
+| Evidence | text | data | bss | dec | Baseline | Delta | Budget status |
+|---|---:|---:|---:|---:|---:|---:|---|
+| `build/src/libmicro_opcua.a` (`size -t`) | 166,738 B | 6,224 B | 0 B | 172,962 B | text 152,709 B; data 6,224 B; bss 0 B | text +14,029 B; data +0 B; bss +0 B | **FAIL for host/full +8 KiB text budget** |
+
+RAM and heap evidence:
+
+| Item | Current host/full value | Comparison status | Notes |
+|---|---:|---|---|
+| `sizeof(struct mu_server)` | 116,040 B | Baseline unavailable in `docs/size/audit-hardening-baseline.md` | Caller-provided storage, not archive `.bss`. |
+| `MU_SERVER_STORAGE_BYTES` | 121,516 B | Baseline unavailable in `docs/size/audit-hardening-baseline.md` | Absolute full-profile host value for the active feature knobs. |
+| Archive `.data` | 6,224 B | 0 B delta vs baseline | `nm` review shows existing lowercase `d` symbols such as `g_supported_services` and base-node arrays; no `.bss` symbols were found. |
+| Archive `.bss` | 0 B | 0 B delta vs baseline | Supports the no-new-default-static-RAM check only for archive `.bss`; caller-storage deltas still need baseline evidence. |
+| Protocol hot-path heap | No new core allocation proven by grep review | Advisory, not a release-gate pass | Matches are platform adapters, backend/test cleanup calls, OpenSSL allocation, and `mu_session_find_free` false positives; platform crypto/host adapters remain outside the no-hot-path-heap core claim. |
+
+Resource risk: **High** for host flash because current host/full `.text` growth
+is +14,029 B, exceeding the +8 KiB budget in
+`specs/020-audit-hardening/plan.md`. Static RAM risk is **medium/incomplete**:
+archive `.data`/`.bss` did not grow, but no audit-hardening baseline was
+available for `sizeof(struct mu_server)` or `MU_SERVER_STORAGE_BYTES`, so this
+entry records current absolute caller-storage measurements without inventing
+deltas. Do not claim SC-007 or release-gate resource passage from this host-only
+evidence.
+
+### Historical Feature 020 US4 embedded/nano audit-hardening evidence
+
+Measured-attempt 2026-06-30 for `020-audit-hardening` task T088b before the
+T102b blocker-remediation refresh. This entry
+targets the ARM Cortex-M0+ Thumb `-Os` profile matrix required by the active
+feature's size gate: nano/embedded `.text` growth under +4 KiB, no new default
+static RAM unless justified, no protocol hot-path heap, and release-gate honesty.
+The current embedded/nano evidence is **blocked** because the ARM profile builds
+fail before producing `libmicro_opcua.a` archives, so this entry records command
+results and blockers rather than invented flash/RAM deltas.
+
+Toolchain inventory:
+
+- `arm-none-eabi-gcc (15:13.2.rel1-2) 13.2.1 20231009`
+- `GNU size (2.42-1ubuntu1+23) 2.42`
+- `cmake version 3.28.3`
+
+Commands and transcripts:
+
+```sh
+BUILD_ROOT=build/audit-size-arm scripts/measure_size.sh all
+BUILD_ROOT=build/audit-size-arm scripts/measure_size.sh nano
+BUILD_ROOT=build/audit-size-arm scripts/measure_size.sh embedded
+```
+
+- Matrix transcript: `/tmp/micro-opcua-size/t088b-arm-size-matrix.log`
+  (`measure_size.sh all` exit code `2`).
+- Nano transcript: `/tmp/micro-opcua-size/t088b-arm-nano-size.log`
+  (`measure_size.sh nano` exit code `2`).
+- Embedded transcript: `/tmp/micro-opcua-size/t088b-arm-embedded-size.log`
+  (`measure_size.sh embedded` exit code `2`).
+- `find build/audit-size-arm -path '*/src/libmicro_opcua.a' -printf '%p\n'`
+  produced no archive paths after these failed runs.
+
+Build/profile knobs come from `scripts/measure_size.sh`: `CMAKE_SYSTEM_NAME=Generic`,
+`CMAKE_C_COMPILER=arm-none-eabi-gcc`,
+`CMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY`,
+`CMAKE_C_FLAGS="-mcpu=cortex-m0plus -mthumb"`,
+`MICRO_OPCUA_PLATFORM=arduino-skeleton`,
+`MICRO_OPCUA_OPTIMIZE_SIZE=ON`, and per-profile
+`MICRO_OPCUA_PROFILE=nano` or `MICRO_OPCUA_PROFILE=embedded`. The embedded run
+also sets `MU_MAX_SUBSCRIPTIONS=2`, `MU_MAX_MONITORED_ITEMS=100`,
+`MU_MAX_PUBLISH_REQUESTS=5`, `MU_MONITORED_QUEUE_DEPTH=2`, and
+`MU_MAX_TRIGGER_LINKS=4`.
+
+Current ARM size result:
+
+| Profile | Command result | text | data | bss | Delta/budget status |
+|---|---|---:|---:|---:|---|
+| nano | **BLOCKED**, compile fails before archive creation | N/A | N/A | N/A | Cannot compare to +4 KiB budget. |
+| embedded | **BLOCKED**, compile fails before archive creation | N/A | N/A | N/A | Cannot compare to +4 KiB budget. |
+
+Observed blockers:
+
+- Nano: `src/services/discovery.c:142:29: error: variable 'policy' set but not used [-Werror=unused-but-set-variable]`.
+- Embedded: `src/core/server_internal.h:45:1: error: static assertion failed: "MU_CONNECTION_BASE_STORAGE_BYTES must cover mu_connection_t fields outside rx_buffer"`.
+
+RAM and heap evidence status:
+
+| Item | Current evidence | Status |
+|---|---|---|
+| Archive `.data` / `.bss` for nano and embedded | No current ARM archive was produced. | **Blocked**; cannot claim no-new-default-static-RAM for nano/embedded from this task. |
+| `MU_SERVER_STORAGE_BYTES` / `sizeof(struct mu_server)` nano and embedded deltas | No audit-hardening pre-change ARM baseline exists in `docs/size/audit-hardening-baseline.md`, and current ARM builds fail before measurement. | **Blocked/incomplete**; record no deltas. |
+| Protocol hot-path heap | No new ARM-specific heap evidence from T088b. T088a's host grep remains advisory source-level evidence only. | **Incomplete** for embedded release-gate purposes. |
+
+Resource risk: **High/incomplete** for nano and embedded release gating. The
+required embedded/nano flash/RAM evidence is unavailable until the ARM profile
+build blockers above are fixed and the profile matrix can produce current
+absolute `text`/`data`/`bss` rows. Do not claim SC-007 or release-gate resource
+passage from this T088b evidence.
+
+### Historical Feature 020 US4 static RAM data/bss audit-hardening evidence
+
+Measured 2026-06-30 for `020-audit-hardening` task T088c before the T102b
+blocker-remediation refresh. This entry focuses
+only on archive `.data` and `.bss` static RAM evidence for the active
+audit-hardening budget: no new default static RAM unless justified, no
+protocol hot-path heap, and no release-gate resource claim without current
+evidence across the required artifacts.
+
+Current host/full artifact evidence:
+
+| Artifact | Command | Result | Current `.data` | Current `.bss` | Baseline comparison | Transcript |
+|---|---|---|---:|---:|---|---|
+| `build/src/libmicro_opcua.a` | `size -t build/src/libmicro_opcua.a` | exit code `0`; GNU `size` 2.42; totals row `text=166738`, `data=6224`, `bss=0`, `dec=172962` | 6,224 B | 0 B | `docs/size/audit-hardening-baseline.md` records `data=6224`, `bss=0`; delta `data +0 B`, `bss +0 B` | `/tmp/micro-opcua-size/t088c-host-full-size-totals.log` |
+| `build/src/libmicro_opcua.a` | `nm -S --size-sort build/src/libmicro_opcua.a \| rg ' [BbDd] '` | exit code `0`; GNU `nm` 2.42; found lowercase `d` symbols only, no `B`/`b` symbols | Existing initialized data symbols only | No BSS symbols reported | Supports the host/full archive static-RAM comparison above; does not measure caller-provided `struct mu_server` storage | `/tmp/micro-opcua-size/t088c-host-full-nm-data-bss.log` |
+
+Host/full symbol review: the `.data` matches are existing initialized-data
+symbols: `g_supported_services` (`0x330` bytes), four 16-byte server array
+descriptors, four 56-byte array values, `s_base_space` (`0x10` bytes), and
+`s_base_nodes` (`0x13f0` bytes). No `.bss` symbols were reported by the
+host/full `nm` review. This supports the host/full archive portion of the
+no-new-default-static-RAM check, but it does not prove the full static-RAM gate
+because caller-provided storage and embedded/nano profile artifacts still need
+current evidence.
+
+Current embedded/nano status:
+
+| Artifact set | Command | Result | `.data` / `.bss` status | Transcript |
+|---|---|---|---|---|
+| Current T088b ARM audit build root `build/audit-size-arm` | `find build/audit-size-arm -path '*/src/libmicro_opcua.a' -printf '%p\n'` | exit code `0`; no archive paths printed | **Blocked**: no current nano/embedded archives exist to measure | `/tmp/micro-opcua-size/t088c-audit-arm-archive-find.log` |
+| Pre-existing ARM reference archives under `build/size-arm` | `size -t build/size-arm/nano/src/libmicro_opcua.a`; `size -t build/size-arm/embedded/src/libmicro_opcua.a` | exit code `0`; nano totals `data=0`, `bss=0`; embedded totals `data=0`, `bss=0` | Reference only; archive mtimes are 2026-06-29, before the current T088b build attempts, so these are not current audit-hardening release evidence | `/tmp/micro-opcua-size/t088c-preexisting-arm-summary.log` |
+| Pre-existing ARM reference archives under `build/size-arm` | `nm -S --size-sort build/size-arm/nano/src/libmicro_opcua.a build/size-arm/embedded/src/libmicro_opcua.a \| rg ' [BbDd] '` | exit code `1`; no matches | Reference only; no `.data`/`.bss` symbols found in stale nano/embedded archives | `/tmp/micro-opcua-size/t088c-preexisting-arm-nm-data-bss.log` |
+
+The current embedded/nano `.data`/`.bss` gate remains **blocked/incomplete** for
+the same reasons documented in T088b: `BUILD_ROOT=build/audit-size-arm
+scripts/measure_size.sh nano` fails on the unused `policy` variable in
+`src/services/discovery.c`, and `BUILD_ROOT=build/audit-size-arm
+scripts/measure_size.sh embedded` fails the
+`MU_CONNECTION_BASE_STORAGE_BYTES` static assertion in
+`src/core/server_internal.h`. Do not use the pre-existing `build/size-arm`
+archives to claim release-gate passage for `020-audit-hardening`; they only show
+that older ARM reference archives had no archive `.data` or `.bss`.
+
+Static RAM conclusion for T088c: host/full archive `.data` and `.bss` are flat
+against the available pre-change baseline (`data +0 B`, `bss +0 B`), and the
+fresh host/full symbol review found no `.bss`. The full no-new-default-static-RAM
+release gate is **not passed** by this evidence because current embedded/nano
+archives are unavailable and caller-provided storage deltas are not baselined in
+`docs/size/audit-hardening-baseline.md`.
+
+### Historical Feature 020 US4 stack audit-hardening evidence
+
+Measured 2026-06-30 for `020-audit-hardening` task T088d before the T102b
+blocker-remediation refresh. This entry records
+only the secured OpenSecureChannel stack evidence required by the active
+feature's resource budget and release-gate honesty rules. The stack threshold
+check passes, but this does **not** claim SC-007 or full resource-gate passage:
+T088a records host/full flash over the +8 KiB budget, and T088b/T088c record
+current embedded/nano size and static-RAM evidence as blocked or incomplete.
+
+Build/profile knobs from `build/audit-embedded-stack/CMakeCache.txt`:
+`MICRO_OPCUA_PROFILE=embedded`, `MICRO_OPCUA_EMBEDDED_PROFILE=ON`,
+`MICRO_OPCUA_OPTIMIZE_SIZE=ON`, `MICRO_OPCUA_STACK_USAGE=ON`,
+`MICRO_OPCUA_STACK_USAGE_LIMIT=10240`, `MICRO_OPCUA_PLATFORM=host`,
+`CMAKE_BUILD_TYPE=Release`, compiler `/usr/bin/cc`, `MICRO_OPCUA_SECURITY=ON`,
+`MICRO_OPCUA_SUBSCRIPTIONS_STANDARD=ON`, `MICRO_OPCUA_MULTIPLE_CONNECTIONS=ON`,
+and capacity overrides `MU_MAX_MONITORED_ITEMS=100`,
+`MU_MAX_SUBSCRIPTIONS=2`, `MU_MAX_PUBLISH_REQUESTS=5`,
+`MU_MONITORED_QUEUE_DEPTH=2`, `MU_MAX_TRIGGER_LINKS=4`.
+
+Commands and transcripts:
+
+```sh
+cmake --build build/audit-embedded-stack
+bash scripts/check_stack_usage.sh --build-dir build/audit-embedded-stack --threshold 10240
+find build/audit-embedded-stack -type f -name '*.su' | wc -l
+```
+
+- Build transcript: `/tmp/micro-opcua-size/t088d-stack-build.log`
+  (`cmake --build build/audit-embedded-stack` exit code `0`; produced
+  `build/audit-embedded-stack/src/libmicro_opcua.a`).
+- Stack-check transcript: `/tmp/micro-opcua-size/t088d-stack-check.log`
+  (`check_stack_usage.sh` exit code `0`).
+- Stack-usage artifacts: `37` `.su` files found under
+  `build/audit-embedded-stack`.
+
+T100b refresh evidence from the T100a rerun:
+
+- Build transcript: `/tmp/micro-opcua-t100a/t100a-stack-build.log`
+  (`cmake --build build/audit-embedded-stack` exit code `0`; produced
+  `build/audit-embedded-stack/src/libmicro_opcua.a`).
+- Stack-check transcript: `/tmp/micro-opcua-t100a/t100a-stack-check.log`
+  (`check_stack_usage.sh` exit code `0`; secured OPN stack estimate
+  `3040 bytes`; threshold `10240 bytes`; stack-specific check passed).
+- Stack-usage count transcript:
+  `/tmp/micro-opcua-t100a/t100a-su-count.log` (`find ... '*.su' | wc -l`
+  exit code `0`; `37` `.su` files found under `build/audit-embedded-stack`).
+
+Stack comparison:
+
+| Evidence | Current estimate | Baseline | Delta | Threshold | Result |
+|---|---:|---:|---:|---:|---|
+| Secured OPN stack estimate | 3,040 B | 3,040 B | +0 B | 10,240 B | **PASS for stack threshold** |
+| T100a rerun secured OPN stack estimate | 3,040 B | 3,040 B | +0 B | 10,240 B | **PASS for host stack-specific threshold only** |
+
+Frame and phase summary from `scripts/check_stack_usage.sh`:
+
+| Frame / phase | Bytes |
+|---|---:|
+| `src/core/server.c:handle_data_chunk_secure` | 0 B (not emitted) |
+| `src/security/asym_chunk.c:mu_asym_chunk_unwrap` | 304 B |
+| `src/security/asym_chunk.c:mu_asym_chunk_wrap` | 2,912 B |
+| `src/security/asym_chunk.c:max_helper` | 128 B |
+| `src/core/service_dispatch.c:mu_service_dispatch` | 176 B |
+| `src/core/service_dispatch.c:handle_open_secure_channel` | 256 B |
+| `src/services/secure_channel.c:mu_secure_channel_open` | 48 B |
+| `src/security/sym_chunk.c:mu_sym_keys_derive` | 272 B |
+| `src/security/key_derivation.c:mu_p_sha256` | 288 B |
+| asymmetric unwrap/wrap phase | 3,040 B |
+| OpenSecureChannel dispatch/KDF phase | 992 B |
+
+Historical T088d stack conclusion: the stack-recording command passed and was
+flat against the pre-change `3040 bytes` baseline in
+`docs/size/audit-hardening-baseline.md`, but that pre-remediation snapshot did
+not clear the full resource gate because other T088/T089 rows were still
+failing or blocked. The T102b blocker-remediation refresh above supersedes this
+historical status.
+
+### Feature 020 US4 application-headroom summary
+
+Updated 2026-06-30 for the T102b blocker-remediation refresh. The active
+application-headroom budget comes from `specs/020-audit-hardening/plan.md` and
+`specs/020-audit-hardening/spec.md`: host/full `.text` growth under +8 KiB,
+nano/embedded `.text` growth under +4 KiB, no new default static RAM beyond
+existing server/session/channel storage, no heap use on the protocol hot path,
+and recorded stack evidence for hardening changes.
+
+| Budget item | Current evidence source | Budget evaluation | Resource risk |
+|---|---|---|---|
+| Host/full `.text` growth under +8 KiB | T102b: default full build with `MICRO_OPCUA_OPTIMIZE_SIZE=ON` reports `text=96,398 B` vs baseline `152,709 B`. | **PASS**: delta is `-56,311 B`, below the `< 8,192 B` growth budget. | Low for the default constrained-device build; the explicit `OPTIMIZE_SIZE=OFF` opt-out remains over budget as reference-only evidence. |
+| Nano `.text` growth under +4 KiB | T102b ARM matrix: nano `text=16,366 B`, `data=0`, `bss=0`. | **PASS / current value recorded**: blocker cleared and size remains below the historical nano value in this ledger. | Low for current measured nano archive. |
+| Embedded `.text` growth under +4 KiB | T102b ARM matrix: embedded `text=43,078 B`, `data=0`, `bss=0`; Pico embedded artifacts also build. | **PASS / current value recorded**: blocker cleared and embedded/Pico artifacts exist. | Low for current measured embedded archive and Pico build presence. |
+| No new default static RAM | Host/full archive `.data=6,224 B`, `.bss=0 B`; ARM archives `.data=0`, `.bss=0`; caller-storage absolutes recorded with `MU_CONNECTION_BASE_STORAGE_BYTES=1,328 B`. | **PASS / absolute caller-storage evidence recorded**: archive static RAM is flat, and storage requirements are explicit. | Low for archive static RAM; caller storage is documented as integrator-provided memory. |
+| No protocol hot-path heap | T102b source review found no allocator calls in `src/core`, `src/encoding`, or `src/services`; adapter cleanup hooks remain outside the core hot-path claim. | **PASS for the core protocol hot path**. | Low for core protocol hot path; third-party backend internals remain adapter-specific. |
+| Stack-recording budget | Host secured OPN stack `3,040 B`; Pico secured OPN stack `2,776 B`; threshold `10,240 B`. | **PASS**: both measured stack estimates are below threshold. | Low for measured secured OPN stack path. |
+
+Application-headroom conclusion for the active refresh: the Feature 020
+repository-fixable resource blocker rows are closed by current evidence. This
+does not supply external CTT evidence. T102c closes the source-ID ledger gap
+separately in `docs/validation/audit-hardening-triage-ledger.md`.
+
 ## Secured-path stack (after in-place decrypt)
 
 MSG chunks are decrypted in place in the receive buffer, so the secured request path
@@ -219,4 +635,3 @@ byte-identical (golden-vector regression test).
 
 ## Feature 009: Core Feature Expansion
 - Target size impact estimates for Write service, multiple connections, modern security policies, certificate user authentication, and alarms & events are documented in the design specification and implementation plan. Flash impact is expected to remain under 10 KB total.
-

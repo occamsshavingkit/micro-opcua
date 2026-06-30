@@ -148,6 +148,9 @@ opcua_statuscode_t mu_read_process_with_user_index(const mu_address_space_t *add
                                                    size_t max_results) {
     if (!req || !resp || !results_array)
         return MU_STATUS_BAD_INTERNALERROR;
+    /* OPC-10000-4 section 5.11.2.3 uses TimestampsToReturn from section 7.39. */
+    if (req->timestamps_to_return > MU_TIMESTAMPS_TO_RETURN_NEITHER)
+        return MU_STATUS_BAD_TIMESTAMPSTORETURNINVALID;
     if (req->num_nodes_to_read > max_results)
         return MU_STATUS_BAD_TOOMANYOPERATIONS;
 

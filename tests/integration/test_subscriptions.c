@@ -35,6 +35,9 @@
 #define STATUS_BAD_NODEIDUNKNOWN 0x80340000u
 #define STATUS_BAD_TOOMANYMONITOREDITEMS 0x80DB0000u
 #define STATUS_BAD_MONITOREDITEMIDINVALID 0x80420000u
+/* tests/support/fake_platform.c returns entropy byte 0x42. The first CreateSession
+   authenticationToken is generated from that entropy by src/services/session.c. */
+#define TEST_FIRST_AUTH_TOKEN 0xE7E7E7E7u
 
 void setUp(void) {}
 void tearDown(void) {}
@@ -106,6 +109,27 @@ static void write_request_header(mu_binary_writer_t *w, opcua_uint32_t auth, opc
     mu_binary_write_uint32(w, 0);
     mu_binary_write_extension_object_header(w, &nul, 0);
 }
+
+static void write_create_session_request_body_fields(mu_binary_writer_t *w) {
+    mu_string_t ns = {-1, NULL};
+    mu_bytestring_t nb = {-1, NULL};
+
+    mu_binary_write_string(w, &ns);     /* ClientDescription.applicationUri */
+    mu_binary_write_string(w, &ns);     /* productUri */
+    mu_binary_write_byte(w, 0x00);      /* applicationName */
+    mu_binary_write_uint32(w, 1);       /* applicationType = Client */
+    mu_binary_write_string(w, &ns);     /* gatewayServerUri */
+    mu_binary_write_string(w, &ns);     /* discoveryProfileUri */
+    mu_binary_write_int32(w, 0);        /* discoveryUrls[] */
+    mu_binary_write_string(w, &ns);     /* serverUri */
+    mu_binary_write_string(w, &ns);     /* endpointUrl */
+    mu_binary_write_string(w, &ns);     /* sessionName */
+    mu_binary_write_bytestring(w, &nb); /* clientNonce */
+    mu_binary_write_bytestring(w, &nb); /* clientCertificate */
+    mu_binary_write_double(w, 0.0);     /* requestedSessionTimeout */
+    mu_binary_write_uint32(w, 0);       /* maxResponseMessageSize */
+}
+
 static size_t build_msg(opcua_byte_t *out, size_t cap, opcua_uint32_t seq, opcua_uint32_t reqid,
                         const opcua_byte_t *body, size_t blen) {
     mu_binary_writer_t w;
@@ -220,6 +244,7 @@ static void enqueue_connect(mock_t *mock) {
         mu_binary_write_nodeid(&w, &t);
     }
     write_request_header(&w, 0, 2);
+    write_create_session_request_body_fields(&w);
     clen = build_msg(chunk, sizeof(chunk), 2, 2, tmp, w.position);
     enqueue(mock, chunk, clen);
 
@@ -228,7 +253,7 @@ static void enqueue_connect(mock_t *mock) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_ACTIVATESESSIONREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 3);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, 3);
     {
         mu_string_t ns = {-1, NULL};
         mu_bytestring_t nb = {-1, NULL};
@@ -256,7 +281,7 @@ static void enqueue_create_subscription(mock_t *mock, opcua_uint32_t seq, opcua_
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_CREATESUBSCRIPTIONREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, seq);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, seq);
     mu_binary_write_double(&w, interval);
     mu_binary_write_uint32(&w, lifetime);
     mu_binary_write_uint32(&w, keepalive);
@@ -456,7 +481,7 @@ void test_delete_subscriptions(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_DELETESUBSCRIPTIONSREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 5);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, 5);
     mu_binary_write_int32(&w, 2);
     mu_binary_write_uint32(&w, sub_id);
     mu_binary_write_uint32(&w, 0xDEADu);
@@ -506,7 +531,7 @@ void test_create_monitored_items(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_CREATEMONITOREDITEMSREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 5);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, 5);
     mu_binary_write_uint32(&w, sub_id);
     mu_binary_write_uint32(&w, 3);                /* timestampsToReturn = Neither */
     mu_binary_write_int32(&w, 2);                 /* itemsToCreate count */
@@ -562,7 +587,7 @@ void test_create_monitored_items_too_many(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_CREATEMONITOREDITEMSREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 5);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, 5);
     mu_binary_write_uint32(&w, sub_id);
     mu_binary_write_uint32(&w, 3);
     mu_binary_write_int32(&w, n_items);
@@ -612,7 +637,7 @@ void test_delete_monitored_items(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_CREATEMONITOREDITEMSREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 5);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, 5);
     mu_binary_write_uint32(&w, sub_id);
     mu_binary_write_uint32(&w, 3);
     mu_binary_write_int32(&w, 1);
@@ -635,7 +660,7 @@ void test_delete_monitored_items(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_DELETEMONITOREDITEMSREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 6);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, 6);
     mu_binary_write_uint32(&w, sub_id);
     mu_binary_write_int32(&w, 2);
     mu_binary_write_uint32(&w, item_id);
@@ -709,7 +734,7 @@ void test_sampling_detects_change(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_CREATEMONITOREDITEMSREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 5);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, 5);
     mu_binary_write_uint32(&w, sub_id);
     mu_binary_write_uint32(&w, 3);
     mu_binary_write_int32(&w, 1);
@@ -754,7 +779,7 @@ static void enqueue_publish(mock_t *m, opcua_uint32_t seq) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_PUBLISHREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, seq);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, seq);
     mu_binary_write_int32(&w, 0); /* subscriptionAcknowledgements: empty */
     clen = build_msg(chunk, sizeof(chunk), seq, seq, tmp, w.position);
     enqueue(m, chunk, clen);
@@ -833,7 +858,7 @@ void test_publish_delivers_data_change(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_CREATEMONITOREDITEMSREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 5);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, 5);
     mu_binary_write_uint32(&w, sub_id);
     mu_binary_write_uint32(&w, 3);
     mu_binary_write_int32(&w, 1);
@@ -921,7 +946,7 @@ static void enqueue_publish_ack(mock_t *m, opcua_uint32_t seq, opcua_uint32_t su
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_PUBLISHREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, seq);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, seq);
     mu_binary_write_int32(&w, 1); /* one acknowledgement */
     mu_binary_write_uint32(&w, sub_id);
     mu_binary_write_uint32(&w, ack_seq);
@@ -939,7 +964,7 @@ static void enqueue_republish(mock_t *m, opcua_uint32_t seq, opcua_uint32_t sub_
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_REPUBLISHREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, seq);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, seq);
     mu_binary_write_uint32(&w, sub_id);
     mu_binary_write_uint32(&w, retransmit_seq);
     clen = build_msg(chunk, sizeof(chunk), seq, seq, tmp, w.position);
@@ -976,7 +1001,7 @@ void test_republish_and_acknowledge(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_CREATEMONITOREDITEMSREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 5);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, 5);
     mu_binary_write_uint32(&w, sub_id);
     mu_binary_write_uint32(&w, 3);
     mu_binary_write_int32(&w, 1);
@@ -1060,7 +1085,7 @@ static mu_server_t *setup_sub_with_item(mock_t *mock, opcua_byte_t *storage, siz
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_CREATEMONITOREDITEMSREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 5);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, 5);
     mu_binary_write_uint32(&w, *sub_id_out);
     mu_binary_write_uint32(&w, 3);
     mu_binary_write_int32(&w, 1);
@@ -1102,7 +1127,7 @@ void test_modify_subscription(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_MODIFYSUBSCRIPTIONREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 5);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, 5);
     mu_binary_write_uint32(&w, sub_id);
     mu_binary_write_double(&w, 333.0); /* requestedPublishingInterval */
     mu_binary_write_uint32(&w, 100);   /* requestedLifetimeCount */
@@ -1143,7 +1168,7 @@ void test_set_publishing_mode(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_SETPUBLISHINGMODEREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 6);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, 6);
     mu_binary_write_boolean(&w, false);
     mu_binary_write_int32(&w, 1);
     mu_binary_write_uint32(&w, sub_id);
@@ -1195,7 +1220,7 @@ void test_modify_monitored_items(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_MODIFYMONITOREDITEMSREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 6);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, 6);
     mu_binary_write_uint32(&w, sub_id);
     mu_binary_write_uint32(&w, 3);       /* timestampsToReturn */
     mu_binary_write_int32(&w, 1);        /* itemsToModify */
@@ -1250,7 +1275,7 @@ void test_set_monitoring_mode(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_SETMONITORINGMODEREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 6);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, 6);
     mu_binary_write_uint32(&w, sub_id);
     mu_binary_write_uint32(&w, 0); /* monitoringMode = Disabled */
     mu_binary_write_int32(&w, 1);
@@ -1279,7 +1304,7 @@ void test_set_monitoring_mode(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_SETMONITORINGMODEREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 7);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, 7);
     mu_binary_write_uint32(&w, sub_id);
     mu_binary_write_uint32(&w, 2); /* Reporting */
     mu_binary_write_int32(&w, 1);
@@ -1300,7 +1325,7 @@ void test_set_monitoring_mode(void) {
 #define ID_READRESPONSE 634
 #define STATUS_BAD_TOOMANYSESSIONS 0x80560000u
 
-/* Enqueue a CreateSession request (header only; the server bounds the timeout). */
+/* Enqueue a complete CreateSession request body. */
 static void enqueue_create_session(mock_t *m, opcua_uint32_t seq) {
     opcua_byte_t tmp[256], chunk[256];
     mu_binary_writer_t w;
@@ -1311,6 +1336,7 @@ static void enqueue_create_session(mock_t *m, opcua_uint32_t seq) {
         mu_binary_write_nodeid(&w, &t);
     }
     write_request_header(&w, 0, seq);
+    write_create_session_request_body_fields(&w);
     clen = build_msg(chunk, sizeof(chunk), seq, seq, tmp, w.position);
     enqueue(m, chunk, clen);
 }
@@ -1649,7 +1675,7 @@ void test_monitored_item_absolute_deadband(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_CREATEMONITOREDITEMSREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 5);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, 5);
     mu_binary_write_uint32(&w, sub_id);
     mu_binary_write_uint32(&w, 3); /* timestampsToReturn */
     mu_binary_write_int32(&w, 1);  /* itemsToCreate count */
@@ -1781,7 +1807,7 @@ void test_monitored_item_queue_overflow(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_CREATEMONITOREDITEMSREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 5);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, 5);
     mu_binary_write_uint32(&w, sub_id);
     mu_binary_write_uint32(&w, 3);
     mu_binary_write_int32(&w, 1);
@@ -1896,7 +1922,7 @@ void test_set_triggering(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_CREATEMONITOREDITEMSREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 5);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, 5);
     mu_binary_write_uint32(&w, sub_id);
     mu_binary_write_uint32(&w, 3);
     mu_binary_write_int32(&w, 2); /* two items */
@@ -1933,7 +1959,7 @@ void test_set_triggering(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_SETTRIGGERINGREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 7);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, 7);
     mu_binary_write_uint32(&w, sub_id);
     mu_binary_write_uint32(&w, a_id); /* triggeringItemId */
     mu_binary_write_int32(&w, 1);     /* linksToAdd count */
@@ -1990,7 +2016,7 @@ void test_standard_facet_errors(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_CREATEMONITOREDITEMSREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 6);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, 6);
     mu_binary_write_uint32(&w, sub_id);
     mu_binary_write_uint32(&w, 3);
     mu_binary_write_int32(&w, 1);
@@ -2014,7 +2040,7 @@ void test_standard_facet_errors(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_SETTRIGGERINGREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 7);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, 7);
     mu_binary_write_uint32(&w, sub_id);
     mu_binary_write_uint32(&w, item_id); /* valid triggering item */
     mu_binary_write_int32(&w, 1);
@@ -2037,7 +2063,7 @@ void test_standard_facet_errors(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {ID_SETTRIGGERINGREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 8);
+    write_request_header(&w, TEST_FIRST_AUTH_TOKEN, 8);
     mu_binary_write_uint32(&w, sub_id);
     mu_binary_write_uint32(&w, item_id);
     mu_binary_write_int32(&w, 0);

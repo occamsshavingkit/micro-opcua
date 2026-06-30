@@ -216,6 +216,25 @@ void test_write_service_integration(void) {
         mu_binary_write_nodeid(&w, &t);
     }
     write_request_header(&w, 0, 2);
+    {
+        mu_string_t ns = {-1, NULL};
+        mu_bytestring_t nb = {-1, NULL};
+
+        mu_binary_write_string(&w, &ns);     /* ClientDescription.applicationUri */
+        mu_binary_write_string(&w, &ns);     /* productUri */
+        mu_binary_write_byte(&w, 0x00);      /* applicationName */
+        mu_binary_write_uint32(&w, 1);       /* applicationType = Client */
+        mu_binary_write_string(&w, &ns);     /* gatewayServerUri */
+        mu_binary_write_string(&w, &ns);     /* discoveryProfileUri */
+        mu_binary_write_int32(&w, 0);        /* discoveryUrls[] */
+        mu_binary_write_string(&w, &ns);     /* serverUri */
+        mu_binary_write_string(&w, &ns);     /* endpointUrl */
+        mu_binary_write_string(&w, &ns);     /* sessionName */
+        mu_binary_write_bytestring(&w, &nb); /* clientNonce */
+        mu_binary_write_bytestring(&w, &nb); /* clientCertificate */
+        mu_binary_write_double(&w, 0.0);     /* requestedSessionTimeout */
+        mu_binary_write_uint32(&w, 0);       /* maxResponseMessageSize */
+    }
     clen = build_msg(chunk, sizeof(chunk), 2, 2, tmp, w.position);
     enqueue(&mock, chunk, clen);
 
@@ -225,7 +244,7 @@ void test_write_service_integration(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_ACTIVATESESSIONREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 3);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, 3);
     {
         mu_string_t ns = {-1, NULL};
         mu_bytestring_t nb = {-1, NULL};
@@ -250,7 +269,7 @@ void test_write_service_integration(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_WRITEREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 4);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, 4);
 
     /* Write values array size: 4 items (happy, read-only, type-mismatch, wrong attribute) */
     mu_binary_write_int32(&w, 4);

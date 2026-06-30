@@ -106,8 +106,8 @@ typedef struct {
             mu_variant_t max_val;
         } max;
     } accumulator;
-    opcua_uint32_t aggregate_type;      /* MU_ID_AGGREGATETYPE_AVERAGE, MINIMUM, MAXIMUM */
-    opcua_uint32_t sample_count;        /* number of samples in the current interval */
+    opcua_uint32_t aggregate_type; /* MU_ID_AGGREGATETYPE_AVERAGE, MINIMUM, MAXIMUM */
+    opcua_uint32_t sample_count;   /* number of samples in the current interval */
 } mu_aggregate_state_t;
 
 /* A single data MonitoredItem (OPC 10000-4 §5.13, §7.21). */

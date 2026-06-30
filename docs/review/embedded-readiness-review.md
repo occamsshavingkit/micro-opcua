@@ -17,6 +17,309 @@ Severity is relative to the stated MCU target.
 
 ---
 
+## Feature 020 US4 T102b Resource Refresh
+
+Updated 2026-06-30 after the blocker-remediation pass. This section supersedes
+the pre-remediation T088/T089/T090 resource blocker status below while retaining
+the older review text as historical context.
+
+Current evidence:
+
+- Host/full default build with `MICRO_OPCUA_OPTIMIZE_SIZE=ON` reports
+  `text=96,398 B`, `data=6,224 B`, `bss=0 B`, `dec=102,622 B`, which is
+  `56,311 B` below the host baseline `text=152,709 B`.
+- ARM Cortex-M0+ matrix passes: nano `16,366/0/0/16,366`, micro
+  `23,873/0/0/23,873`, embedded `43,078/0/0/43,078`, full-featured
+  `51,172/0/0/51,172`.
+- Pico embedded build produces `libmicro_opcua.a`, `pico_minimal_server.elf`,
+  and `pico_minimal_server.uf2`; the ELF measures `text=73,428`, `data=0`,
+  `bss=119,340`, `dec=192,768`.
+- Host stack check passes at `3,040 B` and Pico stack check passes at `2,776 B`,
+  both below the `10,240 B` threshold.
+- Core protocol hot-path heap review finds no allocator calls in `src/core`,
+  `src/encoding`, or `src/services`; platform/backend adapter allocation remains
+  outside that core claim.
+- Caller-provided storage absolutes are recorded, including
+  `MU_CONNECTION_BASE_STORAGE_BYTES=1,328 B`; no unbaselined caller-storage delta
+  is invented.
+
+Readiness conclusion for the resource rows: the repository-fixable Feature 020
+resource blockers are closed by current evidence. This does not provide external
+OPC Foundation CTT evidence. T102c separately closes the source-ID ledger gap in
+`docs/validation/audit-hardening-triage-ledger.md`.
+
+---
+
+## Feature 020 US4 No-Heap Evidence (T090a)
+
+Updated 2026-06-30 for `020-audit-hardening` User Story 4. The active resource
+budget in `specs/020-audit-hardening/plan.md` and
+`docs/validation/audit-hardening.md` requires no mandatory heap allocation in
+the protocol hot path, no new default static RAM beyond existing
+server/session/channel storage, nano/embedded `.text` growth under +4 KiB,
+host/full `.text` growth under +8 KiB, and release-gate honesty until those
+checks are measured.
+
+Source-level no-heap check run for this review:
+
+```sh
+rg -n 'malloc|calloc|realloc|free\(|OPENSSL_malloc' src include tests
+```
+
+Result: exit code `0` with 92 textual matches; transcript:
+`/tmp/micro-opcua-review/t090a-no-heap-grep.log`.
+
+Classification of the relevant matches:
+
+- Core protocol hot path: no `malloc`, `calloc`, `realloc`,
+  direct `free(`, or `OPENSSL_malloc` allocator call was found in `src/core`,
+  `src/encoding`, or `src/services`. The `src/core/service_dispatch.c` and
+  `src/services/session.*` matches are `mu_session_find_free`, a fixed-slot
+  lookup helper name, not heap allocation.
+- Host/platform adapters: allocator matches remain in
+  `src/platform/host_tcp_adapter.c`, `src/platform/host_crypto_adapter.c`,
+  `src/platform/wolfssl_crypto_adapter.c`, and
+  `src/platform/mbedtls_crypto_adapter.c`. These are outside the core protocol
+  hot-path claim and cover host TCP context allocation, OpenSSL-backed host
+  crypto context/certificate allocation, wolfSSL/mbedTLS adapter context
+  allocation, and backend cleanup paths.
+- Crypto cleanup hooks: `src/security/sym_chunk.c` calls the configured
+  `cipher_ctx_free` adapter hook during symmetric-key cleanup; this is adapter
+  cleanup, not a core allocator.
+- Tests: `tests/unit/test_mbedtls_adapter.c`, `tests/unit/test_wolfssl_adapter.c`,
+  and `tests/unit/test_sym_chunk.c` contain cleanup/helper matches and are not
+  production protocol hot-path evidence.
+- Public headers: no `include/` matches appeared in the transcript.
+
+Review conclusion: current source evidence supports the narrower claim that
+Feature 020 has not introduced a mandatory heap allocation in the core protocol
+hot path. It does **not** prove that every platform crypto backend is heap-free,
+that third-party OpenSSL/mbedTLS/wolfSSL internals avoid allocation, or that the
+full embedded readiness/resource release gate passes.
+
+Release-gate honesty: the source-level no-heap review supports the core
+protocol hot-path claim. T102b now supplies the missing host/full, ARM, Pico,
+and stack resource measurements in `docs/size/feature-size-ledger.md` and
+`docs/size/pico-minimal-server.md`. Platform/backend internals remain
+adapter-specific and outside the core no-hot-path-heap claim.
+
+---
+
+## Feature 020 US4 Transport-Buffer Evidence (T090b)
+
+Updated 2026-06-30 for `020-audit-hardening` User Story 4. The active
+transport-buffer budget in `specs/020-audit-hardening/plan.md` requires the
+server to maintain the `MU_MIN_CHUNK_SIZE` 8192-byte lower bound for receive
+storage, keep ACK buffer values no larger than the peer-requested limits per
+OPC-10000-6 section 7.1.2.4, and make oversize responses deterministic. The
+broader resource gate also requires caller-provided memory, no mandatory
+protocol hot-path heap, host/full `.text` growth under +8 KiB, nano/embedded
+`.text` growth under +4 KiB, and honest blocked evidence when embedded builds
+cannot produce measurements.
+
+Transport storage and sizing evidence:
+
+- Public server configuration exposes caller-owned `receive_buffer` and
+  `send_buffer` pointers plus their sizes in `include/micro_opcua/server.h`.
+  `src/core/server.c` rejects initialization when either buffer is missing or
+  smaller than `MU_MIN_CHUNK_SIZE`.
+- `include/micro_opcua/config.h` defines `MU_MIN_CHUNK_SIZE` as `8192` and
+  keeps `MU_CONNECTION_RX_BUFFER_SIZE` at or above that floor. Historical size
+  evidence in `docs/size/feature-size-ledger.md` accounts for RX/TX transport
+  buffers as caller-provided memory: `2 x 8192 = 16 KiB` in addition to
+  `MU_SERVER_STORAGE_BYTES`.
+- `src/core/tcp_connection.c` rejects HEL requests whose receive or send buffer
+  values are below the 8192-byte floor and computes ACK receive/send values as
+  the minimum of the peer-requested counterpart and the configured local
+  buffer. This supports bounded negotiated chunks without advertising a buffer
+  larger than the peer asked to use.
+- `src/core/message_chunk.c` rejects chunks below the fixed header size, chunks
+  whose declared size exceeds the received buffer, invalid message types, abort
+  chunks, and non-final chunks in single-chunk mode before service-body
+  dispatch. This is the current single-chunk implementation; chunk reassembly
+  is not claimed.
+- Secured MSG chunks are decrypted in place in the receive buffer, as already
+  recorded in this review and in `docs/size/feature-size-ledger.md`; this
+  reduces stack scratch use but does not change the need for caller-owned
+  receive/transmit storage sized to the negotiated chunk bounds.
+
+Focused checks run for this review:
+
+```sh
+cmake --build build/test --target test_tcp_connection test_message_chunk_errors
+ctest --test-dir build/test -R '^(test_tcp_connection|test_message_chunk_errors)$' --output-on-failure
+```
+
+Result: both commands exited `0`. Transcripts:
+`/tmp/micro-opcua-review/t090b-transport-build.log` and
+`/tmp/micro-opcua-review/t090b-transport-ctest.log`. `CTest` reported
+`2/2` tests passed, `0` failed, total real time `0.00 sec`. The detailed
+`build/test/Testing/Temporary/LastTest.log` output recorded
+`test_message_chunk_errors` as `8 Tests 0 Failures 0 Ignored` and
+`test_tcp_connection` as `4 Tests 0 Failures 0 Ignored`.
+
+Coverage from the focused run:
+
+- `test_tcp_connection` covers normal HEL/ACK negotiation, ACK send-buffer
+  capping by configured local and peer-requested bounds, rejection of HEL buffer
+  sizes below the 8192-byte minimum, and default buffer sizing.
+- `test_message_chunk_errors` covers too-small, too-large, inconsistent-length,
+  invalid-message-type, abort-chunk, no-dispatch abort, no-dispatch non-final,
+  and invalid-chunk-type cases.
+
+Limitations and gate honesty:
+
+- These are host unit tests from `build/test`; they are focused source/static
+  checks for transport buffer and chunk-bound behavior, not Pico or ARM
+  Cortex-M0+ resource measurements.
+- Current T102b Feature 020 resource evidence supplies host/full, ARM, and Pico
+  build artifacts. This T090b entry supports negotiated-buffer behavior and the
+  caller-owned-storage model; the resource measurements are recorded in the size
+  ledgers.
+
+---
+
+## Feature 020 US4 Static-Storage Evidence (T090c)
+
+Updated 2026-06-30 for `020-audit-hardening` User Story 4. The active static
+storage budget in `specs/020-audit-hardening/plan.md` and
+`docs/validation/audit-hardening.md` requires no new default static RAM beyond
+existing server/session/channel storage unless justified, caller-owned storage
+for server state and transport buffers, no mandatory protocol hot-path heap, and
+release-gate honesty until host, ARM, and Pico resource evidence all exist.
+
+This T090c entry relies on the current T088 static-storage evidence in
+`docs/size/feature-size-ledger.md`; it did not rerun or alter source, tests,
+scripts, or task status.
+
+Current host/full archive evidence from T088a/T088c:
+
+```sh
+size -t build/src/libmicro_opcua.a
+nm -S --size-sort build/src/libmicro_opcua.a | rg ' [BbDd] '
+```
+
+Result: both checks are recorded as completed in T088c. `size -t` exited `0`
+with GNU `size` 2.42 and reported totals `text=166738`, `data=6224`, `bss=0`,
+`dec=172962`; transcript:
+`/tmp/micro-opcua-size/t088c-host-full-size-totals.log`. The `nm`/`rg` review
+exited `0` with GNU `nm` 2.42; transcript:
+`/tmp/micro-opcua-size/t088c-host-full-nm-data-bss.log`.
+
+Static-storage interpretation:
+
+- Archive `.data`: `6,224 B`, flat against the pre-change baseline in
+  `docs/size/audit-hardening-baseline.md` (`data +0 B`). The reported initialized
+  data is existing archive-owned metadata and tables, including
+  `g_supported_services`, server array descriptors/values, `s_base_space`, and
+  `s_base_nodes`.
+- Archive `.bss`: `0 B`, flat against baseline (`bss +0 B`). The host/full
+  symbol review found no `.bss` symbols.
+- Caller-provided server storage: current host/full absolute values are
+  `sizeof(struct mu_server)=116,040 B` and `MU_SERVER_STORAGE_BYTES=121,516 B`
+  under the active full-profile build knobs. These are caller-owned server state,
+  not archive `.bss`, but no audit-hardening pre-change baseline exists for these
+  values, so no delta or pass claim is made.
+- Transport buffers: RX/TX buffers remain caller-owned storage, separately
+  reviewed in T090b. They are not counted as archive `.data` or `.bss`.
+- Platform/example-owned storage: Pico and example firmware RAM are not measured
+  by the host archive checks. `docs/size/pico-minimal-server.md` records that no
+  Pico archive, ELF, or UF2 was produced for Feature 020, so there is no current
+  Pico `.data`/`.bss` or firmware RAM result.
+
+Embedded/nano status from T088b/T088c:
+
+```sh
+BUILD_ROOT=build/audit-size-arm scripts/measure_size.sh all
+BUILD_ROOT=build/audit-size-arm scripts/measure_size.sh nano
+BUILD_ROOT=build/audit-size-arm scripts/measure_size.sh embedded
+find build/audit-size-arm -path '*/src/libmicro_opcua.a' -printf '%p\n'
+```
+
+Historical T090c result: the original ARM matrix, nano, and embedded size
+attempts exited `2` before current archives were produced. Transcripts:
+`/tmp/micro-opcua-size/t088b-arm-size-matrix.log`,
+`/tmp/micro-opcua-size/t088b-arm-nano-size.log`,
+`/tmp/micro-opcua-size/t088b-arm-embedded-size.log`, and
+`/tmp/micro-opcua-size/t088c-audit-arm-archive-find.log`. The archive find
+exited `0` but printed no archive paths.
+
+Historical blockers from that pre-remediation run: nano failed on
+`src/services/discovery.c:142:29: error: variable 'policy' set but not used
+[-Werror=unused-but-set-variable]`; embedded fails
+`src/core/server_internal.h:45:1: error: static assertion failed:
+"MU_CONNECTION_BASE_STORAGE_BYTES must cover mu_connection_t fields outside
+rx_buffer"`.
+
+Reference-only ARM evidence: stale pre-existing archives under `build/size-arm`
+reported `data=0`, `bss=0` for nano and embedded, and `nm` found no
+`.data`/`.bss` matches. T088c explicitly treats those archives as reference
+only because their mtimes predate the current audit-hardening build attempts;
+they must not be used as release-gate evidence.
+
+Review conclusion: the historical T090c entry was partial. T102b supersedes it
+with current ARM archives, Pico artifacts, flat host archive `.data`/`.bss`, and
+explicit caller-storage absolutes in the size ledgers. No unbaselined
+caller-storage delta is invented.
+
+---
+
+## Feature 020 US4 Application-Headroom Evidence (T090d)
+
+Updated 2026-06-30 for the T102b blocker-remediation refresh. This review entry
+rolls up the current T102b evidence for the application-headroom budget in
+`specs/020-audit-hardening/plan.md`, `specs/020-audit-hardening/spec.md`, and
+`docs/validation/audit-hardening.md`.
+
+Budget under review:
+
+- Host/full profile `.text` growth must stay under `+8 KiB`.
+- Nano and embedded profile `.text` growth must stay under `+4 KiB`.
+- The default build must not add static RAM beyond existing
+  server/session/channel storage.
+- The protocol hot path must not require heap allocation.
+- Stack evidence must be recorded for the hardening changes.
+
+Current evidence sources:
+
+- T102b in `docs/size/feature-size-ledger.md` for host/full archive size, ARM
+  profile matrix, static archive RAM, caller-storage absolute values, heap-review
+  summary, and host/Pico stack results.
+- T102b in `docs/size/pico-minimal-server.md` for Pico minimal-server archive,
+  ELF, UF2, and stack evidence.
+- T090a/T090b/T090c in this review for no-heap, transport-buffer, and
+  static-storage interpretation, with historical blockers superseded by T102b.
+
+Application-headroom assessment:
+
+| Budget item | Evidence | Review result | Readiness risk |
+|---|---|---|---|
+| Host/full `.text` growth under `+8 KiB` | T102b: default full build with `MICRO_OPCUA_OPTIMIZE_SIZE=ON` reports `text=96,398 B`, `data=6,224 B`, `bss=0 B`; pre-change baseline `text=152,709 B`. | **PASS**. Delta is `-56,311 B`, below the `< 8,192 B` growth budget. | Low for the default constrained-device build. |
+| Nano `.text` growth under `+4 KiB` | T102b ARM matrix: nano `text=16,366 B`, `data=0`, `bss=0`. | **PASS / current value recorded**. | Low for current measured nano archive. |
+| Embedded `.text` growth under `+4 KiB` | T102b ARM matrix: embedded `text=43,078 B`, `data=0`, `bss=0`; Pico embedded artifacts also build. | **PASS / current value recorded**. | Low for current measured embedded archive and Pico build presence. |
+| No new default static RAM | Host/full archive `.data=6,224 B`, `.bss=0 B`; ARM archives `.data=0`, `.bss=0`; caller-storage absolutes recorded with `MU_CONNECTION_BASE_STORAGE_BYTES=1,328 B`. | **PASS / absolute caller-storage evidence recorded**. | Low for archive static RAM; caller storage is documented as integrator-provided memory. |
+| No protocol hot-path heap | T102b source review found no allocator call in the core protocol hot path; matches are platform/backend adapter cleanup hooks, tests, or `mu_session_find_free` false positives. | **PASS for the core protocol hot path**. | Low for core protocol hot path; adapter internals remain backend-specific. |
+| Stack-recording budget | Host stack check `3,040 B`; Pico stack check `2,776 B`; threshold `10,240 B`. | **PASS**. Both measured stack estimates are below threshold. | Low for measured secured OPN stack path. |
+
+Historical build blockers fixed by T102b:
+
+- Nano ARM profile: `src/services/discovery.c:142:29: error: variable 'policy'
+  set but not used [-Werror=unused-but-set-variable]`.
+- Embedded ARM and Pico profiles:
+  `src/core/server_internal.h:45:1: error: static assertion failed:
+  "MU_CONNECTION_BASE_STORAGE_BYTES must cover mu_connection_t fields outside
+  rx_buffer"`.
+- Pico stack check previously failed closed because required `.su` frames were
+  missing after the failed build. T102b now records a passing Pico stack check
+  with 35 `.su` files and a `2,776 B` secured OPN estimate.
+
+Review conclusion: Feature 020 repository-fixable application-headroom blockers
+are closed by current evidence. This does not provide external CTT evidence.
+T102c separately closes the source-ID ledger gap in
+`docs/validation/audit-hardening-triage-ledger.md`.
+
+---
+
 ## HIGH
 
 ### H1 — Secured request path peaks at ~25–26 KB of stack — ADDRESSED (in-place sym decrypt)

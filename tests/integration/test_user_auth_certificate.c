@@ -2,6 +2,7 @@
 #include "../../src/core/server_internal.h"
 #include "fake_platform.h"
 #include "micro_opcua/micro_opcua.h"
+#include "service_builders.h"
 #include "unity.h"
 #include <string.h>
 
@@ -258,7 +259,7 @@ void test_certificate_user_auth_flow(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_CREATESESSIONREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 0, 2);
+    test_write_create_session_body(&w, 2, 60000.0);
     clen = build_msg(chunk, sizeof(chunk), 2, 2, tmp, w.position);
     enqueue(&global_mock, chunk, clen);
 
@@ -268,7 +269,7 @@ void test_certificate_user_auth_flow(void) {
         mu_nodeid_t t = {0, MU_NODEID_NUMERIC, {MU_ID_ACTIVATESESSIONREQUEST}};
         mu_binary_write_nodeid(&w, &t);
     }
-    write_request_header(&w, 12345, 3);
+    write_request_header(&w, TEST_FAKE_FIRST_AUTH_TOKEN, 3);
     {
         mu_string_t ns = {-1, NULL};
         mu_bytestring_t nb = {-1, NULL};

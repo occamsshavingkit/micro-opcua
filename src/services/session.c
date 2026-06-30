@@ -43,6 +43,9 @@ void mu_session_init(mu_session_t *session) {
         session->auth_token = 0;
         session->revised_session_timeout_ms = 0;
         memset(session->server_nonce, 0, sizeof(session->server_nonce));
+#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+        session->secure_channel_id = 0;
+#endif
     }
 }
 
@@ -74,9 +77,117 @@ mu_session_t *mu_session_find_free(mu_session_t *sessions, size_t count) {
     return NULL;
 }
 
-opcua_statuscode_t mu_session_create(mu_session_t *session, opcua_uint64_t requested_timeout_bits,
-                                     opcua_uint64_t *revised_timeout_bits, opcua_uint32_t *session_id,
-                                     opcua_uint32_t *auth_token) {
+static opcua_boolean_t session_id_active(const mu_session_t *sessions, size_t count, opcua_uint32_t session_id) {
+    if (sessions == NULL) {
+        return false;
+    }
+
+    for (size_t i = 0; i < count; ++i) {
+        if (sessions[i].state != MU_SESSION_STATE_CLOSED && sessions[i].session_id == session_id) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static opcua_boolean_t authentication_token_active(const mu_session_t *sessions, size_t count,
+                                                   opcua_uint32_t auth_token) {
+    if (sessions == NULL) {
+        return false;
+    }
+
+    for (size_t i = 0; i < count; ++i) {
+        if (sessions[i].state != MU_SESSION_STATE_CLOSED && sessions[i].auth_token == auth_token) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+opcua_statuscode_t mu_session_generate_session_id(const mu_session_t *sessions, size_t count,
+                                                  const mu_entropy_adapter_t *entropy, opcua_uint32_t *session_id) {
+    if (entropy == NULL || entropy->generate_random == NULL || session_id == NULL) {
+        return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+    }
+
+    opcua_byte_t random[sizeof(opcua_uint32_t)];
+    opcua_statuscode_t status = entropy->generate_random(entropy->context, random, sizeof(random));
+    if (status != MU_STATUS_GOOD) {
+        return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+    }
+
+    opcua_uint32_t base = ((opcua_uint32_t)random[0]) | ((opcua_uint32_t)random[1] << 8) |
+                          ((opcua_uint32_t)random[2] << 16) | ((opcua_uint32_t)random[3] << 24);
+
+    for (size_t salt = 0; salt <= count; ++salt) {
+        /* OPC-10000-4 section 5.7.2.2: CreateSession SessionId is generated
+           from entropy; the salt only resolves active-slot collisions. */
+        opcua_uint32_t candidate = base ^ (opcua_uint32_t)(0x9E3779B9u * (opcua_uint32_t)salt);
+        if (candidate == 0u) {
+            candidate = (opcua_uint32_t)(0x85EBCA6Bu ^ (opcua_uint32_t)salt);
+        }
+        if (!session_id_active(sessions, count, candidate)) {
+            *session_id = candidate;
+            return MU_STATUS_GOOD;
+        }
+    }
+
+    return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+}
+
+opcua_statuscode_t mu_session_generate_authentication_token(const mu_session_t *sessions, size_t count,
+                                                            const mu_entropy_adapter_t *entropy,
+                                                            opcua_uint32_t *auth_token) {
+    if (entropy == NULL || entropy->generate_random == NULL || auth_token == NULL) {
+        return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+    }
+
+    opcua_byte_t random[sizeof(opcua_uint32_t)];
+    opcua_statuscode_t status = entropy->generate_random(entropy->context, random, sizeof(random));
+    if (status != MU_STATUS_GOOD) {
+        return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+    }
+
+    opcua_uint32_t base = ((opcua_uint32_t)random[0]) | ((opcua_uint32_t)random[1] << 8) |
+                          ((opcua_uint32_t)random[2] << 16) | ((opcua_uint32_t)random[3] << 24);
+
+    for (size_t salt = 0; salt <= count; ++salt) {
+        /* OPC-10000-4 section 5.7.2.2: CreateSession authenticationToken is
+           generated from entropy; the salt only resolves active-slot collisions. */
+        opcua_uint32_t candidate = (base ^ 0xA5A5A5A5u) + (opcua_uint32_t)(0x9E3779B9u * (opcua_uint32_t)salt);
+        if (candidate == 0u) {
+            candidate = (opcua_uint32_t)(0xC2B2AE35u ^ (opcua_uint32_t)salt);
+        }
+        if (!authentication_token_active(sessions, count, candidate)) {
+            *auth_token = candidate;
+            return MU_STATUS_GOOD;
+        }
+    }
+
+    return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+}
+
+opcua_statuscode_t mu_session_generate_server_nonce(const mu_entropy_adapter_t *entropy, opcua_byte_t *server_nonce,
+                                                    size_t server_nonce_len) {
+    if (entropy == NULL || entropy->generate_random == NULL || server_nonce == NULL || server_nonce_len == 0u) {
+        return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+    }
+
+    if (entropy->generate_random(entropy->context, server_nonce, server_nonce_len) != MU_STATUS_GOOD) {
+        return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+    }
+
+    return MU_STATUS_GOOD;
+}
+
+opcua_statuscode_t mu_session_create_with_identifiers(mu_session_t *session, opcua_uint64_t requested_timeout_bits,
+                                                      opcua_uint32_t assigned_session_id,
+                                                      opcua_uint32_t assigned_auth_token,
+                                                      opcua_uint32_t creating_secure_channel_id,
+                                                      opcua_uint64_t *revised_timeout_bits, opcua_uint32_t *session_id,
+                                                      opcua_uint32_t *auth_token) {
     if (!session || !revised_timeout_bits || !session_id || !auth_token)
         return MU_STATUS_BAD_INTERNALERROR;
 
@@ -84,8 +195,15 @@ opcua_statuscode_t mu_session_create(mu_session_t *session, opcua_uint64_t reque
         return MU_STATUS_BAD_INTERNALERROR; /* Only 1 session in minimal server */
     }
 
-    session->session_id = 1;
-    session->auth_token = 12345; /* Mock token */
+    session->session_id = assigned_session_id;
+    session->auth_token = assigned_auth_token;
+#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+    /* OPC-10000-4 section 5.7.2.1 binds a Session to the SecureChannel that
+       created it; later service checks validate use through that channel. */
+    session->secure_channel_id = creating_secure_channel_id;
+#else
+    (void)creating_secure_channel_id;
+#endif
 
     opcua_uint64_t revised = clamp_timeout_bits(requested_timeout_bits);
     session->revised_session_timeout_ms = duration_bits_to_ms(revised);
@@ -94,6 +212,31 @@ opcua_statuscode_t mu_session_create(mu_session_t *session, opcua_uint64_t reque
     *revised_timeout_bits = revised;
     *session_id = session->session_id;
     *auth_token = session->auth_token;
+
+    return MU_STATUS_GOOD;
+}
+
+opcua_statuscode_t mu_session_create(mu_session_t *session, opcua_uint64_t requested_timeout_bits,
+                                     opcua_uint64_t *revised_timeout_bits, opcua_uint32_t *session_id,
+                                     opcua_uint32_t *auth_token) {
+    return mu_session_create_with_identifiers(session, requested_timeout_bits, 1u, 12345u, 0u, revised_timeout_bits,
+                                              session_id, auth_token);
+}
+
+opcua_statuscode_t mu_session_validate_secure_channel(const mu_session_t *session,
+                                                      opcua_uint32_t active_secure_channel_id) {
+    if (!session)
+        return MU_STATUS_BAD_INTERNALERROR;
+
+#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+    /* OPC-10000-4 section 7.38.2: reject Session use through a SecureChannel
+       different from the one that created the Session. */
+    if (session->secure_channel_id != active_secure_channel_id) {
+        return MU_STATUS_BAD_SECURECHANNELIDINVALID;
+    }
+#else
+    (void)active_secure_channel_id;
+#endif
 
     return MU_STATUS_GOOD;
 }

@@ -69,6 +69,12 @@ size_t mu_security_policy_signature_key_length(mu_security_policy_id_t policy) {
 #endif
 }
 
+int mu_security_policy_allows_username_password_tokens(mu_security_policy_id_t policy) {
+    /* OPC-10000-4 sections 5.7.3.3 and 7.40.2.1: password-bearing
+       UserNameIdentityTokens are rejected by default over SecurityPolicy#None. */
+    return policy != MU_SECURITY_POLICY_NONE_ID && policy != MU_SECURITY_POLICY_INVALID_ID;
+}
+
 size_t mu_security_policy_encryption_key_length(mu_security_policy_id_t policy) {
 #ifdef MICRO_OPCUA_SECURITY
     switch (policy) {

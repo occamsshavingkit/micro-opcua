@@ -1,4 +1,6 @@
 /* tests/unit/test_session.c */
+#include "../../src/core/server_internal.h"
+#include "../../src/core/service_dispatch.h"
 #include "micro_opcua/micro_opcua.h"
 #include "unity.h"
 #include <string.h>
@@ -13,6 +15,125 @@ static opcua_uint64_t bits(double d) {
     opcua_uint64_t b;
     memcpy(&b, &d, sizeof(b));
     return b;
+}
+
+static opcua_datetime_t fake_time(void *context) {
+    (void)context;
+    return 0;
+}
+
+static opcua_statuscode_t fake_entropy(void *context, opcua_byte_t *buffer, size_t length) {
+    (void)context;
+    if (buffer != NULL) {
+        memset(buffer, 0x42, length);
+    }
+    return MU_STATUS_GOOD;
+}
+
+static opcua_statuscode_t failing_entropy(void *context, opcua_byte_t *buffer, size_t length) {
+    (void)context;
+    (void)buffer;
+    (void)length;
+    return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+}
+
+static void write_request_header(mu_binary_writer_t *writer, opcua_uint32_t request_handle) {
+    mu_nodeid_t auth_token = {0, MU_NODEID_NUMERIC, {12345}};
+    mu_nodeid_t no_header = {0, MU_NODEID_NUMERIC, {0}};
+    mu_string_t null_string = {-1, NULL};
+
+    mu_binary_write_nodeid(writer, &auth_token);
+    mu_binary_write_int64(writer, 0);
+    mu_binary_write_uint32(writer, request_handle);
+    mu_binary_write_uint32(writer, 0);
+    mu_binary_write_string(writer, &null_string);
+    mu_binary_write_uint32(writer, 0);
+    mu_binary_write_extension_object_header(writer, &no_header, 0);
+}
+
+static size_t build_create_session_body(opcua_byte_t *buffer, size_t capacity, opcua_double_t requested_timeout) {
+    mu_binary_writer_t writer;
+    mu_string_t null_string = {-1, NULL};
+    mu_bytestring_t null_bytes = {-1, NULL};
+
+    mu_binary_writer_init(&writer, buffer, capacity);
+    write_request_header(&writer, 25);
+
+    mu_binary_write_string(&writer, &null_string);    /* ClientDescription.applicationUri */
+    mu_binary_write_string(&writer, &null_string);    /* productUri */
+    mu_binary_write_byte(&writer, 0x00);              /* applicationName */
+    mu_binary_write_uint32(&writer, 1);               /* applicationType = CLIENT */
+    mu_binary_write_string(&writer, &null_string);    /* gatewayServerUri */
+    mu_binary_write_string(&writer, &null_string);    /* discoveryProfileUri */
+    mu_binary_write_int32(&writer, 0);                /* discoveryUrls[] */
+    mu_binary_write_string(&writer, &null_string);    /* serverUri */
+    mu_binary_write_string(&writer, &null_string);    /* endpointUrl */
+    mu_binary_write_string(&writer, &null_string);    /* sessionName */
+    mu_binary_write_bytestring(&writer, &null_bytes); /* clientNonce */
+    mu_binary_write_bytestring(&writer, &null_bytes); /* clientCertificate */
+    mu_binary_write_double(&writer, requested_timeout);
+    mu_binary_write_uint32(&writer, 0); /* maxResponseMessageSize */
+
+    return writer.position;
+}
+
+static void assert_sessions_unchanged(const mu_session_t *expected, const mu_session_t *actual) {
+    for (size_t i = 0; i < MU_MAX_SESSIONS; ++i) {
+        TEST_ASSERT_EQUAL(expected[i].state, actual[i].state);
+        TEST_ASSERT_EQUAL(expected[i].session_id, actual[i].session_id);
+        TEST_ASSERT_EQUAL(expected[i].auth_token, actual[i].auth_token);
+        TEST_ASSERT_EQUAL(expected[i].revised_session_timeout_ms, actual[i].revised_session_timeout_ms);
+        TEST_ASSERT_EQUAL_MEMORY(expected[i].server_nonce, actual[i].server_nonce, sizeof(expected[i].server_nonce));
+#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+        TEST_ASSERT_EQUAL(expected[i].secure_channel_id, actual[i].secure_channel_id);
+#endif
+    }
+}
+
+static void skip_response_header(mu_binary_reader_t *reader, opcua_uint32_t *request_handle,
+                                 opcua_statuscode_t *service_result) {
+    opcua_int64_t timestamp;
+    opcua_byte_t diagnostics_encoding;
+    opcua_int32_t string_table_length;
+    mu_nodeid_t additional_header_type;
+    opcua_byte_t additional_header_encoding;
+
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_int64(reader, &timestamp));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_uint32(reader, request_handle));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_statuscode(reader, service_result));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_byte(reader, &diagnostics_encoding));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_int32(reader, &string_table_length));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_nodeid(reader, &additional_header_type));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_byte(reader, &additional_header_encoding));
+}
+
+static void dispatch_create_session_and_read_ids(mu_server_t *server, mu_nodeid_t *session_id,
+                                                 mu_nodeid_t *authentication_token) {
+    opcua_byte_t request[256];
+    size_t request_length = build_create_session_body(request, sizeof(request), 1200000.0);
+
+    opcua_byte_t response[1024];
+    size_t response_length = sizeof(response);
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_service_dispatch(server, MU_ID_CREATESESSIONREQUEST, request, request_length,
+                                                          response, &response_length));
+
+    mu_binary_reader_t reader;
+    mu_binary_reader_init(&reader, response, response_length);
+
+    mu_nodeid_t response_type;
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_nodeid(&reader, &response_type));
+    TEST_ASSERT_EQUAL(MU_ID_CREATESESSIONRESPONSE, response_type.identifier.numeric);
+
+    opcua_uint32_t request_handle;
+    opcua_statuscode_t service_result;
+    skip_response_header(&reader, &request_handle, &service_result);
+    TEST_ASSERT_EQUAL(25, request_handle);
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, service_result);
+
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_nodeid(&reader, session_id));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_binary_read_nodeid(&reader, authentication_token));
+    TEST_ASSERT_EQUAL(MU_NODEID_NUMERIC, session_id->identifier_type);
+    TEST_ASSERT_EQUAL(MU_NODEID_NUMERIC, authentication_token->identifier_type);
 }
 
 void test_session_create(void) {
@@ -99,10 +220,101 @@ void test_session_close(void) {
     TEST_ASSERT_EQUAL(MU_SESSION_STATE_CLOSED, session.state);
 }
 
+void test_create_session_truncated_body_returns_bad_decodingerror_without_allocating_session(void) {
+    mu_server_t server;
+    memset(&server, 0, sizeof(server));
+    server.secure_channel.is_open = true;
+    server.config.time_adapter.get_time = fake_time;
+    server.config.entropy_adapter.generate_random = fake_entropy;
+    for (size_t i = 0; i < MU_MAX_SESSIONS; ++i) {
+        mu_session_init(&server.sessions[i]);
+    }
+
+    mu_session_t sessions_before[MU_MAX_SESSIONS];
+    memcpy(sessions_before, server.sessions, sizeof(sessions_before));
+    mu_session_t *active_session_before = server.active_session;
+
+    opcua_byte_t request[256];
+    size_t request_length = build_create_session_body(request, sizeof(request), 1200000.0);
+    TEST_ASSERT_TRUE(request_length > 1u);
+
+    opcua_byte_t response[1024];
+    size_t response_length = sizeof(response);
+
+    /* OPC-10000-4 section 5.7.2: truncated CreateSession parameters fail before allocation. */
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_BAD_DECODINGERROR,
+                            mu_service_dispatch(&server, MU_ID_CREATESESSIONREQUEST, request, request_length - 1u,
+                                                response, &response_length));
+    TEST_ASSERT_EQUAL_PTR(active_session_before, server.active_session);
+    assert_sessions_unchanged(sessions_before, server.sessions);
+}
+
+void test_create_session_two_successful_responses_use_fresh_session_ids_and_tokens(void) {
+    mu_server_t server;
+    memset(&server, 0, sizeof(server));
+    server.secure_channel.is_open = true;
+    server.config.time_adapter.get_time = fake_time;
+    server.config.entropy_adapter.generate_random = fake_entropy;
+    for (size_t i = 0; i < MU_MAX_SESSIONS; ++i) {
+        mu_session_init(&server.sessions[i]);
+    }
+
+    TEST_ASSERT_GREATER_OR_EQUAL_UINT(2u, MU_MAX_SESSIONS);
+
+    mu_nodeid_t first_session_id;
+    mu_nodeid_t first_authentication_token;
+    mu_nodeid_t second_session_id;
+    mu_nodeid_t second_authentication_token;
+
+    dispatch_create_session_and_read_ids(&server, &first_session_id, &first_authentication_token);
+    dispatch_create_session_and_read_ids(&server, &second_session_id, &second_authentication_token);
+
+    /* OPC-10000-4 section 5.7.2.2 defines the CreateSession sessionId and
+       authenticationToken response parameters; each successful Session creation
+       must return identifiers that do not reuse an existing Session's values. */
+    TEST_ASSERT_NOT_EQUAL(first_session_id.identifier.numeric, second_session_id.identifier.numeric);
+    TEST_ASSERT_NOT_EQUAL(first_authentication_token.identifier.numeric,
+                          second_authentication_token.identifier.numeric);
+}
+
+void test_create_session_server_nonce_entropy_failure_returns_bad_securitychecksfailed_without_allocating_session(
+    void) {
+    mu_server_t server;
+    memset(&server, 0, sizeof(server));
+    server.secure_channel.is_open = true;
+    server.config.time_adapter.get_time = fake_time;
+    server.config.entropy_adapter.generate_random = failing_entropy;
+    for (size_t i = 0; i < MU_MAX_SESSIONS; ++i) {
+        mu_session_init(&server.sessions[i]);
+    }
+
+    mu_session_t sessions_before[MU_MAX_SESSIONS];
+    memcpy(sessions_before, server.sessions, sizeof(sessions_before));
+    mu_session_t *active_session_before = server.active_session;
+
+    opcua_byte_t request[256];
+    size_t request_length = build_create_session_body(request, sizeof(request), 1200000.0);
+
+    opcua_byte_t response[1024];
+    size_t response_length = sizeof(response);
+
+    /* OPC-10000-4 sections 5.7.2.3 and 7.38.2: CreateSession ServerNonce
+       freshness is security-sensitive; entropy failure must fail closed. */
+    TEST_ASSERT_EQUAL_HEX32(
+        MU_STATUS_BAD_SECURITYCHECKSFAILED,
+        mu_service_dispatch(&server, MU_ID_CREATESESSIONREQUEST, request, request_length, response, &response_length));
+    TEST_ASSERT_EQUAL_PTR(active_session_before, server.active_session);
+    assert_sessions_unchanged(sessions_before, server.sessions);
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_session_create);
     RUN_TEST(test_session_activate_anonymous);
     RUN_TEST(test_session_close);
+    RUN_TEST(test_create_session_truncated_body_returns_bad_decodingerror_without_allocating_session);
+    RUN_TEST(test_create_session_two_successful_responses_use_fresh_session_ids_and_tokens);
+    RUN_TEST(
+        test_create_session_server_nonce_entropy_failure_returns_bad_securitychecksfailed_without_allocating_session);
     return UNITY_END();
 }

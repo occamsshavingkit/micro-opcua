@@ -12,6 +12,16 @@ void tearDown(void) {}
 
 #if MICRO_OPCUA_SUBSCRIPTIONS && MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
 
+static size_t aggregate_filter_body_length(opcua_uint32_t aggregate_type) {
+    size_t nodeid_length = 7u;
+    if (aggregate_type <= 255u) {
+        nodeid_length = 2u;
+    } else if (aggregate_type <= 65535u) {
+        nodeid_length = 4u;
+    }
+    return 8u + nodeid_length + 8u + 5u;
+}
+
 static opcua_datetime_t fake_time(void *c) {
     (void)c;
     return 0;
@@ -153,7 +163,7 @@ static opcua_statuscode_t create_aggregate_item_result(mu_server_t *server, opcu
     mu_binary_write_double(&w, 100.0);
 
     mu_nodeid_t filter_type = {0, MU_NODEID_NUMERIC, {MU_ID_AGGREGATEFILTER_ENCODING_DEFAULTBINARY}};
-    mu_binary_write_extension_object_header(&w, &filter_type, 8 + 8 + 5 + 5);
+    mu_binary_write_extension_object_header(&w, &filter_type, aggregate_filter_body_length(aggregate_type));
 
     mu_binary_write_int64(&w, 0);
     mu_nodeid_t agg_type = {0, MU_NODEID_NUMERIC, {aggregate_type}};
@@ -170,8 +180,8 @@ static opcua_statuscode_t create_aggregate_item_result(mu_server_t *server, opcu
 
     opcua_byte_t resp[512];
     size_t resp_len = sizeof(resp);
-    TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_service_dispatch(server, MU_ID_CREATEMONITOREDITEMSREQUEST, req, w.position,
-                                                          resp, &resp_len));
+    TEST_ASSERT_EQUAL(MU_STATUS_GOOD,
+                      mu_service_dispatch(server, MU_ID_CREATEMONITOREDITEMSREQUEST, req, w.position, resp, &resp_len));
 
     mu_binary_reader_t r;
     mu_binary_reader_init(&r, resp, resp_len);
@@ -251,7 +261,7 @@ void test_aggregate_filter_decodes_correctly(void) {
     /* ExtensionObject filter: AggregateFilter */
     mu_nodeid_t filter_type = {0, MU_NODEID_NUMERIC, {MU_ID_AGGREGATEFILTER_ENCODING_DEFAULTBINARY}};
     mu_binary_write_extension_object_header(&w, &filter_type,
-                                            8 + 8 + 5 + 5); /* estimate length or let's write correct body size */
+                                            aggregate_filter_body_length(MU_ID_AGGREGATETYPE_AVERAGE));
 
     /* AggregateFilter Body */
     mu_binary_write_int64(&w, 0); /* startTime */
@@ -328,7 +338,8 @@ void test_aggregate_filter_fails_on_non_numeric(void) {
 
     /* ExtensionObject filter: AggregateFilter */
     mu_nodeid_t filter_type = {0, MU_NODEID_NUMERIC, {MU_ID_AGGREGATEFILTER_ENCODING_DEFAULTBINARY}};
-    mu_binary_write_extension_object_header(&w, &filter_type, 8 + 8 + 5 + 5);
+    mu_binary_write_extension_object_header(&w, &filter_type,
+                                            aggregate_filter_body_length(MU_ID_AGGREGATETYPE_AVERAGE));
 
     /* AggregateFilter Body */
     mu_binary_write_int64(&w, 0);
@@ -369,6 +380,9 @@ void test_aggregate_filter_fails_on_non_numeric(void) {
 }
 
 void test_aggregate_filter_fails_on_unsupported_aggregate_type(void) {
+    /* OPC-10000-4 §7.22.4: AggregateFilter selects the AggregateFunction used
+       for returned values; unsupported aggregate functions are rejected with the
+       per-item Bad_MonitoredItemFilterUnsupported result. */
     mu_server_t server;
     activated_server(&server);
     opcua_uint32_t sub_id = create_subscription(&server);
@@ -394,7 +408,7 @@ void test_aggregate_filter_fails_on_unsupported_aggregate_type(void) {
 
     /* ExtensionObject filter: AggregateFilter */
     mu_nodeid_t filter_type = {0, MU_NODEID_NUMERIC, {MU_ID_AGGREGATEFILTER_ENCODING_DEFAULTBINARY}};
-    mu_binary_write_extension_object_header(&w, &filter_type, 8 + 8 + 5 + 5);
+    mu_binary_write_extension_object_header(&w, &filter_type, aggregate_filter_body_length(99999u));
 
     /* AggregateFilter Body with unsupported type 99999 */
     mu_binary_write_int64(&w, 0);
@@ -427,6 +441,7 @@ void test_aggregate_filter_fails_on_unsupported_aggregate_type(void) {
 
     opcua_int32_t results_count;
     mu_binary_read_int32(&r, &results_count);
+    TEST_ASSERT_EQUAL(1, results_count);
 
     opcua_statuscode_t item_result;
     mu_binary_read_statuscode(&r, &item_result);
@@ -459,7 +474,8 @@ void test_aggregate_filter_fails_on_invalid_interval(void) {
 
     /* ExtensionObject filter: AggregateFilter */
     mu_nodeid_t filter_type = {0, MU_NODEID_NUMERIC, {MU_ID_AGGREGATEFILTER_ENCODING_DEFAULTBINARY}};
-    mu_binary_write_extension_object_header(&w, &filter_type, 8 + 8 + 5 + 5);
+    mu_binary_write_extension_object_header(&w, &filter_type,
+                                            aggregate_filter_body_length(MU_ID_AGGREGATETYPE_AVERAGE));
 
     /* AggregateFilter Body with 0.0 processing interval */
     mu_binary_write_int64(&w, 0);
@@ -498,30 +514,36 @@ void test_aggregate_filter_fails_on_invalid_interval(void) {
     TEST_ASSERT_EQUAL_HEX32(MU_STATUS_BAD_FILTERNOTALLOWED, item_result);
 }
 
-void test_aggregate_average_calculations(void) {
+void test_aggregate_filter_average_scoped_support(void) {
+    /* OPC-10000-4 §7.22.4: AggregateFilter selects the AggregateFunction used
+       for returned values. OPC-10000-13 §5.4.3.5: this scoped Average support
+       publishes sum(Good raw values) / Good raw sample count for the interval. */
     mu_server_t server;
     activated_server(&server);
+    opcua_uint32_t sub_id = create_subscription(&server);
 
-    mu_monitored_item_t item;
-    memset(&item, 0, sizeof(item));
-    item.in_use = true;
-    item.has_aggregate = true;
-    item.aggregate_state.aggregate_type = MU_ID_AGGREGATETYPE_AVERAGE;
-    item.aggregate_state.processing_interval = 100.0;
-    item.aggregate_state.last_calculation = 0;
-    item.aggregate_state.sample_count = 0;
-    item.sampling_interval_ms = 10;
-    item.next_sample_ms = 10;
-    item.resolved_node = &s_nodes[1]; /* NumericVar */
-    item.monitoring_mode = MU_MONITORING_MODE_REPORTING;
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, create_aggregate_item_result(&server, sub_id, MU_ID_AGGREGATETYPE_AVERAGE));
+
+    mu_monitored_item_t *item = &server.subs.monitored_items[0];
+    TEST_ASSERT_TRUE(item->in_use);
+    TEST_ASSERT_TRUE(item->has_aggregate);
+    TEST_ASSERT_EQUAL_UINT32(MU_ID_AGGREGATETYPE_AVERAGE, item->aggregate_state.aggregate_type);
+
+    item->aggregate_state.processing_interval = 100.0;
+    item->aggregate_state.last_calculation = 0;
+    item->aggregate_state.sample_count = 0;
+    memset(&item->aggregate_state.accumulator, 0, sizeof(item->aggregate_state.accumulator));
+    item->sampling_interval_ms = 10;
+    item->next_sample_ms = 10;
+    item->queue_head = 0;
+    item->queue_tail = 0;
+    item->queue_count = 0;
+    item->pending = false;
 
     /* Mock value updates and ticks */
     mu_value_source_t val1 = {MU_VALUESOURCE_STATIC, {.static_value = {MU_TYPE_FLOAT, {.f = 10.0f}}}};
     mu_value_source_t val2 = {MU_VALUESOURCE_STATIC, {.static_value = {MU_TYPE_FLOAT, {.f = 20.0f}}}};
     mu_value_source_t val3 = {MU_VALUESOURCE_STATIC, {.static_value = {MU_TYPE_FLOAT, {.f = 30.0f}}}};
-
-    server.subs.monitored_items[0] = item;
-    server.subs.active_monitored_items_count = 1;
 
     /* Tick 1: 10ms - sample 1 */
     g_tick_ms = 10;
@@ -551,6 +573,108 @@ void test_aggregate_average_calculations(void) {
     TEST_ASSERT_EQUAL(1, res_item->queue_count);
     TEST_ASSERT_EQUAL(MU_TYPE_DOUBLE, res_item->queue[0].value.type);
     TEST_ASSERT_TRUE(res_item->queue[0].value.value.d == 20.0);
+}
+
+void test_aggregate_filter_minimum_scoped_support(void) {
+    /* OPC-10000-4 §7.22.4: AggregateFilter selects the AggregateFunction used
+       for returned values. OPC-10000-13 §5.4.3.10: this scoped Minimum support
+       publishes the minimum Good raw value sampled within the interval. */
+    mu_server_t server;
+    activated_server(&server);
+    opcua_uint32_t sub_id = create_subscription(&server);
+
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, create_aggregate_item_result(&server, sub_id, MU_ID_AGGREGATETYPE_MINIMUM));
+
+    mu_monitored_item_t *item = &server.subs.monitored_items[0];
+    TEST_ASSERT_TRUE(item->in_use);
+    TEST_ASSERT_TRUE(item->has_aggregate);
+    TEST_ASSERT_EQUAL_UINT32(MU_ID_AGGREGATETYPE_MINIMUM, item->aggregate_state.aggregate_type);
+
+    item->aggregate_state.processing_interval = 100.0;
+    item->aggregate_state.last_calculation = 0;
+    item->aggregate_state.sample_count = 0;
+    memset(&item->aggregate_state.accumulator, 0, sizeof(item->aggregate_state.accumulator));
+    item->sampling_interval_ms = 10;
+    item->next_sample_ms = 10;
+    item->queue_head = 0;
+    item->queue_tail = 0;
+    item->queue_count = 0;
+    item->pending = false;
+
+    mu_value_source_t val1 = {MU_VALUESOURCE_STATIC, {.static_value = {MU_TYPE_FLOAT, {.f = 15.0f}}}};
+    mu_value_source_t val2 = {MU_VALUESOURCE_STATIC, {.static_value = {MU_TYPE_FLOAT, {.f = 5.0f}}}};
+    mu_value_source_t val3 = {MU_VALUESOURCE_STATIC, {.static_value = {MU_TYPE_FLOAT, {.f = 30.0f}}}};
+
+    g_tick_ms = 10;
+    ((mu_node_t *)&s_nodes[1])->value = &val1;
+    mu_subscriptions_tick(&server, g_tick_ms);
+
+    g_tick_ms = 20;
+    ((mu_node_t *)&s_nodes[1])->value = &val2;
+    mu_subscriptions_tick(&server, g_tick_ms);
+
+    g_tick_ms = 30;
+    ((mu_node_t *)&s_nodes[1])->value = &val3;
+    mu_subscriptions_tick(&server, g_tick_ms);
+
+    g_tick_ms = 100;
+    mu_subscriptions_tick(&server, g_tick_ms);
+
+    mu_monitored_item_t *res_item = &server.subs.monitored_items[0];
+    TEST_ASSERT_EQUAL(1, res_item->queue_count);
+    TEST_ASSERT_EQUAL(MU_TYPE_FLOAT, res_item->queue[0].value.type);
+    TEST_ASSERT_TRUE(res_item->queue[0].value.value.f == 5.0f);
+}
+
+void test_aggregate_filter_maximum_scoped_support(void) {
+    /* OPC-10000-4 §7.22.4: AggregateFilter selects the AggregateFunction used
+       for returned values. OPC-10000-13 §5.4.3.11: this scoped Maximum support
+       publishes the maximum Good raw value sampled within the interval. */
+    mu_server_t server;
+    activated_server(&server);
+    opcua_uint32_t sub_id = create_subscription(&server);
+
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, create_aggregate_item_result(&server, sub_id, MU_ID_AGGREGATETYPE_MAXIMUM));
+
+    mu_monitored_item_t *item = &server.subs.monitored_items[0];
+    TEST_ASSERT_TRUE(item->in_use);
+    TEST_ASSERT_TRUE(item->has_aggregate);
+    TEST_ASSERT_EQUAL_UINT32(MU_ID_AGGREGATETYPE_MAXIMUM, item->aggregate_state.aggregate_type);
+
+    item->aggregate_state.processing_interval = 100.0;
+    item->aggregate_state.last_calculation = 0;
+    item->aggregate_state.sample_count = 0;
+    memset(&item->aggregate_state.accumulator, 0, sizeof(item->aggregate_state.accumulator));
+    item->sampling_interval_ms = 10;
+    item->next_sample_ms = 10;
+    item->queue_head = 0;
+    item->queue_tail = 0;
+    item->queue_count = 0;
+    item->pending = false;
+
+    mu_value_source_t val1 = {MU_VALUESOURCE_STATIC, {.static_value = {MU_TYPE_FLOAT, {.f = 15.0f}}}};
+    mu_value_source_t val2 = {MU_VALUESOURCE_STATIC, {.static_value = {MU_TYPE_FLOAT, {.f = 5.0f}}}};
+    mu_value_source_t val3 = {MU_VALUESOURCE_STATIC, {.static_value = {MU_TYPE_FLOAT, {.f = 30.0f}}}};
+
+    g_tick_ms = 10;
+    ((mu_node_t *)&s_nodes[1])->value = &val1;
+    mu_subscriptions_tick(&server, g_tick_ms);
+
+    g_tick_ms = 20;
+    ((mu_node_t *)&s_nodes[1])->value = &val2;
+    mu_subscriptions_tick(&server, g_tick_ms);
+
+    g_tick_ms = 30;
+    ((mu_node_t *)&s_nodes[1])->value = &val3;
+    mu_subscriptions_tick(&server, g_tick_ms);
+
+    g_tick_ms = 100;
+    mu_subscriptions_tick(&server, g_tick_ms);
+
+    mu_monitored_item_t *res_item = &server.subs.monitored_items[0];
+    TEST_ASSERT_EQUAL(1, res_item->queue_count);
+    TEST_ASSERT_EQUAL(MU_TYPE_FLOAT, res_item->queue[0].value.type);
+    TEST_ASSERT_TRUE(res_item->queue[0].value.value.f == 30.0f);
 }
 
 void test_aggregate_min_max_calculations(void) {
@@ -678,7 +802,9 @@ int main(void) {
     RUN_TEST(test_aggregate_filter_fails_on_non_numeric);
     RUN_TEST(test_aggregate_filter_fails_on_unsupported_aggregate_type);
     RUN_TEST(test_aggregate_filter_fails_on_invalid_interval);
-    RUN_TEST(test_aggregate_average_calculations);
+    RUN_TEST(test_aggregate_filter_average_scoped_support);
+    RUN_TEST(test_aggregate_filter_minimum_scoped_support);
+    RUN_TEST(test_aggregate_filter_maximum_scoped_support);
     RUN_TEST(test_aggregate_min_max_calculations);
     RUN_TEST(test_aggregate_no_samples_publishes_last_known);
     RUN_TEST(test_aggregate_zero_heap_containment);

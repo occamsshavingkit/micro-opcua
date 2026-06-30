@@ -42,10 +42,7 @@ typedef enum {
  * @brief FilterOperand (OPC 10000-4, 7.7.4)
  * For simplicity, we only support ElementOperand and LiteralOperand.
  */
-typedef enum {
-    MU_FILTEROPERAND_ELEMENT = 0,
-    MU_FILTEROPERAND_LITERAL = 1
-} mu_filter_operand_type_t;
+typedef enum { MU_FILTEROPERAND_ELEMENT = 0, MU_FILTEROPERAND_LITERAL = 1 } mu_filter_operand_type_t;
 
 typedef struct {
     opcua_uint32_t index;
@@ -146,8 +143,9 @@ opcua_statuscode_t mu_content_filter_decode(mu_binary_reader_t *reader, mu_conte
 
 opcua_statuscode_t mu_query_first_request_decode(mu_binary_reader_t *reader, mu_query_first_request_t *req,
                                                  mu_node_type_description_t *node_types, size_t max_node_types,
-                                                 mu_content_filter_element_t *filter_elements, size_t max_filter_elements,
-                                                 mu_filter_operand_t *filter_operands, size_t max_filter_operands);
+                                                 mu_content_filter_element_t *filter_elements,
+                                                 size_t max_filter_elements, mu_filter_operand_t *filter_operands,
+                                                 size_t max_filter_operands);
 
 opcua_statuscode_t mu_query_first_response_encode(mu_binary_writer_t *writer, const mu_query_first_response_t *resp);
 
@@ -158,10 +156,12 @@ opcua_statuscode_t mu_query_next_response_encode(mu_binary_writer_t *writer, con
 /* Service logic */
 struct mu_server;
 opcua_statuscode_t mu_query_first_process(struct mu_server *server, const mu_query_first_request_t *req,
-                                          mu_query_first_response_t *resp, mu_query_data_set_t *data_sets, size_t max_data_sets);
+                                          mu_query_first_response_t *resp, mu_query_data_set_t *data_sets,
+                                          size_t max_data_sets);
 
 opcua_statuscode_t mu_query_next_process(struct mu_server *server, const mu_query_next_request_t *req,
-                                         mu_query_next_response_t *resp, mu_query_data_set_t *data_sets, size_t max_data_sets);
+                                         mu_query_next_response_t *resp, mu_query_data_set_t *data_sets,
+                                         size_t max_data_sets);
 
 #ifdef __cplusplus
 }
