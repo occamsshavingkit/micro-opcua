@@ -3,29 +3,41 @@
 
 #include "micro_opcua/types.h"
 
+#ifndef MU_PUBSUB_MAX_FIELDS
+#define MU_PUBSUB_MAX_FIELDS 8
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// Represents a UDP connection for publishing
+/* Represents one UADP/UDP publisher connection (OPC-10000-14 sections 7.2 and 7.3). */
 typedef struct {
     uint16_t port;
     bool enabled;
     uint32_t publisher_id;
+    const char *address; /* NULL defaults to IPv4 broadcast for host adapters. */
 } mu_pubsub_connection_t;
 
-// Contains variables to publish
+/* One published field encoded with UADP Variant field encoding
+ * (OPC-10000-14 sections 7.2.4.5.4 and 7.2.4.5.5). */
+typedef struct {
+    mu_variant_t value;
+} mu_pubsub_field_t;
+
+/* Contains caller-owned fields to publish. The field array must outlive any
+ * writer group registered with mu_server_add_writer_group(). */
 typedef struct {
     uint16_t data_set_writer_id;
-    // In a real implementation this would point to a PublishedDataSet
-    // For this MVP, we just use dummy values or hardcoded values
+    const mu_pubsub_field_t *fields;
+    size_t field_count;
 } mu_pubsub_dataset_writer_t;
 
-// Groups dataset writers and handles timing
+/* Groups one DataSetWriter and handles cooperative publishing timing. */
 typedef struct {
     uint16_t writer_group_id;
     uint32_t publishing_interval_ms;
-    uint32_t last_publish_time_ms; // Internal state
+    uint32_t last_publish_time_ms; /* Internal state */
     mu_pubsub_dataset_writer_t dataset_writer;
 } mu_pubsub_writer_group_t;
 

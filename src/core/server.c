@@ -564,6 +564,23 @@ static void process_message(mu_server_t *server, opcua_byte_t *msg, size_t msg_l
     handle_data_chunk_plaintext(server, msg, msg_len, is_opn);
 }
 
+static opcua_statuscode_t mu_server_poll_background(mu_server_t *server) {
+    (void)server;
+
+#ifdef MICRO_OPCUA_PUBSUB
+    opcua_statuscode_t status = mu_pubsub_poll(server);
+    if (status != MU_STATUS_GOOD) {
+        return status;
+    }
+#endif
+
+#if MICRO_OPCUA_SUBSCRIPTIONS
+    mu_subscriptions_tick(server, server->config.time_adapter.get_tick_ms(server->config.time_adapter.context));
+#endif
+
+    return MU_STATUS_GOOD;
+}
+
 opcua_statuscode_t mu_server_poll(mu_server_t *server) {
     if (server == NULL || !server->is_running) {
         return MU_STATUS_BAD_INTERNALERROR;
@@ -589,7 +606,7 @@ opcua_statuscode_t mu_server_poll(mu_server_t *server) {
             conn->last_activity_ms = server->config.time_adapter.get_tick_ms(server->config.time_adapter.context);
             mu_tcp_connection_init(&conn->tcp_conn);
             mu_secure_channel_init(&conn->secure_channel);
-            return MU_STATUS_GOOD;
+            return mu_server_poll_background(server);
         } else {
             /* Server full: send error message and close */
             opcua_byte_t buf[256];
@@ -601,7 +618,7 @@ opcua_statuscode_t mu_server_poll(mu_server_t *server) {
                                                  &bytes_written);
             }
             server->config.tcp_adapter.close_connection(server->config.tcp_adapter.context, new_handle);
-            return MU_STATUS_GOOD;
+            return mu_server_poll_background(server);
         }
     }
 
@@ -698,7 +715,7 @@ opcua_statuscode_t mu_server_poll(mu_server_t *server) {
             server_rx_len = 0;
             server_last_activity_ms = server->config.time_adapter.get_tick_ms(server->config.time_adapter.context);
         }
-        return MU_STATUS_GOOD;
+        return mu_server_poll_background(server);
     } else {
         /* Reclaim the single slot from an idle/stuck peer: a connection with no
            inbound traffic for its channel lifetime (or the connect timeout before
@@ -711,7 +728,7 @@ opcua_statuscode_t mu_server_poll(mu_server_t *server) {
             server->config.tcp_adapter.close_connection(server->config.tcp_adapter.context, server_client_handle);
             server_client_handle = NULL;
             server_rx_len = 0;
-            return MU_STATUS_GOOD;
+            return mu_server_poll_background(server);
         }
         /* Check if there's another connection waiting to be rejected */
         void *second_handle = NULL;
@@ -749,7 +766,7 @@ opcua_statuscode_t mu_server_poll(mu_server_t *server) {
             server->config.tcp_adapter.close_connection(server->config.tcp_adapter.context, server_client_handle);
             server_client_handle = NULL;
             server_rx_len = 0;
-            return MU_STATUS_GOOD;
+            return mu_server_poll_background(server);
         }
         if (bytes_read > 0) {
             server_rx_len += bytes_read;
@@ -769,7 +786,7 @@ opcua_statuscode_t mu_server_poll(mu_server_t *server) {
             server->config.tcp_adapter.close_connection(server->config.tcp_adapter.context, server_client_handle);
             server_client_handle = NULL;
             server_rx_len = 0;
-            return MU_STATUS_GOOD;
+            return mu_server_poll_background(server);
         }
         if (msg_size > (server_rx_len - consumed)) {
             break; /* incomplete: wait for more bytes on a later poll */
@@ -794,11 +811,7 @@ opcua_statuscode_t mu_server_poll(mu_server_t *server) {
     }
 #endif
 
-#if MICRO_OPCUA_SUBSCRIPTIONS
-    mu_subscriptions_tick(server, server->config.time_adapter.get_tick_ms(server->config.time_adapter.context));
-#endif
-
-    return MU_STATUS_GOOD;
+    return mu_server_poll_background(server);
 }
 
 void mu_server_close(mu_server_t *server) {

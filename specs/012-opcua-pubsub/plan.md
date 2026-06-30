@@ -18,7 +18,7 @@ Implement OPC UA PubSub (Part 14) UADP over UDP connectionless publishing to all
 **Performance Goals**: Sub-millisecond packet construction
 **Constraints**: Zero-heap, minimal RAM/Flash impact
 **Scale/Scope**: Single Publisher, UDP Unicast/Multicast
-**OPC UA Normative References**: OPC-10000-14 section 7.2 (UADP), section 7.3 (UDP)
+**OPC UA Normative References**: OPC-10000-14 §7.2.4.4.2 (UADP NetworkMessage layout), §7.2.4.5.2 (DataSet payload header), §7.2.4.5.4 (DataSetMessage header), §7.2.4.5.5 (Data Key Frame DataSetMessage), §7.3.2.1 (UDP transport)
 **Target OPC UA Profile/Conformance Units**: PubSub UADP UDP Publisher
 **Conformance Status Target**: Profile-targeting
 
@@ -29,16 +29,16 @@ Implement OPC UA PubSub (Part 14) UADP over UDP connectionless publishing to all
 **Heap Use**: None
 **Static Tables Added**: N/A
 **Transport Buffers**: Reuses the `send_buffer` from `mu_server_config_t` for packet construction.
-**Crypto Dependency Impact**: None (PubSub security out of scope for MVP).
+**Crypto Dependency Impact**: None (PubSub security out of scope for this scoped publisher).
 
 ## Constitution Check
 
 *GATE: Passed*
 
-- **Spec Fidelity**: Strictly implementing UADP NetworkMessage framing per OPC 10000-14.
+- **Spec Fidelity**: Scoped UADP NetworkMessage, PayloadHeader, and Data Key Frame behavior is grounded in OPC-10000-14 §7.2.4.4.2, §7.2.4.5.2, §7.2.4.5.4, §7.2.4.5.5, and §7.3.2.1.
 - **Embedded C Core**: Freestanding C11, no heap.
 - **Memory Model**: Static `mu_pubsub_connection_t` array, caller-provided UDP transmission buffer.
-- **Minimal OPC UA Surface**: Scoped entirely to UADP Publisher over UDP; Subscriber and MQTT excluded.
+- **Minimal OPC UA Surface**: Scoped entirely to one UADP Publisher over UDP with one DataSetWriter per WriterGroup; Subscriber, PubSub security, MQTT, AMQP, JSON, dynamic PublishedDataSet management, arrays, and multiple DataSetWriters per WriterGroup are excluded.
 - **Profile Research**: Conforms to Publisher requirements in Part 14.
 - **Correctness Gates**: Unity tests for UADP binary encoding will be written.
 - **Toolchain Discipline**: Fits existing CMake structure.

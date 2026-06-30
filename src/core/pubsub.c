@@ -27,20 +27,26 @@ opcua_statuscode_t mu_pubsub_poll(mu_server_t *server) {
     if (!server->config.time_adapter.get_tick_ms)
         return MU_STATUS_GOOD;
 
-    opcua_uint64_t now = server->config.time_adapter.get_tick_ms(server->config.time_adapter.context);
+    opcua_uint32_t now = (opcua_uint32_t)server->config.time_adapter.get_tick_ms(server->config.time_adapter.context);
 
     for (size_t i = 0; i < server->writer_group_count; i++) {
         mu_pubsub_writer_group_t *wg = &server->writer_groups[i];
-        if (now - wg->last_publish_time_ms >= wg->publishing_interval_ms) {
-            wg->last_publish_time_ms = (uint32_t)now;
+        if ((opcua_uint32_t)(now - wg->last_publish_time_ms) >= wg->publishing_interval_ms) {
+            wg->last_publish_time_ms = now;
+            const char *address = server->config.pubsub.address ? server->config.pubsub.address : "255.255.255.255";
 
             size_t bytes_written = 0;
             opcua_statuscode_t status =
                 mu_encode_uadp_network_message(&server->config.pubsub, wg, server->config.send_buffer,
                                                server->config.send_buffer_size, &bytes_written);
             if (status == MU_STATUS_GOOD && bytes_written > 0) {
-                server->config.udp_adapter.send(server->config.udp_adapter.context, server->config.send_buffer,
-                                                bytes_written, "255.255.255.255", server->config.pubsub.port);
+                status = server->config.udp_adapter.send(server->config.udp_adapter.context, server->config.send_buffer,
+                                                         bytes_written, address, server->config.pubsub.port);
+                if (status != MU_STATUS_GOOD) {
+                    return status;
+                }
+            } else if (status != MU_STATUS_GOOD) {
+                return status;
             }
         }
     }

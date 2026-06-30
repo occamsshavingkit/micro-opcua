@@ -684,3 +684,70 @@ caller-storage changes are attributable to US4. Throughput impact is also
 negative-path tests increase CI/test coverage without changing runtime
 throughput. The table above records current absolute profile outputs from the
 size script, not subscription-negative-path runtime growth.
+
+## Feature 012 PubSub hardening resource evidence
+
+- **Measured**: 2026-06-30
+- **Commands**:
+  - `cmake --build build/pubsub-hardening -j$(nproc)`
+  - `ctest --test-dir build/pubsub-hardening --output-on-failure`
+  - `cmake --build build/pubsub-hardening --target format-check`
+  - `cmake --build build/pubsub-hardening --target cppcheck`
+  - `make all-profiles`
+  - `BUILD_ROOT=build/pubsub-size-arm scripts/measure_size.sh all`
+  - `cmake -S . -B build/pubsub-pico -DMICRO_OPCUA_PLATFORM=pico -DPICO_SDK_FETCH_FROM_GIT=ON -DMICRO_OPCUA_BUILD_EXAMPLES=ON -DMICRO_OPCUA_PROFILE=embedded -DMICRO_OPCUA_OPTIMIZE_SIZE=ON -DMU_MAX_SUBSCRIPTIONS=2 -DMU_MAX_MONITORED_ITEMS=100 -DMU_MAX_PUBLISH_REQUESTS=5 -DMU_MONITORED_QUEUE_DEPTH=2 -DMU_MAX_TRIGGER_LINKS=4`
+  - `cmake --build build/pubsub-pico -j$(nproc)`
+  - `make speed-compare`
+
+Current ARM Cortex-M0+ profile matrix:
+
+| Profile | text | data | bss | dec | Archive |
+|---|---:|---:|---:|---:|---|
+| nano | 16,278 B | 0 B | 0 B | 16,278 B | `build/pubsub-size-arm/nano/src/libmicro_opcua.a` |
+| micro | 23,785 B | 0 B | 0 B | 23,785 B | `build/pubsub-size-arm/micro/src/libmicro_opcua.a` |
+| embedded | 42,990 B | 0 B | 0 B | 42,990 B | `build/pubsub-size-arm/embedded/src/libmicro_opcua.a` |
+| full-featured | 51,248 B | 0 B | 0 B | 51,248 B | `build/pubsub-size-arm/full-featured/src/libmicro_opcua.a` |
+
+PubSub object budget for the full-featured ARM build:
+
+| Object | text | data | bss | Budget result |
+|---|---:|---:|---:|---|
+| `encoding/uadp_encoder.c.obj` | 252 B | 0 B | 0 B | PASS |
+| `core/pubsub.c.obj` | 280 B | 0 B | 0 B | PASS |
+| combined | 532 B | 0 B | 0 B | PASS: below 3 KiB flash and below 200 B archive RAM |
+
+Host profile archive totals after `make all-profiles` plus a full-profile examples
+build:
+
+| Profile | text | data | bss | dec |
+|---|---:|---:|---:|---:|
+| nano | 33,604 B | 264 B | 0 B | 33,868 B |
+| micro | 46,568 B | 528 B | 0 B | 47,096 B |
+| embedded | 80,023 B | 5,984 B | 0 B | 86,007 B |
+| full | 96,190 B | 6,224 B | 0 B | 102,414 B |
+
+Full-profile host example binaries:
+
+| Artifact | text | data | bss | dec |
+|---|---:|---:|---:|---:|
+| `build/full/examples/minimal_server` | 109,997 B | 8,292 B | 141,616 B | 259,905 B |
+| `build/full/examples/pubsub_server` | 97,621 B | 7,200 B | 141,440 B | 246,261 B |
+
+Pico embedded-profile cross-compile:
+
+| Artifact | text | data | bss | dec | Status |
+|---|---:|---:|---:|---:|---|
+| `build/pubsub-pico/platform/pico/pico_minimal_server.elf` | 73,292 B | 0 B | 119,340 B | 192,632 B | PASS |
+
+Caller-storage check for the full-profile host build with embedded capacity
+overrides: `sizeof(struct mu_server)=120,896 B`,
+`MU_SERVER_STORAGE_BYTES=125,980 B`, and
+`sizeof(mu_pubsub_writer_group_t)=40 B`; the storage macro remains above the
+actual server struct size. Published field values are caller-owned and do not
+add fixed server-side field storage.
+
+Controlled speed comparison (`make speed-compare`) passed on isolated CPU 11
+with realtime scheduling and CPU shielding. All 66 paired rows passed the
+configured gates. Median normalized ratios versus `docs/benchmarks/speed-baseline.json`
+were nano `0.994`, micro `1.003`, embedded `1.004`, and full `1.005`; the worst
+row was full `subscription-active-tick` at `0.937`, above the `0.85` gate.

@@ -64,6 +64,7 @@ int main(void) {
     config.pubsub.enabled = true;
     config.pubsub.port = 4840;
     config.pubsub.publisher_id = 0x12345678;
+    config.pubsub.address = "255.255.255.255";
 
     config.udp_adapter.context = &udp_fd;
     config.udp_adapter.init = mu_host_udp_init;
@@ -77,11 +78,15 @@ int main(void) {
         return 1;
     }
 
-    mu_pubsub_writer_group_t wg = {
-        .writer_group_id = 1, .publishing_interval_ms = 1000, .dataset_writer = {.data_set_writer_id = 1}};
+    static mu_pubsub_field_t fields[] = {
+        {.value = {MU_TYPE_DOUBLE, {.d = 23.5}}},
+    };
+    mu_pubsub_writer_group_t wg = {.writer_group_id = 1,
+                                   .publishing_interval_ms = 1000,
+                                   .dataset_writer = {.data_set_writer_id = 1, .fields = fields, .field_count = 1}};
     mu_server_add_writer_group(server, &wg);
 
-    printf("PubSub MVP server started. Broadcasting UADP packets every 1 second...\n");
+    printf("PubSub server started. Broadcasting UADP packets every 1 second...\n");
 
     while (true) {
         mu_server_poll(server);
