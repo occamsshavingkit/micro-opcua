@@ -5,7 +5,7 @@
 #include <string.h>
 
 #include "../../src/core/server_internal.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 
 #define FUZZ_REQUEST_CAPACITY MU_DEFAULT_MAX_MESSAGE_SIZE
 #define FUZZ_RESPONSE_CAPACITY 512u

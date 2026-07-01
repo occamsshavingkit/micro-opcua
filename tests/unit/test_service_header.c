@@ -1,6 +1,6 @@
 /* tests/unit/test_service_header.c */
 #include "../../src/services/service_header.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 #include <string.h>
 

@@ -2,7 +2,7 @@
 #include "base_nodes.h"
 #include <stddef.h>
 
-#ifdef MICRO_OPCUA_BASE_NODES
+#ifdef MUC_OPCUA_BASE_NODES
 
 /* Pooled strings to save flash */
 #if defined(__GNUC__) || defined(__clang__)
@@ -72,7 +72,7 @@ static const opcua_byte_t s_str_http___opcfoundation_org_UA_Profile_Server_Embed
 static const opcua_byte_t s_str_http___opcfoundation_org_UA_Profile_Server_NanoEmbeddedDevice2017[] =
     "http://opcfoundation.org/UA-Profile/Server/NanoEmbeddedDevice2017";
 static const opcua_byte_t s_str_http___opcfoundation_org_UA_[] = "http://opcfoundation.org/UA/";
-static const opcua_byte_t s_str_urn_micro_opcua_server[] = "urn:micro-opcua:server";
+static const opcua_byte_t s_str_urn_muc_opcua_server[] = "urn:muc-opcua:server";
 #if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
@@ -80,22 +80,22 @@ static const opcua_byte_t s_str_urn_micro_opcua_server[] = "urn:micro-opcua:serv
 static const mu_reference_t s_root_refs[] = {{{0, MU_NODEID_NUMERIC, {35}}, {0, MU_NODEID_NUMERIC, {85}}, true},
                                              {{0, MU_NODEID_NUMERIC, {35}}, {0, MU_NODEID_NUMERIC, {86}}, true},
                                              {{0, MU_NODEID_NUMERIC, {35}}, {0, MU_NODEID_NUMERIC, {87}}, true},
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
                                              {{0, MU_NODEID_NUMERIC, {40}}, {0, MU_NODEID_NUMERIC, {61}}, true}
 #endif
 };
 
 static const mu_reference_t s_objects_refs[] = {{{0, MU_NODEID_NUMERIC, {35}}, {0, MU_NODEID_NUMERIC, {2253}}, true},
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
                                                 {{0, MU_NODEID_NUMERIC, {40}}, {0, MU_NODEID_NUMERIC, {61}}, true}
 #endif
 };
 
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
 static const mu_reference_t s_views_refs[] = {{{0, MU_NODEID_NUMERIC, {40}}, {0, MU_NODEID_NUMERIC, {61}}, true}};
 #endif
 
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
 static const mu_reference_t s_types_refs[] = {{{0, MU_NODEID_NUMERIC, {35}}, {0, MU_NODEID_NUMERIC, {88}}, true},
                                               {{0, MU_NODEID_NUMERIC, {35}}, {0, MU_NODEID_NUMERIC, {89}}, true},
                                               {{0, MU_NODEID_NUMERIC, {35}}, {0, MU_NODEID_NUMERIC, {90}}, true},
@@ -119,7 +119,7 @@ static const mu_reference_t s_type_folder_reference_refs[] = {
     {{0, MU_NODEID_NUMERIC, {40}}, {0, MU_NODEID_NUMERIC, {61}}, true}};
 #endif
 
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
 static const mu_reference_t s_references_refs[] = {{{0, MU_NODEID_NUMERIC, {45}}, {0, MU_NODEID_NUMERIC, {32}}, true},
                                                    {{0, MU_NODEID_NUMERIC, {45}}, {0, MU_NODEID_NUMERIC, {33}}, true}};
 
@@ -170,11 +170,11 @@ static const mu_reference_t s_server_refs[] = {{{0, MU_NODEID_NUMERIC, {47}}, {0
                                                {{0, MU_NODEID_NUMERIC, {47}}, {0, MU_NODEID_NUMERIC, {2255}}, true},
                                                {{0, MU_NODEID_NUMERIC, {47}}, {0, MU_NODEID_NUMERIC, {2256}}, true},
                                                {{0, MU_NODEID_NUMERIC, {47}}, {0, MU_NODEID_NUMERIC, {2268}}, true},
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM && MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_BASE_TYPE_SYSTEM && MUC_OPCUA_SUBSCRIPTIONS_STANDARD
                                                {{0, MU_NODEID_NUMERIC, {47}}, {0, MU_NODEID_NUMERIC, {11492}}, true},
                                                {{0, MU_NODEID_NUMERIC, {47}}, {0, MU_NODEID_NUMERIC, {12873}}, true},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
                                                {{0, MU_NODEID_NUMERIC, {40}}, {0, MU_NODEID_NUMERIC, {2004}}, true}
 #endif
 };
@@ -183,7 +183,7 @@ static const mu_reference_t s_server_status_refs[] = {
     {{0, MU_NODEID_NUMERIC, {47}}, {0, MU_NODEID_NUMERIC, {2259}}, true},
     {{0, MU_NODEID_NUMERIC, {47}}, {0, MU_NODEID_NUMERIC, {2258}}, true},
     {{0, MU_NODEID_NUMERIC, {47}}, {0, MU_NODEID_NUMERIC, {2257}}, true},
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {40}}, {0, MU_NODEID_NUMERIC, {63}}, true}
 #endif
 };
@@ -192,7 +192,7 @@ static const mu_reference_t s_server_capabilities_refs[] = {
     {{0, MU_NODEID_NUMERIC, {46}}, {0, MU_NODEID_NUMERIC, {2269}}, true},
     {{0, MU_NODEID_NUMERIC, {46}}, {0, MU_NODEID_NUMERIC, {2271}}, true},
     {{0, MU_NODEID_NUMERIC, {47}}, {0, MU_NODEID_NUMERIC, {11704}}, true},
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {40}}, {0, MU_NODEID_NUMERIC, {58}}, true}
 #endif
 };
@@ -200,16 +200,16 @@ static const mu_reference_t s_server_capabilities_refs[] = {
 static const mu_reference_t s_operation_limits_refs[] = {
     {{0, MU_NODEID_NUMERIC, {46}}, {0, MU_NODEID_NUMERIC, {11705}}, true},
     {{0, MU_NODEID_NUMERIC, {46}}, {0, MU_NODEID_NUMERIC, {11710}}, true},
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {40}}, {0, MU_NODEID_NUMERIC, {58}}, true}
 #endif
 };
 
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
 static const mu_reference_t s_property_type_ref[] = {
     {{0, MU_NODEID_NUMERIC, {40}}, {0, MU_NODEID_NUMERIC, {68}}, true}};
 
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
 static const mu_reference_t s_get_monitored_items_refs[] = {
     {{0, MU_NODEID_NUMERIC, {46}}, {0, MU_NODEID_NUMERIC, {11493}}, true},
     {{0, MU_NODEID_NUMERIC, {46}}, {0, MU_NODEID_NUMERIC, {11494}}, true}};
@@ -220,7 +220,7 @@ static const mu_reference_t s_resend_data_refs[] = {
 
 #endif
 
-static const mu_string_t s_server_array[] = {{22, s_str_urn_micro_opcua_server}};
+static const mu_string_t s_server_array[] = {{20, s_str_urn_muc_opcua_server}};
 
 static const mu_value_source_t s_server_array_value = {
     MU_VALUESOURCE_STATIC,
@@ -236,7 +236,7 @@ static const mu_value_source_t s_server_status_state_value = {
     MU_VALUESOURCE_STATIC, {.static_value = {.type = MU_TYPE_INT32, .value.i32 = 0}}};
 
 static const mu_string_t s_server_profile_array[] = {
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {57, s_str_http___opcfoundation_org_UA_Profile_Server_EmbeddedUA2017}
 #else
     {65, s_str_http___opcfoundation_org_UA_Profile_Server_NanoEmbeddedDevice2017}
@@ -261,49 +261,49 @@ static const mu_value_source_t s_max_nodes_per_browse_value = {
     MU_VALUESOURCE_STATIC, {.static_value = {.type = MU_TYPE_UINT32, .value.ui32 = 8}}};
 
 static const mu_node_t s_base_nodes[] = {
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {1}}, MU_NODECLASS_DATATYPE, {7, s_str_Boolean}, {7, s_str_Boolean}, NULL, 0, NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {2}}, MU_NODECLASS_DATATYPE, {5, s_str_SByte}, {5, s_str_SByte}, NULL, 0, NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {3}}, MU_NODECLASS_DATATYPE, {4, s_str_Byte}, {4, s_str_Byte}, NULL, 0, NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {4}}, MU_NODECLASS_DATATYPE, {5, s_str_Int16}, {5, s_str_Int16}, NULL, 0, NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {5}}, MU_NODECLASS_DATATYPE, {6, s_str_UInt16}, {6, s_str_UInt16}, NULL, 0, NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {6}}, MU_NODECLASS_DATATYPE, {5, s_str_Int32}, {5, s_str_Int32}, NULL, 0, NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {7}}, MU_NODECLASS_DATATYPE, {6, s_str_UInt32}, {6, s_str_UInt32}, NULL, 0, NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {8}}, MU_NODECLASS_DATATYPE, {5, s_str_Int64}, {5, s_str_Int64}, NULL, 0, NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {9}}, MU_NODECLASS_DATATYPE, {6, s_str_UInt64}, {6, s_str_UInt64}, NULL, 0, NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {10}}, MU_NODECLASS_DATATYPE, {5, s_str_Float}, {5, s_str_Float}, NULL, 0, NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {11}}, MU_NODECLASS_DATATYPE, {6, s_str_Double}, {6, s_str_Double}, NULL, 0, NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {12}}, MU_NODECLASS_DATATYPE, {6, s_str_String}, {6, s_str_String}, NULL, 0, NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {13}}, MU_NODECLASS_DATATYPE, {8, s_str_DateTime}, {8, s_str_DateTime}, NULL, 0, NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {17}}, MU_NODECLASS_DATATYPE, {6, s_str_NodeId}, {6, s_str_NodeId}, NULL, 0, NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {19}},
      MU_NODECLASS_DATATYPE,
      {10, s_str_StatusCode},
@@ -312,7 +312,7 @@ static const mu_node_t s_base_nodes[] = {
      0,
      NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {20}},
      MU_NODECLASS_DATATYPE,
      {13, s_str_QualifiedName},
@@ -321,7 +321,7 @@ static const mu_node_t s_base_nodes[] = {
      0,
      NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {21}},
      MU_NODECLASS_DATATYPE,
      {13, s_str_LocalizedText},
@@ -331,7 +331,7 @@ static const mu_node_t s_base_nodes[] = {
      NULL},
 
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {24}},
      MU_NODECLASS_DATATYPE,
      {12, s_str_BaseDataType},
@@ -340,7 +340,7 @@ static const mu_node_t s_base_nodes[] = {
      sizeof(s_base_data_type_refs) / sizeof(s_base_data_type_refs[0]),
      NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {31}},
      MU_NODECLASS_REFERENCETYPE,
      {10, s_str_References},
@@ -349,7 +349,7 @@ static const mu_node_t s_base_nodes[] = {
      sizeof(s_references_refs) / sizeof(s_references_refs[0]),
      NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {32}},
      MU_NODECLASS_REFERENCETYPE,
      {25, s_str_NonHierarchicalReferences},
@@ -358,7 +358,7 @@ static const mu_node_t s_base_nodes[] = {
      sizeof(s_nonhierarchical_refs) / sizeof(s_nonhierarchical_refs[0]),
      NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {33}},
      MU_NODECLASS_REFERENCETYPE,
      {22, s_str_HierarchicalReferences},
@@ -367,7 +367,7 @@ static const mu_node_t s_base_nodes[] = {
      sizeof(s_hierarchical_refs) / sizeof(s_hierarchical_refs[0]),
      NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {34}},
      MU_NODECLASS_REFERENCETYPE,
      {8, s_str_HasChild},
@@ -376,7 +376,7 @@ static const mu_node_t s_base_nodes[] = {
      sizeof(s_has_child_refs) / sizeof(s_has_child_refs[0]),
      NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {35}},
      MU_NODECLASS_REFERENCETYPE,
      {9, s_str_Organizes},
@@ -385,7 +385,7 @@ static const mu_node_t s_base_nodes[] = {
      0,
      NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {40}},
      MU_NODECLASS_REFERENCETYPE,
      {17, s_str_HasTypeDefinition},
@@ -394,7 +394,7 @@ static const mu_node_t s_base_nodes[] = {
      0,
      NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {44}},
      MU_NODECLASS_REFERENCETYPE,
      {10, s_str_Aggregates},
@@ -403,7 +403,7 @@ static const mu_node_t s_base_nodes[] = {
      sizeof(s_aggregates_refs) / sizeof(s_aggregates_refs[0]),
      NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {45}},
      MU_NODECLASS_REFERENCETYPE,
      {10, s_str_HasSubtype},
@@ -412,7 +412,7 @@ static const mu_node_t s_base_nodes[] = {
      0,
      NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {46}},
      MU_NODECLASS_REFERENCETYPE,
      {11, s_str_HasProperty},
@@ -421,7 +421,7 @@ static const mu_node_t s_base_nodes[] = {
      0,
      NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {47}},
      MU_NODECLASS_REFERENCETYPE,
      {12, s_str_HasComponent},
@@ -431,7 +431,7 @@ static const mu_node_t s_base_nodes[] = {
      NULL},
 
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {58}},
      MU_NODECLASS_OBJECTTYPE,
      {14, s_str_BaseObjectType},
@@ -440,7 +440,7 @@ static const mu_node_t s_base_nodes[] = {
      sizeof(s_base_object_type_refs) / sizeof(s_base_object_type_refs[0]),
      NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {61}},
      MU_NODECLASS_OBJECTTYPE,
      {10, s_str_FolderType},
@@ -449,7 +449,7 @@ static const mu_node_t s_base_nodes[] = {
      0,
      NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {62}},
      MU_NODECLASS_VARIABLETYPE,
      {16, s_str_BaseVariableType},
@@ -458,7 +458,7 @@ static const mu_node_t s_base_nodes[] = {
      sizeof(s_base_variable_type_refs) / sizeof(s_base_variable_type_refs[0]),
      NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {63}},
      MU_NODECLASS_VARIABLETYPE,
      {20, s_str_BaseDataVariableType},
@@ -467,7 +467,7 @@ static const mu_node_t s_base_nodes[] = {
      sizeof(s_base_data_variable_type_refs) / sizeof(s_base_data_variable_type_refs[0]),
      NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {68}},
      MU_NODECLASS_VARIABLETYPE,
      {12, s_str_PropertyType},
@@ -494,7 +494,7 @@ static const mu_node_t s_base_nodes[] = {
      MU_NODECLASS_OBJECT,
      {5, s_str_Types},
      {5, s_str_Types},
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
      s_types_refs,
      sizeof(s_types_refs) / sizeof(s_types_refs[0]),
 #else
@@ -506,7 +506,7 @@ static const mu_node_t s_base_nodes[] = {
      MU_NODECLASS_OBJECT,
      {5, s_str_Views},
      {5, s_str_Views},
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
      s_views_refs,
      sizeof(s_views_refs) / sizeof(s_views_refs[0]),
 #else
@@ -514,7 +514,7 @@ static const mu_node_t s_base_nodes[] = {
      0,
 #endif
      NULL},
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {88}},
      MU_NODECLASS_OBJECT,
      {11, s_str_ObjectTypes},
@@ -523,7 +523,7 @@ static const mu_node_t s_base_nodes[] = {
      sizeof(s_type_folder_object_refs) / sizeof(s_type_folder_object_refs[0]),
      NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {89}},
      MU_NODECLASS_OBJECT,
      {13, s_str_VariableTypes},
@@ -532,7 +532,7 @@ static const mu_node_t s_base_nodes[] = {
      sizeof(s_type_folder_variable_refs) / sizeof(s_type_folder_variable_refs[0]),
      NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {90}},
      MU_NODECLASS_OBJECT,
      {9, s_str_DataTypes},
@@ -541,7 +541,7 @@ static const mu_node_t s_base_nodes[] = {
      sizeof(s_type_folder_data_refs) / sizeof(s_type_folder_data_refs[0]),
      NULL},
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {91}},
      MU_NODECLASS_OBJECT,
      {14, s_str_ReferenceTypes},
@@ -551,7 +551,7 @@ static const mu_node_t s_base_nodes[] = {
      NULL},
 
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     {{0, MU_NODEID_NUMERIC, {2004}},
      MU_NODECLASS_OBJECTTYPE,
      {10, s_str_ServerType},
@@ -571,7 +571,7 @@ static const mu_node_t s_base_nodes[] = {
      MU_NODECLASS_VARIABLE,
      {11, s_str_ServerArray},
      {11, s_str_ServerArray},
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
      s_property_type_ref,
      sizeof(s_property_type_ref) / sizeof(s_property_type_ref[0]),
 #else
@@ -583,7 +583,7 @@ static const mu_node_t s_base_nodes[] = {
      MU_NODECLASS_VARIABLE,
      {14, s_str_NamespaceArray},
      {14, s_str_NamespaceArray},
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
      s_property_type_ref,
      sizeof(s_property_type_ref) / sizeof(s_property_type_ref[0]),
 #else
@@ -602,7 +602,7 @@ static const mu_node_t s_base_nodes[] = {
      MU_NODECLASS_VARIABLE,
      {5, s_str_State},
      {5, s_str_State},
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
      s_property_type_ref,
      sizeof(s_property_type_ref) / sizeof(s_property_type_ref[0]),
 #else
@@ -621,7 +621,7 @@ static const mu_node_t s_base_nodes[] = {
      MU_NODECLASS_VARIABLE,
      {18, s_str_ServerProfileArray},
      {18, s_str_ServerProfileArray},
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
      s_property_type_ref,
      sizeof(s_property_type_ref) / sizeof(s_property_type_ref[0]),
 #else
@@ -633,7 +633,7 @@ static const mu_node_t s_base_nodes[] = {
      MU_NODECLASS_VARIABLE,
      {13, s_str_LocaleIdArray},
      {13, s_str_LocaleIdArray},
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
      s_property_type_ref,
      sizeof(s_property_type_ref) / sizeof(s_property_type_ref[0]),
 #else
@@ -641,8 +641,8 @@ static const mu_node_t s_base_nodes[] = {
      0,
 #endif
      &s_locale_id_array_value},
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
     {{0, MU_NODEID_NUMERIC, {11492}},
      MU_NODECLASS_METHOD,
      {17, s_str_GetMonitoredItems},
@@ -652,8 +652,8 @@ static const mu_node_t s_base_nodes[] = {
      NULL},
 #endif
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
     {{0, MU_NODEID_NUMERIC, {11493}},
      MU_NODECLASS_VARIABLE,
      {14, s_str_InputArguments},
@@ -663,8 +663,8 @@ static const mu_node_t s_base_nodes[] = {
      NULL},
 #endif
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
     {{0, MU_NODEID_NUMERIC, {11494}},
      MU_NODECLASS_VARIABLE,
      {15, s_str_OutputArguments},
@@ -685,7 +685,7 @@ static const mu_node_t s_base_nodes[] = {
      MU_NODECLASS_VARIABLE,
      {15, s_str_MaxNodesPerRead},
      {15, s_str_MaxNodesPerRead},
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
      s_property_type_ref,
      sizeof(s_property_type_ref) / sizeof(s_property_type_ref[0]),
 #else
@@ -697,7 +697,7 @@ static const mu_node_t s_base_nodes[] = {
      MU_NODECLASS_VARIABLE,
      {17, s_str_MaxNodesPerBrowse},
      {17, s_str_MaxNodesPerBrowse},
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
      s_property_type_ref,
      sizeof(s_property_type_ref) / sizeof(s_property_type_ref[0]),
 #else
@@ -705,8 +705,8 @@ static const mu_node_t s_base_nodes[] = {
      0,
 #endif
      &s_max_nodes_per_browse_value},
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
     {{0, MU_NODEID_NUMERIC, {12873}},
      MU_NODECLASS_METHOD,
      {10, s_str_ResendData},
@@ -716,8 +716,8 @@ static const mu_node_t s_base_nodes[] = {
      NULL},
 #endif
 #endif
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
     {{0, MU_NODEID_NUMERIC, {12874}},
      MU_NODECLASS_VARIABLE,
      {14, s_str_InputArguments},
@@ -733,13 +733,13 @@ static const mu_node_t s_base_nodes[] = {
 static const mu_address_space_t s_base_space = {s_base_nodes, sizeof(s_base_nodes) / sizeof(s_base_nodes[0])};
 #else
 static const mu_address_space_t s_base_space = {NULL, 0};
-#endif /* MICRO_OPCUA_BASE_NODES */
+#endif /* MUC_OPCUA_BASE_NODES */
 
 const mu_address_space_t *mu_base_address_space(void) {
     return &s_base_space;
 }
 
-#ifdef MICRO_OPCUA_BASE_NODES
+#ifdef MUC_OPCUA_BASE_NODES
 static opcua_statuscode_t base_status_time_read(void *ctx, const mu_nodeid_t *id, mu_variant_t *v) {
     const mu_base_runtime_t *rt = (const mu_base_runtime_t *)ctx;
 
@@ -752,13 +752,13 @@ static opcua_statuscode_t base_status_time_read(void *ctx, const mu_nodeid_t *id
     }
     return MU_STATUS_GOOD;
 }
-#endif /* MICRO_OPCUA_BASE_NODES */
+#endif /* MUC_OPCUA_BASE_NODES */
 
 void mu_base_runtime_init(mu_base_runtime_nodes_t *s, const mu_time_adapter_t *time, opcua_datetime_t start_time) {
     s->rt.time = time;
     s->rt.start_time = start_time;
 
-#ifdef MICRO_OPCUA_BASE_NODES
+#ifdef MUC_OPCUA_BASE_NODES
     s->values[0].type = MU_VALUESOURCE_CALLBACK;
     s->values[0].data.callback.read = base_status_time_read;
     s->values[0].data.callback.context = &s->rt;
@@ -771,7 +771,7 @@ void mu_base_runtime_init(mu_base_runtime_nodes_t *s, const mu_time_adapter_t *t
         .node_class = MU_NODECLASS_VARIABLE,
         .browse_name = {.length = (opcua_int32_t)11, .data = (const opcua_byte_t *)"CurrentTime"},
         .display_name = {.length = (opcua_int32_t)11, .data = (const opcua_byte_t *)"CurrentTime"},
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
         .references = s_property_type_ref,
         .reference_count = sizeof(s_property_type_ref) / sizeof(s_property_type_ref[0]),
 #else
@@ -784,7 +784,7 @@ void mu_base_runtime_init(mu_base_runtime_nodes_t *s, const mu_time_adapter_t *t
         .node_class = MU_NODECLASS_VARIABLE,
         .browse_name = {.length = (opcua_int32_t)9, .data = (const opcua_byte_t *)"StartTime"},
         .display_name = {.length = (opcua_int32_t)9, .data = (const opcua_byte_t *)"StartTime"},
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
         .references = s_property_type_ref,
         .reference_count = sizeof(s_property_type_ref) / sizeof(s_property_type_ref[0]),
 #else
@@ -798,7 +798,7 @@ void mu_base_runtime_init(mu_base_runtime_nodes_t *s, const mu_time_adapter_t *t
 #else
     s->space.nodes = NULL;
     s->space.node_count = 0;
-#endif /* MICRO_OPCUA_BASE_NODES */
+#endif /* MUC_OPCUA_BASE_NODES */
 }
 
 const mu_node_t *mu_resolve_node(const mu_address_space_t *user, mu_address_space_index_t *user_index,

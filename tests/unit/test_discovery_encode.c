@@ -2,7 +2,7 @@
  * Byte-level tests for the EndpointDescription / ApplicationDescription encoders
  * (OPC 10000-4 7.14, 7.2, 7.41). */
 #include "../../src/services/discovery.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 #include <string.h>
 

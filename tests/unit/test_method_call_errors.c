@@ -10,15 +10,15 @@
 #include "../../src/core/server_internal.h"
 #include "../../src/services/secure_channel.h"
 #include "../../src/services/session.h"
-#include "micro_opcua/encoding.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/encoding.h"
+#include "muc_opcua/muc_opcua.h"
 
 #include <string.h>
 
 void setUp(void) {}
 void tearDown(void) {}
 
-#if MICRO_OPCUA_SUBSCRIPTIONS && MICRO_OPCUA_SUBSCRIPTIONS_STANDARD && MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_SUBSCRIPTIONS && MUC_OPCUA_SUBSCRIPTIONS_STANDARD && MUC_OPCUA_BASE_TYPE_SYSTEM
 
 #define AUTH_TOKEN 12345u
 #define ID_SERVER_OBJECT 2253u
@@ -298,7 +298,7 @@ void test_method_call_error_coverage_is_gated_to_embedded_standard_builds(void) 
 
 int main(void) {
     UNITY_BEGIN();
-#if MICRO_OPCUA_SUBSCRIPTIONS && MICRO_OPCUA_SUBSCRIPTIONS_STANDARD && MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_SUBSCRIPTIONS && MUC_OPCUA_SUBSCRIPTIONS_STANDARD && MUC_OPCUA_BASE_TYPE_SYSTEM
     RUN_TEST(test_unknown_method_returns_bad_method_invalid);
     RUN_TEST(test_wrong_object_returns_bad_nodeid_invalid);
     RUN_TEST(test_missing_argument_returns_bad_arguments_missing);

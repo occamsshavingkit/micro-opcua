@@ -8,7 +8,7 @@
 Feature 005 local commands:
 
 ```sh
-cmake -S . -B build/test -DMICRO_OPCUA_BUILD_TESTS=ON
+cmake -S . -B build/test -DMUC_OPCUA_BUILD_TESTS=ON
 
 files=$(
   { git diff --name-only --diff-filter=ACM -- src include tests;
@@ -43,7 +43,7 @@ Notes:
 
 - `.clang-format` was corrected from invalid `Standard: c11` to `Standard: Cpp11` for
   clang-format 18 compatibility.
-- `cmake/MicroOpcUaStaticAnalysis.cmake` was corrected so the generated analysis targets quote
+- `cmake/MucOpcUaStaticAnalysis.cmake` was corrected so the generated analysis targets quote
   paths safely and so `cppcheck` focuses on warning/performance/portability findings instead of
   style-only noise.
 - The repo-wide `format-check` target now executes correctly, but it still reports pre-existing
@@ -53,7 +53,7 @@ Notes:
 Feature 020 / T098c historical local commands:
 
 ```sh
-cmake -S . -B build/test -DMICRO_OPCUA_BUILD_TESTS=ON
+cmake -S . -B build/test -DMUC_OPCUA_BUILD_TESTS=ON
 
 files=$(
   { git diff --name-only --diff-filter=ACM -- src include tests;
@@ -82,11 +82,11 @@ Feature 020 / T098c historical results:
 
 | Command | Exit | Result | Evidence |
 | --- | ---: | --- | --- |
-| `cmake -S . -B build/test -DMICRO_OPCUA_BUILD_TESTS=ON` | 0 | PASS | `/tmp/micro-opcua-t098c/01-cmake-configure.transcript` |
-| Feature-scope `clang-format --dry-run --Werror` | 123 | HISTORICAL FAIL | `/tmp/micro-opcua-t098c/02-feature-clang-format-dry-run.transcript`; 734 formatting violations across 29 files before T102b formatting. |
-| `cmake --build build/test --target cppcheck` | 0 | PASS | `/tmp/micro-opcua-t098c/03-cppcheck-target.transcript`; only informational `toomanyconfigs` |
-| Feature-scope `clang-tidy -p build/test --checks=-clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling --quiet` | 0 | ADVISORY | `/tmp/micro-opcua-t098c/04-feature-clang-tidy.transcript`; 18 explicit warnings |
-| `cmake --build build/test --target format-check` | 2 | HISTORICAL FAIL | `/tmp/micro-opcua-t098c/05-repo-format-check.transcript`; 858 formatting violations across 41 files before T102b formatting. |
+| `cmake -S . -B build/test -DMUC_OPCUA_BUILD_TESTS=ON` | 0 | PASS | `/tmp/muc-opcua-t098c/01-cmake-configure.transcript` |
+| Feature-scope `clang-format --dry-run --Werror` | 123 | HISTORICAL FAIL | `/tmp/muc-opcua-t098c/02-feature-clang-format-dry-run.transcript`; 734 formatting violations across 29 files before T102b formatting. |
+| `cmake --build build/test --target cppcheck` | 0 | PASS | `/tmp/muc-opcua-t098c/03-cppcheck-target.transcript`; only informational `toomanyconfigs` |
+| Feature-scope `clang-tidy -p build/test --checks=-clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling --quiet` | 0 | ADVISORY | `/tmp/muc-opcua-t098c/04-feature-clang-tidy.transcript`; 18 explicit warnings |
+| `cmake --build build/test --target format-check` | 2 | HISTORICAL FAIL | `/tmp/muc-opcua-t098c/05-repo-format-check.transcript`; 858 formatting violations across 41 files before T102b formatting. |
 
 Historical T098c gate status: FAIL before blocker-remediation formatting. Both
 the feature-scope `clang-format` dry-run and repo-wide `format-check` failed.

@@ -16,11 +16,11 @@
  * Read and Browse consult this address space as a fallback AFTER the integrator's
  * own `config.address_space` (so the standard nodes resolve even when the
  * integrator supplies none, and the integrator can still override by NodeId). */
-#ifndef MICRO_OPCUA_BASE_NODES_H
-#define MICRO_OPCUA_BASE_NODES_H
+#ifndef MUC_OPCUA_BASE_NODES_H
+#define MUC_OPCUA_BASE_NODES_H
 
-#include "micro_opcua/address_space.h"
-#include "micro_opcua/platform.h" /* mu_time_adapter_t */
+#include "muc_opcua/address_space.h"
+#include "muc_opcua/platform.h" /* mu_time_adapter_t */
 
 /* The const, static Base Information address space described above. Never NULL. */
 const mu_address_space_t *mu_base_address_space(void);
@@ -57,4 +57,4 @@ void mu_base_runtime_init(mu_base_runtime_nodes_t *storage, const mu_time_adapte
 const mu_node_t *mu_resolve_node(const mu_address_space_t *user, mu_address_space_index_t *user_index,
                                  const mu_address_space_t *dynamic, const mu_nodeid_t *node_id);
 
-#endif /* MICRO_OPCUA_BASE_NODES_H */
+#endif /* MUC_OPCUA_BASE_NODES_H */

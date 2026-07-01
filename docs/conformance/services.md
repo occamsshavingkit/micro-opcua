@@ -1,6 +1,6 @@
 # Conformance: Services Support Matrix
 
-Status of each OPC UA Service in micro-opcua. This matrix is a
+Status of each OPC UA Service in muc-opcua. This matrix is a
 profile-targeting claim only: OPC-10000-7 section 4.2 governs
 ConformanceUnits, and OPC-10000-7 section 4.3 governs Profiles. The rows below
 record implemented subsets that are used to target selected ConformanceUnits;
@@ -26,8 +26,8 @@ is available only when the named build option is enabled. `Unsupported` returns
 | TranslateBrowsePathsToNodeIds | 5.9.4 | Implemented subset | RelativePath walk over the address space; `Bad_NoMatch` |
 | RegisterNodes | 5.9.5 | Implemented subset | Identity mapping (NodeIds copied back) |
 | UnregisterNodes | 5.9.6 | Implemented subset | No-op, returns Good |
-| Write | 5.11.4 | Optional implemented subset | Behind `MICRO_OPCUA_SERVICE_WRITE` |
-| Call | 5.12.2 | Optional implemented subset | Behind `MICRO_OPCUA_EMBEDDED_PROFILE` (GetMonitoredItems/ResendData + custom methods only) |
+| Write | 5.11.4 | Optional implemented subset | Behind `MUC_OPCUA_SERVICE_WRITE` |
+| Call | 5.12.2 | Optional implemented subset | Behind `MUC_OPCUA_EMBEDDED_PROFILE` (GetMonitoredItems/ResendData + custom methods only) |
 | CreateMonitoredItems | 5.13.2 | Implemented subset | Data-change monitoring; initial sample; `Bad_NodeIdUnknown` / `Bad_TooManyMonitoredItems`; queue bounds |
 | ModifyMonitoredItems | 5.13.3 | Implemented subset | Revised sampling interval / clientHandle; invalid MonitoredItemId -> `Bad_MonitoredItemIdInvalid` |
 | SetMonitoringMode | 5.13.4 | Implemented subset | Disabled / Sampling / Reporting |
@@ -39,10 +39,10 @@ is available only when the named build option is enabled. `Unsupported` returns
 | Republish | 5.14.6 | Implemented subset | Resends the retained NotificationMessage; invalid sequence -> `Bad_MessageNotAvailable` |
 | TransferSubscriptions | 5.14.7 | Unsupported | Dispatch returns `Bad_ServiceUnsupported`; `TransferSubscriptionsRequest_Encoding_DefaultBinary` ns=0;i=841 tested |
 | DeleteSubscriptions | 5.14.8 | Implemented subset | Deletes the subscription and its MonitoredItems; invalid SubscriptionId -> `Bad_SubscriptionIdInvalid` |
-| SetTriggering | 5.13.5 | Optional implemented subset | Behind `MICRO_OPCUA_EMBEDDED_PROFILE` (links monitored items within a subscription; link capacity -> `Bad_TooManyOperations`) |
-| HistoryRead / HistoryUpdate | 5.11.3 / 5.11.5 | Optional implemented subset | Behind `MICRO_OPCUA_SERVICE_HISTORY`, persistence adapter based |
-| AddNodes / DeleteNodes / AddReferences / DeleteReferences | 5.8 | Optional implemented subset | Behind `MICRO_OPCUA_SERVICE_NODEMANAGEMENT` and `MICRO_OPCUA_DYNAMIC_NODES` |
-| QueryFirst / QueryNext | B.2.3 / B.2.4 | Optional implemented subset | Behind `MICRO_OPCUA_SERVICE_QUERY`; OPC-10000-4 Appendix B §B.2.3/§B.2.4 |
+| SetTriggering | 5.13.5 | Optional implemented subset | Behind `MUC_OPCUA_EMBEDDED_PROFILE` (links monitored items within a subscription; link capacity -> `Bad_TooManyOperations`) |
+| HistoryRead / HistoryUpdate | 5.11.3 / 5.11.5 | Optional implemented subset | Behind `MUC_OPCUA_SERVICE_HISTORY`, persistence adapter based |
+| AddNodes / DeleteNodes / AddReferences / DeleteReferences | 5.8 | Optional implemented subset | Behind `MUC_OPCUA_SERVICE_NODEMANAGEMENT` and `MUC_OPCUA_DYNAMIC_NODES` |
+| QueryFirst / QueryNext | B.2.3 / B.2.4 | Optional implemented subset | Behind `MUC_OPCUA_SERVICE_QUERY`; OPC-10000-4 Appendix B §B.2.3/§B.2.4 |
 
 The View Service Set entries (Browse, BrowseNext, TranslateBrowsePaths,
 RegisterNodes, UnregisterNodes) are documented as profile-targeting service
@@ -51,7 +51,7 @@ Profile analysis. Current project evidence is `tests/integration/test_view_servi
 this does not assert Nano profile completion.
 
 PubSub is outside the Part 4 Service Set matrix, so it is not listed as a Part
-4 service. The documented optional `MICRO_OPCUA_PUBSUB` status is scoped
+4 service. The documented optional `MUC_OPCUA_PUBSUB` status is scoped
 interoperability evidence only: a UADP/UDP publisher and matching
 caller-storage subscriber decoder for one UInt32 PublisherId, one PayloadHeader
 entry, one Data Key Frame DataSetMessage, and scalar Variant fields. The
@@ -65,11 +65,11 @@ claim, and no full PubSub Subscriber profile claim.
 The Subscription Service Set (OPC 10000-4 §5.14) and MonitoredItem Service Set
 (OPC 10000-4 §5.13) are implemented as a profile-targeting data-change subset:
 data-change monitoring, an asynchronous Publish flow driven by `mu_server_poll`,
-keep-alives, and Republish, all no-heap and behind the `MICRO_OPCUA_SUBSCRIPTIONS`
+keep-alives, and Republish, all no-heap and behind the `MUC_OPCUA_SUBSCRIPTIONS`
 build option (`tests/integration/test_subscriptions.c`). Under OPC-10000-7
 section 4.2 and section 4.3 this is only evidence for selected ConformanceUnit
 and Profile targeting, not a Micro profile or facet completion claim. The
-`MICRO_OPCUA_EMBEDDED_PROFILE=ON` build adds an optional implemented subset for
+`MUC_OPCUA_EMBEDDED_PROFILE=ON` build adds an optional implemented subset for
 SetTriggering, Call (with GetMonitoredItems/ResendData methods), and larger
 monitored-item/queue bounds. The TransferSubscriptions service remains unsupported.
 
@@ -113,7 +113,7 @@ service-level `Bad_MessageNotAvailable`. TransferSubscriptions remains outside
 the implemented subset and dispatches `Bad_ServiceUnsupported` for
 `TransferSubscriptionsRequest_Encoding_DefaultBinary` (ns=0;i=841).
 Aggregate filters remain scoped `AggregateFilter` support under
-`MICRO_OPCUA_SUBSCRIPTIONS_STANDARD`, not full OPC-10000-13 aggregate coverage.
+`MUC_OPCUA_SUBSCRIPTIONS_STANDARD`, not full OPC-10000-13 aggregate coverage.
 Average is supported only within the implementation's verified subset and
 build/config constraints: OPC-10000-4 section 7.22.4 describes the
 `AggregateFilter` selection, OPC-10000-13 section 4.2.2.4 identifies the Average

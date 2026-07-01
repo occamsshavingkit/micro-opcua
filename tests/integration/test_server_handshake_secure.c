@@ -5,11 +5,11 @@
  * channel decrypts requests, derives keys, and signs+encrypts responses. */
 #include "../../src/core/server_internal.h"
 #include "fake_platform.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 #include <string.h>
 
-#ifdef MICRO_OPCUA_HAVE_OPENSSL
+#ifdef MUC_OPCUA_HAVE_OPENSSL
 #include "platform/host_crypto_adapter.h"
 #include "security/asym_chunk.h"
 #include "security/security_policy.h"
@@ -411,7 +411,7 @@ int main(void) {
     return UNITY_END();
 }
 
-#else /* !MICRO_OPCUA_HAVE_OPENSSL */
+#else /* !MUC_OPCUA_HAVE_OPENSSL */
 void setUp(void) {}
 void tearDown(void) {}
 void test_secure_handshake_skipped(void) {

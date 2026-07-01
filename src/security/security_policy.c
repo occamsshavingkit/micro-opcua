@@ -3,7 +3,7 @@
 #include <string.h>
 
 static const char POLICY_NONE_URI[] = "http://opcfoundation.org/UA/SecurityPolicy#None";
-#ifdef MICRO_OPCUA_SECURITY
+#ifdef MUC_OPCUA_SECURITY
 static const char POLICY_B256S256_URI[] = "http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256";
 static const char POLICY_AES128_OAEP_URI[] = "http://opcfoundation.org/UA/SecurityPolicy#Aes128_Sha256_RsaOaep";
 static const char POLICY_AES256_PSS_URI[] = "http://opcfoundation.org/UA/SecurityPolicy#Aes256_Sha256_RsaPss";
@@ -21,7 +21,7 @@ mu_security_policy_id_t mu_security_policy_from_uri(const opcua_byte_t *uri, siz
     if (uri_equals(uri, length, POLICY_NONE_URI)) {
         return MU_SECURITY_POLICY_NONE_ID;
     }
-#ifdef MICRO_OPCUA_SECURITY
+#ifdef MUC_OPCUA_SECURITY
     if (uri_equals(uri, length, POLICY_B256S256_URI)) {
         return MU_SECURITY_POLICY_BASIC256SHA256_ID;
     }
@@ -39,7 +39,7 @@ const char *mu_security_policy_uri(mu_security_policy_id_t id) {
     switch (id) {
     case MU_SECURITY_POLICY_NONE_ID:
         return POLICY_NONE_URI;
-#ifdef MICRO_OPCUA_SECURITY
+#ifdef MUC_OPCUA_SECURITY
     case MU_SECURITY_POLICY_BASIC256SHA256_ID:
         return POLICY_B256S256_URI;
     case MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID:
@@ -54,7 +54,7 @@ const char *mu_security_policy_uri(mu_security_policy_id_t id) {
 }
 
 size_t mu_security_policy_signature_key_length(mu_security_policy_id_t policy) {
-#ifdef MICRO_OPCUA_SECURITY
+#ifdef MUC_OPCUA_SECURITY
     switch (policy) {
     case MU_SECURITY_POLICY_BASIC256SHA256_ID:
     case MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID:
@@ -76,7 +76,7 @@ int mu_security_policy_allows_username_password_tokens(mu_security_policy_id_t p
 }
 
 size_t mu_security_policy_encryption_key_length(mu_security_policy_id_t policy) {
-#ifdef MICRO_OPCUA_SECURITY
+#ifdef MUC_OPCUA_SECURITY
     switch (policy) {
     case MU_SECURITY_POLICY_BASIC256SHA256_ID:
     case MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID:
@@ -93,7 +93,7 @@ size_t mu_security_policy_encryption_key_length(mu_security_policy_id_t policy) 
 }
 
 size_t mu_security_policy_encryption_block_size(mu_security_policy_id_t policy) {
-#ifdef MICRO_OPCUA_SECURITY
+#ifdef MUC_OPCUA_SECURITY
     switch (policy) {
     case MU_SECURITY_POLICY_BASIC256SHA256_ID:
     case MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID:
@@ -109,7 +109,7 @@ size_t mu_security_policy_encryption_block_size(mu_security_policy_id_t policy) 
 }
 
 size_t mu_security_policy_signature_length(mu_security_policy_id_t policy) {
-#ifdef MICRO_OPCUA_SECURITY
+#ifdef MUC_OPCUA_SECURITY
     switch (policy) {
     case MU_SECURITY_POLICY_BASIC256SHA256_ID:
     case MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID:
@@ -125,7 +125,7 @@ size_t mu_security_policy_signature_length(mu_security_policy_id_t policy) {
 }
 
 size_t mu_security_policy_nonce_length(mu_security_policy_id_t policy) {
-#ifdef MICRO_OPCUA_SECURITY
+#ifdef MUC_OPCUA_SECURITY
     switch (policy) {
     case MU_SECURITY_POLICY_BASIC256SHA256_ID:
     case MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID:

@@ -1,9 +1,9 @@
 /* src/core/message_chunk.h */
-#ifndef MICRO_OPCUA_MESSAGE_CHUNK_H
-#define MICRO_OPCUA_MESSAGE_CHUNK_H
+#ifndef MUC_OPCUA_MESSAGE_CHUNK_H
+#define MUC_OPCUA_MESSAGE_CHUNK_H
 
-#include "micro_opcua/opcua_types.h"
-#include "micro_opcua/status.h"
+#include "muc_opcua/opcua_types.h"
+#include "muc_opcua/status.h"
 #include <stddef.h>
 
 typedef struct {
@@ -26,4 +26,4 @@ opcua_statuscode_t mu_parse_sequence_header(const opcua_byte_t *buffer, size_t l
 opcua_statuscode_t mu_write_sequence_header(opcua_byte_t *buffer, size_t length, size_t *offset,
                                             const mu_sequence_header_t *header);
 
-#endif /* MICRO_OPCUA_MESSAGE_CHUNK_H */
+#endif /* MUC_OPCUA_MESSAGE_CHUNK_H */

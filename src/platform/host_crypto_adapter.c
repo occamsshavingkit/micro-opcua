@@ -1,8 +1,8 @@
 /* src/platform/host_crypto_adapter.c
  * OpenSSL-backed crypto adapter for SecurityPolicy Basic256Sha256 (host/dev). */
 #include "host_crypto_adapter.h"
-#include "micro_opcua/config.h"
-#include "micro_opcua/status.h"
+#include "muc_opcua/config.h"
+#include "muc_opcua/status.h"
 
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
@@ -386,7 +386,7 @@ static int build_self_signed(struct host_crypto_context *cx) {
         X509_gmtime_adj(X509_getm_notBefore(x), 0);
         X509_gmtime_adj(X509_getm_notAfter(x), 60L * 60L * 24L * 365L);
         X509_NAME *name = X509_get_subject_name(x);
-        X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, (const unsigned char *)"micro-opcua", -1, -1, 0);
+        X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, (const unsigned char *)"muc-opcua", -1, -1, 0);
         if (X509_set_issuer_name(x, name) == 1 && X509_set_pubkey(x, cx->key) == 1 &&
             X509_sign(x, cx->key, EVP_sha256()) != 0) {
             int len = i2d_X509(x, NULL);

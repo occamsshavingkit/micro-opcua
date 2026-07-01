@@ -1,11 +1,11 @@
-#include "micro_opcua/pubsub.h"
+#include "muc_opcua/pubsub.h"
 #include "server_internal.h"
 #include <string.h>
 
 opcua_statuscode_t mu_server_add_writer_group(mu_server_t *server, const mu_pubsub_writer_group_t *wg) {
     if (!server || !wg)
         return MU_STATUS_BAD_INVALIDARGUMENT;
-#ifdef MICRO_OPCUA_PUBSUB
+#ifdef MUC_OPCUA_PUBSUB
     if (server->writer_group_count >= MU_MAX_WRITER_GROUPS) {
         return MU_STATUS_BAD_OUTOFMEMORY;
     }
@@ -19,7 +19,7 @@ opcua_statuscode_t mu_server_add_writer_group(mu_server_t *server, const mu_pubs
 }
 
 opcua_statuscode_t mu_pubsub_poll(mu_server_t *server) {
-#ifdef MICRO_OPCUA_PUBSUB
+#ifdef MUC_OPCUA_PUBSUB
     if (!server || !server->config.pubsub.enabled)
         return MU_STATUS_GOOD;
     if (!server->config.udp_adapter.send)

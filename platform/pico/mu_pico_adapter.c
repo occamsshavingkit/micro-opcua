@@ -1,10 +1,10 @@
 #include "mu_pico_adapter.h"
-#include "micro_opcua/status.h"
+#include "muc_opcua/status.h"
 #include <string.h>
 
 /* 
  * Forward declare Pico SDK specifics internally to avoid leakage 
- * into the public micro_opcua headers.
+ * into the public muc_opcua headers.
  */
 
 static opcua_statuscode_t pico_tcp_listen(void *context, const char *endpoint_url) {

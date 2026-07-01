@@ -1,6 +1,6 @@
 /* src/platform/host_tcp_adapter.c */
 #include "host_tcp_adapter.h"
-#include "micro_opcua/status.h"
+#include "muc_opcua/status.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <netinet/in.h>

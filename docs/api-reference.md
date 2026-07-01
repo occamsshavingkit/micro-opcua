@@ -1,28 +1,28 @@
-# micro-opcua Public API Reference
+# muc-opcua Public API Reference
 
 A freestanding, no-heap OPC UA server library for embedded targets (freestanding C11).
 This document is the authoritative reference for the **public API** exposed under
-`include/micro_opcua/`. Every signature, struct field, enum, and macro below tracks
+`include/muc_opcua/`. Every signature, struct field, enum, and macro below tracks
 the current public headers.
 
 The umbrella header pulls in the whole public surface:
 
 ```c
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 ```
 
 which is exactly:
 
 ```c
-#include "micro_opcua/config.h"
-#include "micro_opcua/opcua_types.h"
-#include "micro_opcua/types.h"
-#include "micro_opcua/status.h"
-#include "micro_opcua/platform.h"
-#include "micro_opcua/server.h"
-#include "micro_opcua/encoding.h"
-#include "micro_opcua/opcua_ids.h"
-#include "micro_opcua/address_space.h"
+#include "muc_opcua/config.h"
+#include "muc_opcua/opcua_types.h"
+#include "muc_opcua/types.h"
+#include "muc_opcua/status.h"
+#include "muc_opcua/platform.h"
+#include "muc_opcua/server.h"
+#include "muc_opcua/encoding.h"
+#include "muc_opcua/opcua_ids.h"
+#include "muc_opcua/address_space.h"
 ```
 
 ---
@@ -47,7 +47,7 @@ which is exactly:
 ## 1. Quick Start
 
 ```c
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 
 /* 1. Static storage for the server (no heap). */
 static unsigned char server_storage[MU_SERVER_STORAGE_BYTES];
@@ -57,9 +57,9 @@ static opcua_byte_t send_buf[8192];
 int main(void) {
     mu_server_config_t config = {0};
     config.endpoint_url     = "opc.tcp://0.0.0.0:4840";
-    config.application_uri  = "urn:example:micro-opcua";
+    config.application_uri  = "urn:example:muc-opcua";
     config.product_uri      = "urn:example:product";
-    config.application_name = "Micro OPC UA Server";
+    config.application_name = "muc-opcua Server";
 
     config.receive_buffer      = recv_buf;
     config.receive_buffer_size = sizeof(recv_buf);
@@ -395,7 +395,7 @@ Compare results against `MU_STATUS_GOOD` for the common success check.
 | `MU_STATUS_BAD_TOOMANYSUBSCRIPTIONS` | `0x80DD0000` |
 | `MU_STATUS_BAD_SUBSCRIPTIONIDINVALID` | `0x80280000` |
 
-The following three are defined **only** when `MICRO_OPCUA_SUBSCRIPTIONS` is enabled:
+The following three are defined **only** when `MUC_OPCUA_SUBSCRIPTIONS` is enabled:
 
 | Macro (gated) | Value |
 |---------------|-------|
@@ -421,10 +421,10 @@ The following three are defined **only** when `MICRO_OPCUA_SUBSCRIPTIONS` is ena
 const char* mu_status_name(opcua_statuscode_t status);
 ```
 
-**Availability:** Declared **only** when `MICRO_OPCUA_STATUS_STRINGS` is defined.
+**Availability:** Declared **only** when `MUC_OPCUA_STATUS_STRINGS` is defined.
 Embedded builds leave it undefined by default to save flash. Returns a human-readable
 name for a StatusCode. Do not reference this symbol in code that may be compiled
-without `MICRO_OPCUA_STATUS_STRINGS`.
+without `MUC_OPCUA_STATUS_STRINGS`.
 
 ---
 
@@ -484,19 +484,19 @@ typedef struct {
     /* TrustList for Application Authentication (optional) */
     const mu_trust_list_t *trust_list;
 
-#ifdef MICRO_OPCUA_PUBSUB
+#ifdef MUC_OPCUA_PUBSUB
     /* PubSub Configuration (optional) */
     mu_pubsub_connection_t pubsub;
     mu_udp_adapter_t udp_adapter;
 #endif
 
     /* Write Service Callback (optional) */
-#ifdef MICRO_OPCUA_SERVICE_WRITE
+#ifdef MUC_OPCUA_SERVICE_WRITE
     mu_write_handler_t write_handler;
     void *write_handler_handle;
 #endif
 
-#ifdef MICRO_OPCUA_SERVICE_HISTORY
+#ifdef MUC_OPCUA_SERVICE_HISTORY
     mu_history_adapter_t history_adapter;
 #endif
 } mu_server_config_t;
@@ -534,7 +534,7 @@ typedef struct {
 | `write_handler_handle` | `void *` | No | Optional user context handle passed to `write_handler`. |
 | `history_adapter` | `mu_history_adapter_t` | No | Optional history access persistence adapter. |
 
-**PubSub scope (`MICRO_OPCUA_PUBSUB`):** PubSub is a scoped UADP/UDP publisher plus
+**PubSub scope (`MUC_OPCUA_PUBSUB`):** PubSub is a scoped UADP/UDP publisher plus
 the matching caller-storage UADP NetworkMessage decoder. This is not a full PubSub
 Subscriber profile or CTT conformance claim. `mu_pubsub_connection_t.address`
 selects the unicast, multicast, or broadcast publisher destination; `NULL` keeps
@@ -604,7 +604,7 @@ typedef opcua_statuscode_t (*mu_write_handler_t)(void *handle,
 #### `mu_server_register_method_callback`
 
 ```c
-#ifdef MICRO_OPCUA_CUSTOM_METHODS
+#ifdef MUC_OPCUA_CUSTOM_METHODS
 opcua_statuscode_t mu_server_register_method_callback(mu_server_t *server,
                                                       const mu_nodeid_t *method_id,
                                                       mu_method_callback_t callback,
@@ -615,7 +615,7 @@ opcua_statuscode_t mu_server_register_method_callback(mu_server_t *server,
 #### `mu_server_trigger_event`
 
 ```c
-#ifdef MICRO_OPCUA_EVENTS
+#ifdef MUC_OPCUA_EVENTS
 opcua_statuscode_t mu_server_trigger_event(mu_server_t *server,
                                            const mu_event_notification_t *event);
 #endif
@@ -649,8 +649,8 @@ too small, misaligned storage, or invalid config).
   accepted; a deliberately mis-offset byte/offset buffer is **rejected**. Prefer
   declaring storage as a plain `static unsigned char buf[MU_SERVER_STORAGE_BYTES];`
   at file scope so the compiler gives it max alignment.
-- `MU_SERVER_STORAGE_BYTES` grows when `MICRO_OPCUA_SUBSCRIPTIONS` and/or
-  `MICRO_OPCUA_SECURITY` are compiled in (see [config.h](#8-configh--compile-time-configuration)).
+- `MU_SERVER_STORAGE_BYTES` grows when `MUC_OPCUA_SUBSCRIPTIONS` and/or
+  `MUC_OPCUA_SECURITY` are compiled in (see [config.h](#8-configh--compile-time-configuration)).
   Always size the storage block with the macro rather than a hard-coded number so it
   tracks the build configuration.
 
@@ -854,7 +854,7 @@ callback. Returns `MU_STATUS_GOOD` and fills `value` on success.
 ### 6.10 Declaring a static address space
 
 ```c
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 
 /* A dynamic value read on demand. */
 static opcua_statuscode_t read_temperature(void *context,
@@ -1106,7 +1106,7 @@ buffer of `MU_CIPHER_CTX_SIZE` bytes.
 
 These macros are **compile-time knobs**. Most are overridable with `-D` for tuning
 embedded profiles; a few are fixed library constants. Feature toggles
-(`MICRO_OPCUA_*`) are normally set by the CMake build (see
+(`MUC_OPCUA_*`) are normally set by the CMake build (see
 [section 11](#11-build-time-feature-macros-cmake)).
 
 ### 8.1 Overridable knobs (`-D`)
@@ -1115,8 +1115,8 @@ embedded profiles; a few are fixed library constants. Feature toggles
 |-------|---------|--------|
 | `MU_MAX_ADDRESS_SPACE_NODES` | `64` | Maximum nodes in the address-space index before falling back to a linear scan. Index RAM scales by 2 bytes per node (`order[]` in `mu_address_space_index_t`). |
 | `MU_CIPHER_CTX_SIZE` | `512` | Size (bytes) of opaque per-channel cipher-context storage. 512 bytes gives headroom for an AES-256 key schedule; backend size asserts are added with adapter use. |
-| `MU_SECURE_SCRATCH_SIZE` | `6144` | Shared secure-path scratch owned by `struct mu_server` when `MICRO_OPCUA_SECURITY` is enabled. Sized for the worst-case secure response / OPN scratch (replaces former `respbody[5120]` + `opn_buf[1024]` stack buffers). |
-| `MICRO_OPCUA_STATUS_STRINGS` | *(undefined)* | When defined, exposes `mu_status_name()`. OFF for embedded builds by default to save flash; supply with `-D` to enable. |
+| `MU_SECURE_SCRATCH_SIZE` | `6144` | Shared secure-path scratch owned by `struct mu_server` when `MUC_OPCUA_SECURITY` is enabled. Sized for the worst-case secure response / OPN scratch (replaces former `respbody[5120]` + `opn_buf[1024]` stack buffers). |
+| `MUC_OPCUA_STATUS_STRINGS` | *(undefined)* | When defined, exposes `mu_status_name()`. OFF for embedded builds by default to save flash; supply with `-D` to enable. |
 
 ### 8.2 Fixed library constants
 
@@ -1137,14 +1137,14 @@ feature toggles**. Always pass `MU_SERVER_STORAGE_BYTES` as the storage size to
 `mu_server_init`.
 
 ```c
-#ifdef MICRO_OPCUA_SECURITY
+#ifdef MUC_OPCUA_SECURITY
 /* secure_scratch + 2 per-direction prepared cipher contexts (in client/server keys) */
 #define MU_SERVER_SECURITY_STORAGE_BYTES (MU_SECURE_SCRATCH_SIZE + 2 * MU_CIPHER_CTX_SIZE)
 #else
 #define MU_SERVER_SECURITY_STORAGE_BYTES 0
 #endif
 
-#ifdef MICRO_OPCUA_SUBSCRIPTIONS
+#ifdef MUC_OPCUA_SUBSCRIPTIONS
 #define MU_SERVER_STORAGE_BYTES \
     (3072 + MU_SUBSCRIPTIONS_STANDARD_STORAGE_BYTES + MU_SERVER_SECURITY_STORAGE_BYTES + \
      MU_ADDRESS_SPACE_INDEX_STORAGE_BYTES + MU_MULTIPLE_CONNECTIONS_STORAGE_BYTES + MU_EVENTS_STORAGE_BYTES)
@@ -1156,16 +1156,16 @@ feature toggles**. Always pass `MU_SERVER_STORAGE_BYTES` as the storage size to
 
 | Macro | Definition | Notes |
 |-------|------------|-------|
-| `MU_SERVER_SECURITY_STORAGE_BYTES` | `MU_SECURE_SCRATCH_SIZE + 2*MU_CIPHER_CTX_SIZE` when `MICRO_OPCUA_SECURITY`, else `0` | Secure scratch + two per-direction prepared cipher contexts. With defaults: `12288 + 2*512 = 13312`. |
+| `MU_SERVER_SECURITY_STORAGE_BYTES` | `MU_SECURE_SCRATCH_SIZE + 2*MU_CIPHER_CTX_SIZE` when `MUC_OPCUA_SECURITY`, else `0` | Secure scratch + two per-direction prepared cipher contexts. With defaults: `12288 + 2*512 = 13312`. |
 | `MU_ADDRESS_SPACE_INDEX_STORAGE_BYTES` | `MU_MAX_ADDRESS_SPACE_NODES * 2 + 128` | Caller-owned lookup-index storage; default `256` B. |
-| `MU_SUBSCRIPTIONS_STANDARD_STORAGE_BYTES` | Standard DataChange storage when `MICRO_OPCUA_SUBSCRIPTIONS_STANDARD`, else `0` | Covers the Embedded 2017 monitored-item queues and trigger links. Default Embedded 2017 capacity contributes `35,200` B. |
+| `MU_SUBSCRIPTIONS_STANDARD_STORAGE_BYTES` | Standard DataChange storage when `MUC_OPCUA_SUBSCRIPTIONS_STANDARD`, else `0` | Covers the Embedded 2017 monitored-item queues and trigger links. Default Embedded 2017 capacity contributes `35,200` B. |
 | `MU_MULTIPLE_CONNECTIONS_STORAGE_BYTES` | `MU_MAX_CONNECTIONS * 2500` when multiple connections are enabled, else `0` | Bounded multi-connection state. Defaults to `10000` B. |
 | `MU_EVENTS_STORAGE_BYTES` | `MU_MAX_SUBSCRIPTIONS * 700` when events are enabled, else `0` | Bounded event-queue storage. Defaults to `1400` B. |
 | `MU_SERVER_STORAGE_BYTES` | Sum of all configured profile/engine storage slices | Total caller-provided memory block required for `mu_server_init`. |
 
 **Worked totals (with default knob values):**
 
-| `MICRO_OPCUA_SUBSCRIPTIONS` | `MICRO_OPCUA_SECURITY` | `MICRO_OPCUA_MULTIPLE_CONNECTIONS` | `MU_SERVER_STORAGE_BYTES` |
+| `MUC_OPCUA_SUBSCRIPTIONS` | `MUC_OPCUA_SECURITY` | `MUC_OPCUA_MULTIPLE_CONNECTIONS` | `MU_SERVER_STORAGE_BYTES` |
 |:---:|:---:|:---:|---:|
 | off | off | off | `1024 + 256 = 1280` |
 | off | off | on | `1024 + 256 + 10000 = 11280` |
@@ -1426,34 +1426,34 @@ These are CMake options that configure which code is compiled. All features defa
 
 | CMake option | Define when ON | Default | Effect |
 |--------------|----------------|---------|--------|
-| `MICRO_OPCUA_PROFILE` | *(string)* | `nano` | Target OPC UA profile (`nano`, `micro`, `embedded`, `full`, `custom`). Automatically turns on the relevant set of services. |
-| `MICRO_OPCUA_SECURITY` | `MICRO_OPCUA_SECURITY=1` | OFF | Build SecurityPolicy Basic256Sha256. |
-| `MICRO_OPCUA_SUBSCRIPTIONS` | `MICRO_OPCUA_SUBSCRIPTIONS=1` | OFF | Build the data-change subscription engine. |
-| `MICRO_OPCUA_SUBSCRIPTIONS_STANDARD` | `MICRO_OPCUA_SUBSCRIPTIONS_STANDARD=1` | OFF | Build standard subscription additions. |
-| `MICRO_OPCUA_SERVICE_READ` | `MICRO_OPCUA_SERVICE_READ=1` | ON | Build the Read service. |
-| `MICRO_OPCUA_SERVICE_BROWSE` | `MICRO_OPCUA_SERVICE_BROWSE=1` | ON | Build Browse + BrowseNext + TranslateBrowsePaths. |
-| `MICRO_OPCUA_SERVICE_DISCOVERY` | `MICRO_OPCUA_SERVICE_DISCOVERY=1` | ON | Build GetEndpoints/FindServers. |
-| `MICRO_OPCUA_SERVICE_REGISTER_NODES` | `MICRO_OPCUA_SERVICE_REGISTER_NODES=1` | OFF | Build RegisterNodes/UnregisterNodes. |
-| `MICRO_OPCUA_SERVICE_WRITE` | `MICRO_OPCUA_SERVICE_WRITE=1` | OFF | Build the Write service. |
-| `MICRO_OPCUA_SERVICE_HISTORY` | `MICRO_OPCUA_SERVICE_HISTORY=1` | OFF | Build Historical Access (HistoryRead/HistoryUpdate). |
-| `MICRO_OPCUA_SERVICE_QUERY` | `MICRO_OPCUA_SERVICE_QUERY=1` | OFF | Build QueryFirst/QueryNext (OPC-10000-4 Appendix B §B.2.3/§B.2.4). |
-| `MICRO_OPCUA_SERVICE_NODEMANAGEMENT` | `MICRO_OPCUA_SERVICE_NODEMANAGEMENT=1` | OFF | Build the NodeManagement service set: AddNodes, AddReferences, DeleteNodes, and DeleteReferences (OPC-10000-4 §5.8). |
-| `MICRO_OPCUA_DYNAMIC_NODES` | `MICRO_OPCUA_DYNAMIC_NODES=1` | OFF | Profile flag for dynamic AddNodes/DeleteNodes support; the `full` profile enables it with `MICRO_OPCUA_SERVICE_NODEMANAGEMENT`. |
-| `MICRO_OPCUA_PUBSUB` | `MICRO_OPCUA_PUBSUB=1` | OFF | Build the scoped UADP/UDP PubSub publisher and caller-storage decoder; does not claim full PubSub Subscriber profile compliance. |
-| `MICRO_OPCUA_CUSTOM_METHODS` | `MICRO_OPCUA_CUSTOM_METHODS=1` | OFF | Build support for custom method calls. |
-| `MICRO_OPCUA_SERVER_DIAGNOSTICS` | `MICRO_OPCUA_SERVER_DIAGNOSTICS=1` | OFF | Build support for server diagnostics summary nodes. |
-| `MICRO_OPCUA_EVENTS` | `MICRO_OPCUA_EVENTS=1` | OFF | Build support for event notifications. |
-| `MICRO_OPCUA_BASE_NODES` | `MICRO_OPCUA_BASE_NODES=1` | OFF | Build the standard Base Information node set. |
-| `MICRO_OPCUA_BASE_TYPE_SYSTEM` | `MICRO_OPCUA_BASE_TYPE_SYSTEM=1` | OFF | Expose the Base Info Type System node set. |
-| `MICRO_OPCUA_LTO` | *(toolchain LTO)* | OFF | Enable link-time / interprocedural optimization. |
-| `MICRO_OPCUA_OPTIMIZE_SIZE` | `-Os` | OFF | Optimize the library for size. |
-| `MICRO_OPCUA_PLATFORM` | *(string)* | `host` | Target platform: `host`, `external`, `pico`, or `arduino-skeleton`. |
+| `MUC_OPCUA_PROFILE` | *(string)* | `nano` | Target OPC UA profile (`nano`, `micro`, `embedded`, `full`, `custom`). Automatically turns on the relevant set of services. |
+| `MUC_OPCUA_SECURITY` | `MUC_OPCUA_SECURITY=1` | OFF | Build SecurityPolicy Basic256Sha256. |
+| `MUC_OPCUA_SUBSCRIPTIONS` | `MUC_OPCUA_SUBSCRIPTIONS=1` | OFF | Build the data-change subscription engine. |
+| `MUC_OPCUA_SUBSCRIPTIONS_STANDARD` | `MUC_OPCUA_SUBSCRIPTIONS_STANDARD=1` | OFF | Build standard subscription additions. |
+| `MUC_OPCUA_SERVICE_READ` | `MUC_OPCUA_SERVICE_READ=1` | ON | Build the Read service. |
+| `MUC_OPCUA_SERVICE_BROWSE` | `MUC_OPCUA_SERVICE_BROWSE=1` | ON | Build Browse + BrowseNext + TranslateBrowsePaths. |
+| `MUC_OPCUA_SERVICE_DISCOVERY` | `MUC_OPCUA_SERVICE_DISCOVERY=1` | ON | Build GetEndpoints/FindServers. |
+| `MUC_OPCUA_SERVICE_REGISTER_NODES` | `MUC_OPCUA_SERVICE_REGISTER_NODES=1` | OFF | Build RegisterNodes/UnregisterNodes. |
+| `MUC_OPCUA_SERVICE_WRITE` | `MUC_OPCUA_SERVICE_WRITE=1` | OFF | Build the Write service. |
+| `MUC_OPCUA_SERVICE_HISTORY` | `MUC_OPCUA_SERVICE_HISTORY=1` | OFF | Build Historical Access (HistoryRead/HistoryUpdate). |
+| `MUC_OPCUA_SERVICE_QUERY` | `MUC_OPCUA_SERVICE_QUERY=1` | OFF | Build QueryFirst/QueryNext (OPC-10000-4 Appendix B §B.2.3/§B.2.4). |
+| `MUC_OPCUA_SERVICE_NODEMANAGEMENT` | `MUC_OPCUA_SERVICE_NODEMANAGEMENT=1` | OFF | Build the NodeManagement service set: AddNodes, AddReferences, DeleteNodes, and DeleteReferences (OPC-10000-4 §5.8). |
+| `MUC_OPCUA_DYNAMIC_NODES` | `MUC_OPCUA_DYNAMIC_NODES=1` | OFF | Profile flag for dynamic AddNodes/DeleteNodes support; the `full` profile enables it with `MUC_OPCUA_SERVICE_NODEMANAGEMENT`. |
+| `MUC_OPCUA_PUBSUB` | `MUC_OPCUA_PUBSUB=1` | OFF | Build the scoped UADP/UDP PubSub publisher and caller-storage decoder; does not claim full PubSub Subscriber profile compliance. |
+| `MUC_OPCUA_CUSTOM_METHODS` | `MUC_OPCUA_CUSTOM_METHODS=1` | OFF | Build support for custom method calls. |
+| `MUC_OPCUA_SERVER_DIAGNOSTICS` | `MUC_OPCUA_SERVER_DIAGNOSTICS=1` | OFF | Build support for server diagnostics summary nodes. |
+| `MUC_OPCUA_EVENTS` | `MUC_OPCUA_EVENTS=1` | OFF | Build support for event notifications. |
+| `MUC_OPCUA_BASE_NODES` | `MUC_OPCUA_BASE_NODES=1` | OFF | Build the standard Base Information node set. |
+| `MUC_OPCUA_BASE_TYPE_SYSTEM` | `MUC_OPCUA_BASE_TYPE_SYSTEM=1` | OFF | Expose the Base Info Type System node set. |
+| `MUC_OPCUA_LTO` | *(toolchain LTO)* | OFF | Enable link-time / interprocedural optimization. |
+| `MUC_OPCUA_OPTIMIZE_SIZE` | `-Os` | OFF | Optimize the library for size. |
+| `MUC_OPCUA_PLATFORM` | *(string)* | `host` | Target platform: `host`, `external`, `pico`, or `arduino-skeleton`. |
 
 **Notes:**
 - OpenSecureChannel and the Session services are **always present** (not gated).
-- `MICRO_OPCUA_STATUS_STRINGS` (the `mu_status_name()` gate) is a source-level `-D` knob, not a CMake option; it is left undefined unless supplied.
+- `MUC_OPCUA_STATUS_STRINGS` (the `mu_status_name()` gate) is a source-level `-D` knob, not a CMake option; it is left undefined unless supplied.
 - Because `MU_SERVER_STORAGE_BYTES` depends on enabled options, always compile your application with the **same** feature flags as the library.
 
 ---
 
-*Generated from the public headers in `include/micro_opcua/`.*
+*Generated from the public headers in `include/muc_opcua/`.*

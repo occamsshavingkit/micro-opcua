@@ -1,5 +1,5 @@
 /* src/encoding/binary_variant.c */
-#include "micro_opcua/encoding.h"
+#include "muc_opcua/encoding.h"
 
 opcua_statuscode_t mu_binary_read_variant(mu_binary_reader_t *reader, mu_variant_t *variant) {
     opcua_byte_t encoding_mask;

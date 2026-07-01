@@ -3,23 +3,23 @@
  * No-heap data-change subscription engine for the Micro Embedded Device 2017 Server
  * Profile (the Embedded Data Change Subscription Server Facet). All state is fixed-size
  * and lives in the caller-owned struct mu_server; nothing here allocates. Compiled only
- * when MICRO_OPCUA_SUBSCRIPTIONS is defined.
+ * when MUC_OPCUA_SUBSCRIPTIONS is defined.
  *
  * Service mapping: Subscription Service Set OPC 10000-4 §5.14, MonitoredItem Service Set
  * §5.13, MonitoringParameters §7.21, DataChangeFilter §7.17, NotificationMessage /
  * DataChangeNotification §7.20.
  */
-#ifndef MICRO_OPCUA_SERVICES_SUBSCRIPTION_H
-#define MICRO_OPCUA_SERVICES_SUBSCRIPTION_H
+#ifndef MUC_OPCUA_SERVICES_SUBSCRIPTION_H
+#define MUC_OPCUA_SERVICES_SUBSCRIPTION_H
 
-#include "micro_opcua/address_space.h"
-#include "micro_opcua/opcua_types.h"
-#include "micro_opcua/status.h"
-#include "micro_opcua/types.h"
+#include "muc_opcua/address_space.h"
+#include "muc_opcua/opcua_types.h"
+#include "muc_opcua/status.h"
+#include "muc_opcua/types.h"
 #include <stdbool.h>
 #include <stddef.h>
 
-#if MICRO_OPCUA_SUBSCRIPTIONS
+#if MUC_OPCUA_SUBSCRIPTIONS
 
 /*
  * The embedded build raises these maxima via -D overrides to meet the Standard
@@ -114,7 +114,7 @@ typedef struct {
 typedef struct {
     /* 8-byte aligned fields */
     opcua_uint64_t next_sample_ms; /* monotonic tick of the next sample */
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
     opcua_double_t deadband_value;
     opcua_double_t last_reported_numeric;
     mu_aggregate_state_t aggregate_state;
@@ -132,7 +132,7 @@ typedef struct {
     opcua_uint32_t attribute_id;         /* usually Value (13) */
     opcua_uint32_t sampling_interval_ms; /* revised */
     opcua_statuscode_t last_status;
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
     opcua_uint32_t queue_size;
     opcua_uint32_t triggered_items[MU_MAX_TRIGGER_LINKS];
 
@@ -151,7 +151,7 @@ typedef struct {
     bool in_use;
     bool has_value; /* a baseline sample has been taken */
     bool pending;   /* a change is queued, awaiting the next Publish */
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
     opcua_byte_t deadband_type; /* mu_deadband_type_t */
     bool has_reported;
     bool has_aggregate;
@@ -162,7 +162,7 @@ typedef struct {
     bool queue_overflow;
     opcua_byte_t triggered_count;
 #endif
-#ifdef MICRO_OPCUA_EVENTS
+#ifdef MUC_OPCUA_EVENTS
     opcua_byte_t select_clauses[8];
     opcua_byte_t select_clauses_count;
 #endif
@@ -178,7 +178,7 @@ typedef struct {
     size_t message_len;
 } mu_retransmit_slot_t;
 
-#ifdef MICRO_OPCUA_EVENTS
+#ifdef MUC_OPCUA_EVENTS
 #define MU_MAX_EVENT_QUEUE_SIZE 8
 typedef struct {
     mu_event_notification_t queue[MU_MAX_EVENT_QUEUE_SIZE];
@@ -212,10 +212,10 @@ typedef struct {
     bool in_use;
     bool publishing_enabled;
     bool more_notifications;
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
     bool resend_data_pending; /* OPC-10000-5 §9.2 ResendData method latch */
 #endif
-#ifdef MICRO_OPCUA_EVENTS
+#ifdef MUC_OPCUA_EVENTS
     mu_event_queue_t event_queue;
 #endif
 } mu_subscription_t;
@@ -286,7 +286,7 @@ opcua_statuscode_t mu_monitored_item_alloc(mu_subscriptions_t *subs, opcua_uint3
 opcua_statuscode_t mu_monitored_item_delete(mu_subscriptions_t *subs, opcua_uint32_t subscription_id,
                                             opcua_uint32_t monitored_item_id);
 
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
 /* SetTriggering link storage (OPC-10000-4 §5.13.5). Both MonitoredItems must
    belong to the named Subscription. */
 opcua_statuscode_t mu_monitored_item_add_trigger_link(mu_subscriptions_t *subs, opcua_uint32_t subscription_id,
@@ -335,6 +335,6 @@ opcua_statuscode_t mu_subscription_republish(mu_subscriptions_t *subs, opcua_uin
    and emits parked Publish responses (US2/US3). A no-op until those land. */
 void mu_subscriptions_tick(struct mu_server *server, opcua_uint64_t now_ms);
 
-#endif /* MICRO_OPCUA_SUBSCRIPTIONS */
+#endif /* MUC_OPCUA_SUBSCRIPTIONS */
 
-#endif /* MICRO_OPCUA_SERVICES_SUBSCRIPTION_H */
+#endif /* MUC_OPCUA_SERVICES_SUBSCRIPTION_H */

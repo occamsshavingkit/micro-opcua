@@ -1,5 +1,5 @@
 /* tests/unit/test_server_address_space_config.c */
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 
 void setUp(void) {}

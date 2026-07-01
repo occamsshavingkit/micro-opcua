@@ -2,7 +2,7 @@
 #ifndef TEST_SERVICE_BUILDERS_H
 #define TEST_SERVICE_BUILDERS_H
 
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 
 #ifdef __cplusplus
 extern "C" {

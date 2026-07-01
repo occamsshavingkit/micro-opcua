@@ -2,7 +2,7 @@
  *
  * Feature 005 US1 malformed request checks for Standard DataChange
  * Subscription 2017 additions. These dispatch-level tests are active only
- * when MICRO_OPCUA_SUBSCRIPTIONS_STANDARD is enabled.
+ * when MUC_OPCUA_SUBSCRIPTIONS_STANDARD is enabled.
  *
  * OPC-10000-4 5.13.5: SetTriggering.
  * OPC-10000-4 7.22.2: DataChangeFilter / DeadbandType.
@@ -11,7 +11,7 @@
 #include "unity.h"
 
 #include "../../src/core/server_internal.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 
 #include <string.h>
 
@@ -23,7 +23,7 @@
 void setUp(void) {}
 void tearDown(void) {}
 
-#if MICRO_OPCUA_SUBSCRIPTIONS && MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS && MUC_OPCUA_SUBSCRIPTIONS_STANDARD
 
 static const mu_value_source_t s_test_value = {MU_VALUESOURCE_STATIC, {.static_value = {MU_TYPE_FLOAT, {.f = 10.0f}}}};
 static const mu_node_t s_test_nodes[] = {{{1u, MU_NODEID_NUMERIC, {TEST_VARIABLE_NODE_ID}},
@@ -896,7 +896,7 @@ void test_publish_oversize_notification_response_returns_response_too_large_faul
     server.config.send_buffer_size = sizeof(send_buffer);
     server.current_request_id = 77u;
     server.active_session = &server.sessions[0];
-#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+#ifdef MUC_OPCUA_MULTIPLE_CONNECTIONS
     server.conns[0].client_handle = (void *)0x1;
     server.conns[0].secure_channel = server.secure_channel;
 #else
@@ -981,14 +981,14 @@ void test_oversized_set_triggering_link_array_returns_too_many_operations(void) 
 #else
 
 void test_standard_error_tests_require_standard_subscription_build(void) {
-    TEST_PASS_MESSAGE("MICRO_OPCUA_SUBSCRIPTIONS_STANDARD is disabled in this build");
+    TEST_PASS_MESSAGE("MUC_OPCUA_SUBSCRIPTIONS_STANDARD is disabled in this build");
 }
 
 #endif
 
 int main(void) {
     UNITY_BEGIN();
-#if MICRO_OPCUA_SUBSCRIPTIONS && MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS && MUC_OPCUA_SUBSCRIPTIONS_STANDARD
     RUN_TEST(test_malformed_datachange_filter_length_returns_decoding_error);
     RUN_TEST(test_create_monitored_items_truncated_filter_body_returns_decoding_error);
     RUN_TEST(test_modify_monitored_items_truncated_filter_body_returns_decoding_error);

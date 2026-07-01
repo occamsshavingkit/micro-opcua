@@ -1,6 +1,6 @@
-# Integration Guide: Embedding micro-opcua in Firmware
+# Integration Guide: Embedding muc-opcua in Firmware
 
-This guide is for an integrator putting the **micro-opcua** server library onto
+This guide is for an integrator putting the **muc-opcua** server library onto
 their own microcontroller. It is a hands-on, code-first companion to the
 architecture and conformance docs: it tells you exactly which memory you must
 provide, which platform callbacks you must implement, how to declare a static
@@ -47,7 +47,7 @@ declared storage and a handful of platform callbacks. The minimal host example
 below is distilled from them.
 
 ```c
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "my_board_adapter.h"        /* your TCP/time/entropy adapters */
 #include "static_address_space.h"    /* your const node tables */
 
@@ -65,8 +65,8 @@ int main(void)
 
     /* 2. Identity / discovery strings (must outlive the server). */
     config.endpoint_url     = "opc.tcp://0.0.0.0:4840";
-    config.application_uri   = "urn:my-device:micro_opcua:server";
-    config.product_uri       = "urn:micro_opcua:server";
+    config.application_uri   = "urn:my-device:muc_opcua:server";
+    config.product_uri       = "urn:muc_opcua:server";
     config.application_name   = "My Device OPC UA Server";
 
     /* 3. Hand the library your transport buffers. */
@@ -108,7 +108,7 @@ The remaining sections explain each of the seven steps in depth.
 
 ## 2. The no-heap memory model
 
-micro-opcua never allocates. All mutable state lives in memory you declare and
+muc-opcua never allocates. All mutable state lives in memory you declare and
 hand over at init time. There are **three** caller-owned regions.
 
 ### 2.1 The three regions
@@ -136,16 +136,16 @@ chunk count of 1 there is no benefit.
 The single most important rule: **size the storage block from the macro, never
 from a literal.** The macro is computed at compile time from the options you
 enabled, so it automatically tracks the cost of subscriptions and security
-(`include/micro_opcua/config.h`):
+(`include/muc_opcua/config.h`):
 
 ```c
-#ifdef MICRO_OPCUA_SECURITY
+#ifdef MUC_OPCUA_SECURITY
 #define MU_SERVER_SECURITY_STORAGE_BYTES (MU_SECURE_SCRATCH_SIZE + 2 * MU_CIPHER_CTX_SIZE)
 #else
 #define MU_SERVER_SECURITY_STORAGE_BYTES 0
 #endif
 
-#ifdef MICRO_OPCUA_SUBSCRIPTIONS
+#ifdef MUC_OPCUA_SUBSCRIPTIONS
 #define MU_SERVER_STORAGE_BYTES \
     (3072 + MU_SUBSCRIPTIONS_STANDARD_STORAGE_BYTES + \
      MU_SERVER_SECURITY_STORAGE_BYTES + MU_ADDRESS_SPACE_INDEX_STORAGE_BYTES)
@@ -160,8 +160,8 @@ This yields the per-profile sizes you must budget for:
 | Profile | Options | `MU_SERVER_STORAGE_BYTES` |
 |---|---|---|
 | Nano | base | **1,280** |
-| Micro | `+ MICRO_OPCUA_SUBSCRIPTIONS` | **3,328** |
-| Embedded 2017 | `+ MICRO_OPCUA_EMBEDDED_PROFILE`, 100 monitored items, queue depth 2 | **63,240** |
+| Micro | `+ MUC_OPCUA_SUBSCRIPTIONS` | **3,328** |
+| Embedded 2017 | `+ MUC_OPCUA_EMBEDDED_PROFILE`, 100 monitored items, queue depth 2 | **63,240** |
 | Full Featured | embedded + methods + diagnostics + dynamic nodes | **63,240** |
 
 > **Pitfall.** If you hardcode `static opcua_byte_t storage[1024]` and later turn
@@ -220,7 +220,7 @@ stack.
 ## 3. Implementing the platform adapters
 
 The library is hardware-agnostic. It reaches the network, clock, and RNG only
-through the function-pointer structs in `include/micro_opcua/platform.h`. You fill
+through the function-pointer structs in `include/muc_opcua/platform.h`. You fill
 these in; the reference implementations under `src/platform/` (host POSIX/OpenSSL)
 and the skeletons under `platform/pico/` and `platform/arduino/` show the shape.
 
@@ -331,7 +331,7 @@ randomness, STM32 `RNG` peripheral, nRF `RNG`) or a properly seeded CSPRNG.
 Leave `config.crypto_adapter = NULL` and the server offers **SecurityPolicy None
 only**. Supply a `mu_crypto_adapter_t *` and the server additionally advertises
 `Basic256Sha256`, `Aes128-Sha256-RsaOaep`, and `Aes256-Sha256-RsaPss` Sign and
-SignAndEncrypt endpoints. The interface (`include/micro_opcua/platform.h`) is the
+SignAndEncrypt endpoints. The interface (`include/muc_opcua/platform.h`) is the
 full set of primitives OPC 10000-7 requires for these policies. The server certificate
 and private key live **inside the adapter's `context`** — the library never sees raw key material.
 
@@ -500,7 +500,7 @@ void my_board_adapter_init(mu_tcp_adapter_t *tcp,
 ## 4. Defining the address space
 
 The address space is **static const data** — node tables in flash, zero RAM
-overhead. The model (`include/micro_opcua/address_space.h`) is deliberately
+overhead. The model (`include/muc_opcua/address_space.h`) is deliberately
 minimal: only `Object` and `Variable` node classes, each node carrying a NodeId,
 browse/display names, a reference array, and (for variables) a value source.
 
@@ -597,7 +597,7 @@ well-known nodes a real client reads during session setup:
 | `ns=0;i=2254` | ServerArray | `String[]` of server URIs |
 | `ns=0;i=11705` | MaxNodesPerRead | Advertises your per-Read batch cap so clients self-limit |
 | `ns=0;i=11710` | MaxNodesPerBrowse | Same for Browse |
-| `ns=0;i=2258` / `i=2256` | CurrentTime / ServerStatus | Provided automatically when `MICRO_OPCUA_BASE_NODES` is on (callback-backed by the time adapter) |
+| `ns=0;i=2258` / `i=2256` | CurrentTime / ServerStatus | Provided automatically when `MUC_OPCUA_BASE_NODES` is on (callback-backed by the time adapter) |
 
 ```c
 static const mu_node_t s_nodes[] = {
@@ -621,7 +621,7 @@ the server will truncate.
 The NodeManagement service set allows adding and deleting nodes and references at runtime.
 
 To enable dynamic node management:
-1. Compile with `-DMICRO_OPCUA_SERVICE_NODEMANAGEMENT=1`.
+1. Compile with `-DMUC_OPCUA_SERVICE_NODEMANAGEMENT=1`.
 2. Configure limits via `-DMU_MAX_DYNAMIC_NODES` (default: 32) and `-DMU_MAX_DYNAMIC_REFERENCES` (default: 64). Note that this proportionally increases `MU_SERVER_STORAGE_BYTES` for your static memory budget.
 3. Set `server->config.allow_node_management = true` in your server configuration. If false, NodeManagement services return `BadUserAccessDenied`.
 
@@ -640,7 +640,7 @@ Once enabled, clients can dynamically add variables or objects using `AddNodes` 
 
 ## 5. The run loop
 
-micro-opcua is **cooperative and single-connection**. You drive it by calling
+muc-opcua is **cooperative and single-connection**. You drive it by calling
 `mu_server_poll` repeatedly; it never blocks and never spawns threads.
 
 ```c
@@ -689,7 +689,7 @@ The authoritative conformance reference is
 - **SecurityPolicy selection is automatic from the crypto adapter.** No crypto
   adapter (`config.crypto_adapter == NULL`) ⇒ **None only**. With a crypto adapter
   ⇒ the server *also* advertises `Basic256Sha256`, `Aes128-Sha256-RsaOaep`, and `Aes256-Sha256-RsaPss`
-  Sign and SignAndEncrypt endpoints alongside None. Build security support in with the `MICRO_OPCUA_SECURITY`
+  Sign and SignAndEncrypt endpoints alongside None. Build security support in with the `MUC_OPCUA_SECURITY`
   option (see §7).
 - **None is non-production.** Per the conformance note, SecurityPolicy None
   endpoints are for trusted/isolated networks and bench testing only. Ship
@@ -723,39 +723,39 @@ The authoritative conformance reference is
 
 ### 7.1 Choosing a profile
 
-micro-opcua ships three profiles, selected via CMake options (or the
+muc-opcua ships three profiles, selected via CMake options (or the
 `make nano` / `make micro` / `make embedded` convenience targets):
 
 | Profile | Service set | Key options |
 |---|---|---|
 | **Nano** | Core + View (Browse) + Read, SecurityPolicy None | subscriptions OFF, security OFF |
-| **Micro** | Nano + data-change Subscriptions / MonitoredItems | `MICRO_OPCUA_SUBSCRIPTIONS=ON` |
-| **Embedded** | Micro + Basic256Sha256 | `+ MICRO_OPCUA_SECURITY=ON` |
+| **Micro** | Nano + data-change Subscriptions / MonitoredItems | `MUC_OPCUA_SUBSCRIPTIONS=ON` |
+| **Embedded** | Micro + Basic256Sha256 | `+ MUC_OPCUA_SECURITY=ON` |
 
 ### 7.2 CMake options
 
-From the top-level `CMakeLists.txt` and `cmake/MicroOpcUaOptions.cmake`
+From the top-level `CMakeLists.txt` and `cmake/MucOpcUaOptions.cmake`
 (defaults shown):
 
 | Option | Default | Effect |
 |---|---|---|
-| `MICRO_OPCUA_SECURITY` | ON | Compile advanced security policies (and grow `MU_SERVER_STORAGE_BYTES`) |
-| `MICRO_OPCUA_SUBSCRIPTIONS` | ON | Data-change subscription engine (Micro profile) |
-| `MICRO_OPCUA_PUBSUB` | OFF | OPC UA PubSub UADP/UDP Publisher and scoped decoder |
-| `MICRO_OPCUA_BASE_NODES` | ON | Standard Base Information node set (ServerStatus, CurrentTime, …) |
-| `MICRO_OPCUA_SERVICE_READ` | ON | Read service |
-| `MICRO_OPCUA_SERVICE_BROWSE` | ON | Browse / BrowseNext / TranslateBrowsePaths |
-| `MICRO_OPCUA_SERVICE_DISCOVERY` | ON | GetEndpoints / FindServers |
-| `MICRO_OPCUA_SERVICE_REGISTER_NODES` | ON | RegisterNodes / UnregisterNodes |
-| `MICRO_OPCUA_LTO` | OFF | Link-time / interprocedural optimization for smaller firmware |
-| `MICRO_OPCUA_PLATFORM` | `host` | Target platform: `host`, `external`, `pico`, `arduino-skeleton` |
-| `MICRO_OPCUA_BUILD_EXAMPLES` | OFF | Build the example servers |
+| `MUC_OPCUA_SECURITY` | ON | Compile advanced security policies (and grow `MU_SERVER_STORAGE_BYTES`) |
+| `MUC_OPCUA_SUBSCRIPTIONS` | ON | Data-change subscription engine (Micro profile) |
+| `MUC_OPCUA_PUBSUB` | OFF | OPC UA PubSub UADP/UDP Publisher and scoped decoder |
+| `MUC_OPCUA_BASE_NODES` | ON | Standard Base Information node set (ServerStatus, CurrentTime, …) |
+| `MUC_OPCUA_SERVICE_READ` | ON | Read service |
+| `MUC_OPCUA_SERVICE_BROWSE` | ON | Browse / BrowseNext / TranslateBrowsePaths |
+| `MUC_OPCUA_SERVICE_DISCOVERY` | ON | GetEndpoints / FindServers |
+| `MUC_OPCUA_SERVICE_REGISTER_NODES` | ON | RegisterNodes / UnregisterNodes |
+| `MUC_OPCUA_LTO` | OFF | Link-time / interprocedural optimization for smaller firmware |
+| `MUC_OPCUA_PLATFORM` | `host` | Target platform: `host`, `external`, `pico`, `arduino-skeleton` |
+| `MUC_OPCUA_BUILD_EXAMPLES` | OFF | Build the example servers |
 
 Turn features **off** to shrink the build for Nano-class targets, e.g.:
 
 ```sh
-cmake -B build -DMICRO_OPCUA_SUBSCRIPTIONS=OFF -DMICRO_OPCUA_SECURITY=OFF \
-      -DMICRO_OPCUA_LTO=ON
+cmake -B build -DMUC_OPCUA_SUBSCRIPTIONS=OFF -DMUC_OPCUA_SECURITY=OFF \
+      -DMUC_OPCUA_LTO=ON
 ```
 
 ### 7.3 Capacity and sizing `-D` knobs
@@ -772,7 +772,7 @@ These are plain `#define`s overridable with `-D…` at compile time. They trade 
 | `MU_RETRANSMIT_BYTES` | 256 | Republish buffer per subscription |
 | `MU_CIPHER_CTX_SIZE` | 32 / 512 | Per-channel AES context scratch (32 with pointer-based/OpenSSL adaptors, 512 otherwise) |
 | `MU_SECURE_SCRATCH_SIZE` | 6144 | Server-owned secure-channel scratch (security builds) |
-| `MICRO_OPCUA_STATUS_STRINGS` | *(undefined)* | Define to compile `mu_status_name()` human-readable strings (costs flash; off by default for embedded). Guard logging with `#ifdef`. |
+| `MUC_OPCUA_STATUS_STRINGS` | *(undefined)* | Define to compile `mu_status_name()` human-readable strings (costs flash; off by default for embedded). Guard logging with `#ifdef`. |
 
 Note the subscription, cipher, and scratch knobs feed `MU_SERVER_STORAGE_BYTES`
 indirectly (via the profile macros) or directly — always size your storage array
@@ -781,7 +781,7 @@ from the macro so changes propagate.
 Example tightening RAM on a constrained Micro build:
 
 ```sh
-cmake -B build -DMICRO_OPCUA_SUBSCRIPTIONS=ON \
+cmake -B build -DMUC_OPCUA_SUBSCRIPTIONS=ON \
       -DMU_MAX_MONITORED_ITEMS=4 -DMU_MAX_SUBSCRIPTIONS=1 \
       -DMU_MAX_ADDRESS_SPACE_NODES=32
 ```
@@ -832,7 +832,7 @@ real stack is attached.
 1. **Compile the core.** Add `src/**/*.c` (excluding the host POSIX/OpenSSL
    adapters under `src/platform/`) and the `include/` headers to your build. It is
    freestanding C11; you supply only `<stddef.h>`/`<stdint.h>`/`<string.h>`-level
-   facilities. Set `MICRO_OPCUA_PLATFORM` and feature options (§7).
+   facilities. Set `MUC_OPCUA_PLATFORM` and feature options (§7).
 2. **Declare storage.** Three statics:
    `g_server_storage[MU_SERVER_STORAGE_BYTES]`, `g_recv_buffer[MU_MIN_CHUNK_SIZE]`,
    `g_send_buffer[MU_MIN_CHUNK_SIZE]`.
@@ -869,7 +869,7 @@ NTP/RTC source.
 
 ## 9. Appendix: API quick reference
 
-### Lifecycle (`include/micro_opcua/server.h`)
+### Lifecycle (`include/muc_opcua/server.h`)
 
 ```c
 opcua_statuscode_t mu_server_init(void *storage, size_t storage_size,

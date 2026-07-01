@@ -2,10 +2,10 @@
  * A host crypto backend for SecurityPolicy Basic256Sha256, implemented with OpenSSL.
  * For development/interop on a host; embedded targets would provide an mbedTLS/PSA
  * backend behind the same mu_crypto_adapter_t interface. */
-#ifndef MICRO_OPCUA_HOST_CRYPTO_ADAPTER_H
-#define MICRO_OPCUA_HOST_CRYPTO_ADAPTER_H
+#ifndef MUC_OPCUA_HOST_CRYPTO_ADAPTER_H
+#define MUC_OPCUA_HOST_CRYPTO_ADAPTER_H
 
-#include "micro_opcua/platform.h"
+#include "muc_opcua/platform.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -22,4 +22,4 @@ void mu_host_crypto_adapter_cleanup(mu_crypto_adapter_t *adapter);
 }
 #endif
 
-#endif /* MICRO_OPCUA_HOST_CRYPTO_ADAPTER_H */
+#endif /* MUC_OPCUA_HOST_CRYPTO_ADAPTER_H */

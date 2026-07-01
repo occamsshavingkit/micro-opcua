@@ -1,7 +1,7 @@
 /* tests/unit/test_session.c */
 #include "../../src/core/server_internal.h"
 #include "../../src/core/service_dispatch.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 #include <string.h>
 
@@ -84,7 +84,7 @@ static void assert_sessions_unchanged(const mu_session_t *expected, const mu_ses
         TEST_ASSERT_EQUAL(expected[i].auth_token, actual[i].auth_token);
         TEST_ASSERT_EQUAL(expected[i].revised_session_timeout_ms, actual[i].revised_session_timeout_ms);
         TEST_ASSERT_EQUAL_MEMORY(expected[i].server_nonce, actual[i].server_nonce, sizeof(expected[i].server_nonce));
-#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+#ifdef MUC_OPCUA_MULTIPLE_CONNECTIONS
         TEST_ASSERT_EQUAL(expected[i].secure_channel_id, actual[i].secure_channel_id);
 #endif
     }

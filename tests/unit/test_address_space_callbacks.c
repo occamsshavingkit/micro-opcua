@@ -1,5 +1,5 @@
 /* tests/unit/test_address_space_callbacks.c */
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 
 void setUp(void) {}

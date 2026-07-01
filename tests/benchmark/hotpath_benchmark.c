@@ -5,10 +5,10 @@
 #include "core/service_dispatch.h"
 #include "core/uasc.h"
 #include "fake_platform.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "services/secure_channel.h"
 #include "services/session.h"
-#ifdef MICRO_OPCUA_SUBSCRIPTIONS
+#ifdef MUC_OPCUA_SUBSCRIPTIONS
 #include "services/subscription.h"
 #endif
 
@@ -89,7 +89,7 @@ static opcua_statuscode_t read_bench_value(void *context, const mu_nodeid_t *nod
     return MU_STATUS_GOOD;
 }
 
-#ifdef MICRO_OPCUA_SERVICE_WRITE
+#ifdef MUC_OPCUA_SERVICE_WRITE
 static opcua_statuscode_t write_bench_value(void *handle, const mu_nodeid_t *node_id, opcua_uint32_t attribute_id,
                                             const mu_variant_t *value) {
     (void)handle;
@@ -165,7 +165,7 @@ static bool scenario_supported(scenario_t scenario) {
     switch (scenario) {
     case SCENARIO_READ_VALUE:
     case SCENARIO_READ_BAD_NODE:
-#ifdef MICRO_OPCUA_SERVICE_READ
+#ifdef MUC_OPCUA_SERVICE_READ
         return true;
 #else
         return false;
@@ -176,14 +176,14 @@ static bool scenario_supported(scenario_t scenario) {
         return true;
     case SCENARIO_WRITE_VALUE:
     case SCENARIO_WRITE_BAD_TYPE:
-#ifdef MICRO_OPCUA_SERVICE_WRITE
+#ifdef MUC_OPCUA_SERVICE_WRITE
         return true;
 #else
         return false;
 #endif
     case SCENARIO_SUBSCRIPTION_IDLE_TICK:
     case SCENARIO_SUBSCRIPTION_ACTIVE_TICK:
-#ifdef MICRO_OPCUA_SUBSCRIPTIONS
+#ifdef MUC_OPCUA_SUBSCRIPTIONS
         return true;
 #else
         return false;
@@ -354,7 +354,7 @@ static opcua_statuscode_t build_read_request(const bench_options_t *options, opc
     return MU_STATUS_GOOD;
 }
 
-#ifdef MICRO_OPCUA_SERVICE_WRITE
+#ifdef MUC_OPCUA_SERVICE_WRITE
 static opcua_statuscode_t build_write_request(const bench_options_t *options, opcua_byte_t *buffer, size_t capacity,
                                               size_t *request_len) {
     mu_binary_writer_t writer;
@@ -401,7 +401,7 @@ static opcua_statuscode_t build_request(const bench_options_t *options, size_t *
         return build_read_request(options, request_buffer, sizeof(request_buffer), request_len);
     case SCENARIO_WRITE_VALUE:
     case SCENARIO_WRITE_BAD_TYPE:
-#ifdef MICRO_OPCUA_SERVICE_WRITE
+#ifdef MUC_OPCUA_SERVICE_WRITE
         *request_id = MU_ID_WRITEREQUEST;
         *response_id = MU_ID_WRITERESPONSE;
         return build_write_request(options, request_buffer, sizeof(request_buffer), request_len);
@@ -444,9 +444,9 @@ static opcua_statuscode_t init_server(size_t node_count, mu_server_t **server) {
     init_address_space(node_count, &bench_address_space);
     memset(&config, 0, sizeof(config));
     config.endpoint_url = "opc.tcp://host:4840";
-    config.application_uri = "urn:micro-opcua:hotpath-benchmark";
-    config.product_uri = "urn:micro-opcua:hotpath-benchmark";
-    config.application_name = "micro-opcua hotpath benchmark";
+    config.application_uri = "urn:muc-opcua:hotpath-benchmark";
+    config.product_uri = "urn:muc-opcua:hotpath-benchmark";
+    config.application_name = "muc-opcua hotpath benchmark";
     config.receive_buffer = receive_buffer;
     config.receive_buffer_size = sizeof(receive_buffer);
     config.send_buffer = send_buffer;
@@ -456,7 +456,7 @@ static opcua_statuscode_t init_server(size_t node_count, mu_server_t **server) {
     config.max_sessions = 1u;
     config.max_secure_channels = 1u;
     config.address_space = &bench_address_space;
-#ifdef MICRO_OPCUA_SERVICE_WRITE
+#ifdef MUC_OPCUA_SERVICE_WRITE
     config.write_handler = write_bench_value;
 #endif
     fake_platform_init(&config.tcp_adapter, &config.time_adapter, &config.entropy_adapter);
@@ -475,7 +475,7 @@ static opcua_statuscode_t init_server(size_t node_count, mu_server_t **server) {
     (*server)->sessions[0].session_id = 1u;
     (*server)->sessions[0].auth_token = TEST_FAKE_FIRST_AUTH_TOKEN;
     (*server)->sessions[0].revised_session_timeout_ms = 3600000u;
-#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+#ifdef MUC_OPCUA_MULTIPLE_CONNECTIONS
     (*server)->sessions[0].secure_channel_id = 1u;
 #endif
 
@@ -750,7 +750,7 @@ static double run_calibration(uint32_t min_ms) {
     return elapsed_ns > 0u ? ((double)iterations * 1000000000.0) / (double)elapsed_ns : 0.0;
 }
 
-#ifdef MICRO_OPCUA_SUBSCRIPTIONS
+#ifdef MUC_OPCUA_SUBSCRIPTIONS
 static opcua_statuscode_t setup_active_subscription(mu_server_t *server, size_t item_count) {
     if (item_count > MU_MAX_MONITORED_ITEMS) {
         return MU_STATUS_BAD_TOOMANYMONITOREDITEMS;
@@ -775,7 +775,7 @@ static opcua_statuscode_t setup_active_subscription(mu_server_t *server, size_t 
         item->monitoring_mode = MU_MONITORING_MODE_REPORTING;
         item->trigger = MU_DATACHANGE_TRIGGER_STATUS_VALUE;
         item->last_status = MU_STATUS_GOOD;
-#ifdef MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#ifdef MUC_OPCUA_SUBSCRIPTIONS_STANDARD
         item->queue_size = MU_MONITORED_QUEUE_DEPTH;
         item->discard_oldest = true;
 #endif
@@ -923,7 +923,7 @@ static int run_benchmark(const bench_options_t *options, uint64_t *elapsed_ns, u
         return 1;
     }
 
-#ifdef MICRO_OPCUA_SUBSCRIPTIONS
+#ifdef MUC_OPCUA_SUBSCRIPTIONS
     if (options->scenario == SCENARIO_SUBSCRIPTION_ACTIVE_TICK) {
         status = setup_active_subscription(server, options->batch);
         if (status != MU_STATUS_GOOD) {
@@ -936,7 +936,7 @@ static int run_benchmark(const bench_options_t *options, uint64_t *elapsed_ns, u
     for (uint32_t i = 0; i < options->warmup; ++i) {
         if (options->scenario == SCENARIO_SUBSCRIPTION_IDLE_TICK ||
             options->scenario == SCENARIO_SUBSCRIPTION_ACTIVE_TICK) {
-#ifdef MICRO_OPCUA_SUBSCRIPTIONS
+#ifdef MUC_OPCUA_SUBSCRIPTIONS
             mu_subscriptions_tick(server, (opcua_uint64_t)i + 1u);
 #endif
         } else if (run_dispatch_once(server, request_id, request_len, response_id) != 0) {
@@ -955,7 +955,7 @@ static int run_benchmark(const bench_options_t *options, uint64_t *elapsed_ns, u
     do {
         if (options->scenario == SCENARIO_SUBSCRIPTION_IDLE_TICK ||
             options->scenario == SCENARIO_SUBSCRIPTION_ACTIVE_TICK) {
-#ifdef MICRO_OPCUA_SUBSCRIPTIONS
+#ifdef MUC_OPCUA_SUBSCRIPTIONS
             for (size_t n = 0; n < options->nodes; ++n) {
                 bench_values[n]++;
             }

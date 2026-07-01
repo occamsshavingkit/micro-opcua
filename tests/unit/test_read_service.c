@@ -1,12 +1,12 @@
 /* tests/unit/test_read_service.c */
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 
 void setUp(void) {}
 void tearDown(void) {}
 
 #include "../../src/services/read.h"
-#include "micro_opcua/encoding.h"
+#include "muc_opcua/encoding.h"
 
 void test_read_service_request_decode(void) {
     opcua_byte_t buffer[256];

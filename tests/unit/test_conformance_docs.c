@@ -1,6 +1,6 @@
 /* tests/unit/test_conformance_docs.c */
 #define _POSIX_C_SOURCE 200809L
-#include "micro_opcua/status.h"
+#include "muc_opcua/status.h"
 #include "unity.h"
 #include <ctype.h>
 #include <dirent.h>
@@ -74,7 +74,7 @@ static const statuscode_name_entry_t known_statuscode_names[] = {
     {"Bad_TooManyMonitoredItems", MU_STATUS_BAD_TOOMANYMONITOREDITEMS},
     {"Bad_TooManySubscriptions", MU_STATUS_BAD_TOOMANYSUBSCRIPTIONS},
     {"Bad_SubscriptionIdInvalid", MU_STATUS_BAD_SUBSCRIPTIONIDINVALID},
-#if MICRO_OPCUA_SUBSCRIPTIONS
+#if MUC_OPCUA_SUBSCRIPTIONS
     {"Bad_MessageNotAvailable", MU_STATUS_BAD_MESSAGENOTAVAILABLE},
     {"Bad_SequenceNumberUnknown", MU_STATUS_BAD_SEQUENCENUMBERUNKNOWN},
     {"Bad_TooManyPublishRequests", MU_STATUS_BAD_TOOMANYPUBLISHREQUESTS},
@@ -822,7 +822,7 @@ static int line_has_public_profile_size_number(const char *line) {
                               contains_ci(line, "| **Embedded 2017**") || contains_ci(line, "| **Full Featured**");
     int archive_profile_line = (contains_ci(line, "| nano |") || contains_ci(line, "| micro |") ||
                                 contains_ci(line, "| embedded |") || contains_ci(line, "| full-featured |")) &&
-                               contains_ci(line, "src/libmicro_opcua.a");
+                               contains_ci(line, "src/libmuc_opcua.a");
 
     if (public_profile_line) {
         return contains_ci(line, "KiB");
@@ -1253,7 +1253,7 @@ void test_public_size_numbers_are_snapshot_labeled_or_reproducible(void) {
                              "Expected integration-guide profile rows with KiB numbers to be scanned");
     TEST_ASSERT_TRUE_MESSAGE(
         line_has_public_profile_size_number(
-            "| nano | 16,278 B | 0 B | 0 B | 16,278 B | `build/size-arm/nano/src/libmicro_opcua.a` |"),
+            "| nano | 16,278 B | 0 B | 0 B | 16,278 B | `build/size-arm/nano/src/libmuc_opcua.a` |"),
         "Expected size-ledger byte-only profile rows to be scanned");
     TEST_ASSERT_FALSE_MESSAGE(
         line_has_public_profile_size_number("`MU_MIN_CHUNK_SIZE` (8192 bytes) is the protocol floor"),
@@ -1294,7 +1294,7 @@ void test_public_size_numbers_are_snapshot_labeled_or_reproducible(void) {
 
 void test_pubsub_subscriber_docs_name_borrowed_input_buffer_lifetime(void) {
     static const char *const lifetime_docs[] = {
-        PROJECT_ROOT_DIR "/include/micro_opcua/pubsub.h",
+        PROJECT_ROOT_DIR "/include/muc_opcua/pubsub.h",
         PROJECT_ROOT_DIR "/docs/api-reference.md",
         PROJECT_ROOT_DIR "/docs/integration-guide.md",
         PROJECT_ROOT_DIR "/specs/023-conformance-docs-subscriber/contracts/pubsub-subscriber.md",

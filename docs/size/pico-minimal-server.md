@@ -36,7 +36,7 @@ arm-none-eabi-size build/t089a-pico-embedded/platform/pico/pico_minimal_server.e
 
 | Artifact | Current evidence | Status |
 |---|---:|---|
-| `build/t089a-pico-embedded/src/libmicro_opcua.a` | 703,784 B file size | PASS |
+| `build/t089a-pico-embedded/src/libmuc_opcua.a` | 703,784 B file size | PASS |
 | `build/t089a-pico-embedded/platform/pico/pico_minimal_server.elf` | 1,014,188 B file size; `text=73,428`, `data=0`, `bss=119,340`, `dec=192,768` | PASS |
 | `build/t089a-pico-embedded/platform/pico/pico_minimal_server.uf2` | 138,752 B file size | PASS |
 
@@ -66,7 +66,7 @@ cmake --version | head -n 1
 ```
 
 Result: exit code `0`; transcript
-`/tmp/micro-opcua-size/t089a-pico-toolchain.txt`.
+`/tmp/muc-opcua-size/t089a-pico-toolchain.txt`.
 
 Observed tools:
 
@@ -78,75 +78,75 @@ Legacy documented Pico command attempt:
 
 ```sh
 cmake -S . -B build/t089a-pico \
-  -DMICRO_OPCUA_PLATFORM=pico \
+  -DMUC_OPCUA_PLATFORM=pico \
   -DPICO_SDK_FETCH_FROM_GIT=ON \
-  -DMICRO_OPCUA_EMBEDDED_PROFILE=ON \
+  -DMUC_OPCUA_EMBEDDED_PROFILE=ON \
   -DMU_MAX_SUBSCRIPTIONS=2 \
   -DMU_MAX_MONITORED_ITEMS=100 \
   -DMU_MAX_PUBLISH_REQUESTS=5 \
   -DMU_MONITORED_QUEUE_DEPTH=2 \
   -DMU_MAX_TRIGGER_LINKS=4 \
-  -DMICRO_OPCUA_BUILD_EXAMPLES=ON
+  -DMUC_OPCUA_BUILD_EXAMPLES=ON
 cmake --build build/t089a-pico
 ```
 
 Result:
 
 - Configure exit code: `0`; transcript
-  `/tmp/micro-opcua-size/t089a-pico-configure.log`.
+  `/tmp/muc-opcua-size/t089a-pico-configure.log`.
 - Build exit code: `2`; transcript
-  `/tmp/micro-opcua-size/t089a-pico-build.log`.
-- No `build/t089a-pico/src/libmicro_opcua.a`,
+  `/tmp/muc-opcua-size/t089a-pico-build.log`.
+- No `build/t089a-pico/src/libmuc_opcua.a`,
   `build/t089a-pico/platform/pico/pico_minimal_server.elf`, or
   `build/t089a-pico/platform/pico/pico_minimal_server.uf2` was produced.
-- Cache note: because examples are enabled and `MICRO_OPCUA_PROFILE` was not set,
-  this tree resolved to `MICRO_OPCUA_PROFILE=full`; the current CMake profile
-  selector is `MICRO_OPCUA_PROFILE`, not the legacy embedded-profile boolean by
+- Cache note: because examples are enabled and `MUC_OPCUA_PROFILE` was not set,
+  this tree resolved to `MUC_OPCUA_PROFILE=full`; the current CMake profile
+  selector is `MUC_OPCUA_PROFILE`, not the legacy embedded-profile boolean by
   itself.
 
 Current embedded-profile Pico command attempt:
 
 ```sh
 cmake -S . -B build/t089a-pico-embedded \
-  -DMICRO_OPCUA_PLATFORM=pico \
+  -DMUC_OPCUA_PLATFORM=pico \
   -DPICO_SDK_FETCH_FROM_GIT=ON \
-  -DMICRO_OPCUA_PROFILE=embedded \
-  -DMICRO_OPCUA_OPTIMIZE_SIZE=ON \
+  -DMUC_OPCUA_PROFILE=embedded \
+  -DMUC_OPCUA_OPTIMIZE_SIZE=ON \
   -DMU_MAX_SUBSCRIPTIONS=2 \
   -DMU_MAX_MONITORED_ITEMS=100 \
   -DMU_MAX_PUBLISH_REQUESTS=5 \
   -DMU_MONITORED_QUEUE_DEPTH=2 \
   -DMU_MAX_TRIGGER_LINKS=4 \
-  -DMICRO_OPCUA_BUILD_EXAMPLES=ON
+  -DMUC_OPCUA_BUILD_EXAMPLES=ON
 cmake --build build/t089a-pico-embedded
 ```
 
 Result:
 
 - Configure exit code: `0`; transcript
-  `/tmp/micro-opcua-size/t089a-pico-embedded-configure.log`.
+  `/tmp/muc-opcua-size/t089a-pico-embedded-configure.log`.
 - Build exit code: `2`; transcript
-  `/tmp/micro-opcua-size/t089a-pico-embedded-build.log`.
+  `/tmp/muc-opcua-size/t089a-pico-embedded-build.log`.
 - Artifact check command:
-  `find build/t089a-pico build/t089a-pico-embedded -maxdepth 5 \( -name 'libmicro_opcua.a' -o -name 'pico_minimal_server.elf' -o -name 'pico_minimal_server.uf2' \) -printf '%p\n' | sort`.
+  `find build/t089a-pico build/t089a-pico-embedded -maxdepth 5 \( -name 'libmuc_opcua.a' -o -name 'pico_minimal_server.elf' -o -name 'pico_minimal_server.uf2' \) -printf '%p\n' | sort`.
   Exit code `0`; transcript
-  `/tmp/micro-opcua-size/t089a-pico-artifact-find.log`; no artifact paths were
+  `/tmp/muc-opcua-size/t089a-pico-artifact-find.log`; no artifact paths were
   printed.
 
 Profile/toolchain knobs for the current embedded-profile attempt:
 
-- `MICRO_OPCUA_PLATFORM=pico`
-- `MICRO_OPCUA_PROFILE=embedded`
-- `MICRO_OPCUA_EMBEDDED_PROFILE=ON`
-- `MICRO_OPCUA_OPTIMIZE_SIZE=ON`
-- `MICRO_OPCUA_BUILD_EXAMPLES=ON`
-- `MICRO_OPCUA_SECURITY=ON`
-- `MICRO_OPCUA_SUBSCRIPTIONS=ON`
-- `MICRO_OPCUA_SUBSCRIPTIONS_STANDARD=ON`
-- `MICRO_OPCUA_BASE_NODES=ON`
-- `MICRO_OPCUA_BASE_TYPE_SYSTEM=ON`
-- `MICRO_OPCUA_MULTIPLE_CONNECTIONS=ON`
-- `MICRO_OPCUA_EVENTS=ON`
+- `MUC_OPCUA_PLATFORM=pico`
+- `MUC_OPCUA_PROFILE=embedded`
+- `MUC_OPCUA_EMBEDDED_PROFILE=ON`
+- `MUC_OPCUA_OPTIMIZE_SIZE=ON`
+- `MUC_OPCUA_BUILD_EXAMPLES=ON`
+- `MUC_OPCUA_SECURITY=ON`
+- `MUC_OPCUA_SUBSCRIPTIONS=ON`
+- `MUC_OPCUA_SUBSCRIPTIONS_STANDARD=ON`
+- `MUC_OPCUA_BASE_NODES=ON`
+- `MUC_OPCUA_BASE_TYPE_SYSTEM=ON`
+- `MUC_OPCUA_MULTIPLE_CONNECTIONS=ON`
+- `MUC_OPCUA_EVENTS=ON`
 - `MU_MAX_SUBSCRIPTIONS=2`
 - `MU_MAX_MONITORED_ITEMS=100`
 - `MU_MAX_PUBLISH_REQUESTS=5`
@@ -161,7 +161,7 @@ Profile/toolchain knobs for the current embedded-profile attempt:
 
 ### Historical T089a Result
 
-The original T089a Pico attempts were blocked before `micro_opcua` compiled:
+The original T089a Pico attempts were blocked before `muc_opcua` compiled:
 
 ```text
 src/core/server_internal.h:45:1: error: static assertion failed: "MU_CONNECTION_BASE_STORAGE_BYTES must cover mu_connection_t fields outside rx_buffer"
@@ -174,8 +174,8 @@ Pico archive, ELF, and UF2 artifacts.
 |---|---|---|---|
 | `build/t089a-pico/platform/pico/pico_minimal_server.elf` | Not produced | N/A | Blocked |
 | `build/t089a-pico-embedded/platform/pico/pico_minimal_server.elf` | Not produced | N/A | Blocked |
-| `build/t089a-pico/src/libmicro_opcua.a` | Not produced | N/A | Blocked |
-| `build/t089a-pico-embedded/src/libmicro_opcua.a` | Not produced | N/A | Blocked |
+| `build/t089a-pico/src/libmuc_opcua.a` | Not produced | N/A | Blocked |
+| `build/t089a-pico-embedded/src/libmuc_opcua.a` | Not produced | N/A | Blocked |
 
 ### Historical Budget and Gate Assessment
 
@@ -251,7 +251,7 @@ cmake --version | head -n 1
 ```
 
 Result: exit code `0`; transcript
-`/tmp/micro-opcua-size/t089b-pico-stack-toolchain.txt`.
+`/tmp/muc-opcua-size/t089b-pico-stack-toolchain.txt`.
 
 Observed tools:
 
@@ -263,55 +263,55 @@ Pico embedded stack-usage attempt:
 
 ```sh
 cmake -S . -B build/t089b-pico-stack \
-  -DMICRO_OPCUA_PLATFORM=pico \
+  -DMUC_OPCUA_PLATFORM=pico \
   -DPICO_SDK_FETCH_FROM_GIT=ON \
-  -DMICRO_OPCUA_PROFILE=embedded \
-  -DMICRO_OPCUA_OPTIMIZE_SIZE=ON \
-  -DMICRO_OPCUA_STACK_USAGE=ON \
-  -DMICRO_OPCUA_STACK_USAGE_LIMIT=10240 \
+  -DMUC_OPCUA_PROFILE=embedded \
+  -DMUC_OPCUA_OPTIMIZE_SIZE=ON \
+  -DMUC_OPCUA_STACK_USAGE=ON \
+  -DMUC_OPCUA_STACK_USAGE_LIMIT=10240 \
   -DMU_MAX_SUBSCRIPTIONS=2 \
   -DMU_MAX_MONITORED_ITEMS=100 \
   -DMU_MAX_PUBLISH_REQUESTS=5 \
   -DMU_MONITORED_QUEUE_DEPTH=2 \
   -DMU_MAX_TRIGGER_LINKS=4 \
-  -DMICRO_OPCUA_BUILD_EXAMPLES=ON
+  -DMUC_OPCUA_BUILD_EXAMPLES=ON
 cmake --build build/t089b-pico-stack
 bash scripts/check_stack_usage.sh --build-dir build/t089b-pico-stack --threshold 10240
-find build/t089b-pico-stack -type f \( -name '*.su' -o -name 'libmicro_opcua.a' -o -name 'pico_minimal_server.elf' -o -name 'pico_minimal_server.uf2' \) -printf '%p\n' | sort
+find build/t089b-pico-stack -type f \( -name '*.su' -o -name 'libmuc_opcua.a' -o -name 'pico_minimal_server.elf' -o -name 'pico_minimal_server.uf2' \) -printf '%p\n' | sort
 ```
 
 Result:
 
 - Configure exit code: `0`; transcript
-  `/tmp/micro-opcua-size/t089b-pico-stack-configure.log`.
+  `/tmp/muc-opcua-size/t089b-pico-stack-configure.log`.
 - Build exit code: `2`; transcript
-  `/tmp/micro-opcua-size/t089b-pico-stack-build.log`.
+  `/tmp/muc-opcua-size/t089b-pico-stack-build.log`.
 - Stack-check exit code: `2`; transcript
-  `/tmp/micro-opcua-size/t089b-pico-stack-check.log`.
+  `/tmp/muc-opcua-size/t089b-pico-stack-check.log`.
 - Artifact-find exit code: `0`; transcript
-  `/tmp/micro-opcua-size/t089b-pico-stack-artifacts.log`.
+  `/tmp/muc-opcua-size/t089b-pico-stack-artifacts.log`.
 - The artifact find produced only
-  `build/t089b-pico-stack/src/CMakeFiles/micro_opcua.dir/core/server.c.su`;
+  `build/t089b-pico-stack/src/CMakeFiles/muc_opcua.dir/core/server.c.su`;
   that `.su` file is `0` bytes because compilation stopped at the static
-  assertion. No `libmicro_opcua.a`, `pico_minimal_server.elf`, or
+  assertion. No `libmuc_opcua.a`, `pico_minimal_server.elf`, or
   `pico_minimal_server.uf2` was produced.
 
 Profile/toolchain knobs from `build/t089b-pico-stack/CMakeCache.txt`:
 
-- `MICRO_OPCUA_PLATFORM=pico`
-- `MICRO_OPCUA_PROFILE=embedded`
-- `MICRO_OPCUA_EMBEDDED_PROFILE=ON`
-- `MICRO_OPCUA_OPTIMIZE_SIZE=ON`
-- `MICRO_OPCUA_STACK_USAGE=ON`
-- `MICRO_OPCUA_STACK_USAGE_LIMIT=10240`
-- `MICRO_OPCUA_BUILD_EXAMPLES=ON`
-- `MICRO_OPCUA_SECURITY=ON`
-- `MICRO_OPCUA_SUBSCRIPTIONS=ON`
-- `MICRO_OPCUA_SUBSCRIPTIONS_STANDARD=ON`
-- `MICRO_OPCUA_BASE_NODES=ON`
-- `MICRO_OPCUA_BASE_TYPE_SYSTEM=ON`
-- `MICRO_OPCUA_MULTIPLE_CONNECTIONS=ON`
-- `MICRO_OPCUA_EVENTS=ON`
+- `MUC_OPCUA_PLATFORM=pico`
+- `MUC_OPCUA_PROFILE=embedded`
+- `MUC_OPCUA_EMBEDDED_PROFILE=ON`
+- `MUC_OPCUA_OPTIMIZE_SIZE=ON`
+- `MUC_OPCUA_STACK_USAGE=ON`
+- `MUC_OPCUA_STACK_USAGE_LIMIT=10240`
+- `MUC_OPCUA_BUILD_EXAMPLES=ON`
+- `MUC_OPCUA_SECURITY=ON`
+- `MUC_OPCUA_SUBSCRIPTIONS=ON`
+- `MUC_OPCUA_SUBSCRIPTIONS_STANDARD=ON`
+- `MUC_OPCUA_BASE_NODES=ON`
+- `MUC_OPCUA_BASE_TYPE_SYSTEM=ON`
+- `MUC_OPCUA_MULTIPLE_CONNECTIONS=ON`
+- `MUC_OPCUA_EVENTS=ON`
 - `MU_MAX_SUBSCRIPTIONS=2`
 - `MU_MAX_MONITORED_ITEMS=100`
 - `MU_MAX_PUBLISH_REQUESTS=5`
@@ -347,7 +347,7 @@ Historical stack evidence:
 | `build/t089b-pico-stack` configure | Exit code `0` | N/A | 10,240 B | N/A | Configure only |
 | `cmake --build build/t089b-pico-stack` | Exit code `2`; static assertion failure | N/A | 10,240 B | No Pico estimate available | Blocked |
 | `scripts/check_stack_usage.sh --build-dir build/t089b-pico-stack --threshold 10240` | Exit code `2`; missing required frame | N/A | 10,240 B | Cannot compare to host baseline `3,040 B` | Blocked |
-| `build/t089b-pico-stack/src/CMakeFiles/micro_opcua.dir/core/server.c.su` | Produced but empty (`0` bytes) | N/A | 10,240 B | Not usable evidence | Blocked |
+| `build/t089b-pico-stack/src/CMakeFiles/muc_opcua.dir/core/server.c.su` | Produced but empty (`0` bytes) | N/A | 10,240 B | Not usable evidence | Blocked |
 | `build/t089b-pico-stack/platform/pico/pico_minimal_server.elf` | Not produced | N/A | 10,240 B | No Pico firmware stack evidence | Blocked |
 
 ### Historical Budget and Gate Assessment

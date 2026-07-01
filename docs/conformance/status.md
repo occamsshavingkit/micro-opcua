@@ -11,7 +11,7 @@ until a CTT run passes (project policy, plan.md).
 ## StatusCode names
 
 The following StatusCode names are the canonical identifiers used by
-`include/micro_opcua/status.h` for the audit-hardening StatusCode surface. Name
+`include/muc_opcua/status.h` for the audit-hardening StatusCode surface. Name
 spelling is grounded in OPC-10000-4 section 7.38.2 Common StatusCodes; numeric
 values are listed below.
 
@@ -41,7 +41,7 @@ values are listed below.
 
 ## StatusCode numeric values
 
-The following hexadecimal values are the exact `include/micro_opcua/status.h`
+The following hexadecimal values are the exact `include/muc_opcua/status.h`
 constants used by the audit-hardening StatusCode surface. Symbolic names are
 grounded in OPC-10000-4 section 7.38.2 Common StatusCodes.
 
@@ -108,7 +108,7 @@ The Micro Embedded Device 2017 Server Profile builds on Nano (see
 ## Embedded profile progress
 
 The Embedded 2017 profile surface is implemented behind `make embedded` /
-`MICRO_OPCUA_EMBEDDED_PROFILE=ON`. See [profile-embedded.md](profile-embedded.md) for the
+`MUC_OPCUA_EMBEDDED_PROFILE=ON`. See [profile-embedded.md](profile-embedded.md) for the
 conformance-unit map.
 
 | Conformance group / unit | Status | Evidence |
@@ -118,13 +118,13 @@ conformance-unit map.
 | Standard DataChange Subscription 2017 facet | Implemented | `test_subscriptions_capacity`, `test_subscriptions` |
 | Base Info Type System | Implemented | `test_type_system`, `test_view_services` |
 | Method Call: GetMonitoredItems / ResendData | Implemented | `test_method_call`, `test_method_call_errors` |
-| Write Service | Implemented | Optional feature via `MICRO_OPCUA_SERVICE_WRITE` |
-| Alarms & Conditions (Events) | Implemented | Event notifications via `MICRO_OPCUA_EVENTS` |
-| Dynamic Nodes | Implemented | Runtime node addition via `MICRO_OPCUA_DYNAMIC_NODES` |
-| NodeManagement Services | Implemented | Dynamic NodeManagement via `MICRO_OPCUA_SERVICE_NODEMANAGEMENT` |
-| Query Services | Implemented | Search address space via `MICRO_OPCUA_SERVICE_QUERY` |
-| Historical Access (HA) | Implemented | HistoryRead/HistoryUpdate via `MICRO_OPCUA_SERVICE_HISTORY` |
-| Aggregate Subscriptions | Implemented | Average/Min/Max calculation via `MICRO_OPCUA_SUBSCRIPTIONS_STANDARD` (Feature 018) |
+| Write Service | Implemented | Optional feature via `MUC_OPCUA_SERVICE_WRITE` |
+| Alarms & Conditions (Events) | Implemented | Event notifications via `MUC_OPCUA_EVENTS` |
+| Dynamic Nodes | Implemented | Runtime node addition via `MUC_OPCUA_DYNAMIC_NODES` |
+| NodeManagement Services | Implemented | Dynamic NodeManagement via `MUC_OPCUA_SERVICE_NODEMANAGEMENT` |
+| Query Services | Implemented | Search address space via `MUC_OPCUA_SERVICE_QUERY` |
+| Historical Access (HA) | Implemented | HistoryRead/HistoryUpdate via `MUC_OPCUA_SERVICE_HISTORY` |
+| Aggregate Subscriptions | Implemented | Average/Min/Max calculation via `MUC_OPCUA_SUBSCRIPTIONS_STANDARD` (Feature 018) |
 
 ## Remaining
 1. **CTT verification** — run the OPC Foundation Compliance Test Tool against the

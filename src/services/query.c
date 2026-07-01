@@ -1,8 +1,8 @@
-#include "micro_opcua/config.h"
-#ifdef MICRO_OPCUA_SERVICE_QUERY
+#include "muc_opcua/config.h"
+#ifdef MUC_OPCUA_SERVICE_QUERY
 
 #include "../core/server_internal.h"
-#include "micro_opcua/address_space.h"
+#include "muc_opcua/address_space.h"
 #include "query.h"
 #include <string.h>
 
@@ -95,7 +95,7 @@ opcua_statuscode_t mu_query_first_process(mu_server_t *server, const mu_query_fi
             }
         }
     }
-#ifdef MICRO_OPCUA_SERVICE_NODEMANAGEMENT
+#ifdef MUC_OPCUA_SERVICE_NODEMANAGEMENT
     /* Also scan dynamic address space if we haven't hit the limit */
     if (next_index == 0) {
         for (size_t i = 0; i < server->dynamic_address_space.nodes_count; ++i) {
@@ -171,4 +171,4 @@ opcua_statuscode_t mu_query_next_process(mu_server_t *server, const mu_query_nex
     return MU_STATUS_GOOD;
 }
 
-#endif /* MICRO_OPCUA_SERVICE_QUERY */
+#endif /* MUC_OPCUA_SERVICE_QUERY */

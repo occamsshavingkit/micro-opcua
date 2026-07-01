@@ -1,5 +1,5 @@
 /* tests/unit/test_security_identity_errors.c */
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 #include <stdbool.h>
 #include <string.h>

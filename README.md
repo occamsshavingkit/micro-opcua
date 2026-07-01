@@ -1,8 +1,8 @@
-# micro-opcua
+# muc-opcua
 
 **A freestanding C11, zero-heap OPC UA server for small microcontrollers.**
 
-micro-opcua is an embedded [OPC UA](https://opcfoundation.org/) **server** library
+muc-opcua is an embedded [OPC UA](https://opcfoundation.org/) **server** library
 designed to run on parts as small as an RP2040 / Arm Cortex-M0+. It speaks OPC UA TCP
 (`opc.tcp`) with OPC UA Binary encoding (OPC 10000-6), never calls `malloc`, and gets
 all of its OS/hardware services (TCP, clock, entropy, crypto, persistence) through
@@ -19,7 +19,7 @@ OPC Foundation 2017 device server profiles, so you compile in only the surface y
 
 ---
 
-## Why micro-opcua
+## Why muc-opcua
 
 - **Zero heap.** No `malloc` anywhere in the protocol path. The application owns all
   memory: one server-storage block plus the RX/TX buffers. Footprint is deterministic.
@@ -29,7 +29,7 @@ OPC Foundation 2017 device server profiles, so you compile in only the surface y
   (23,785 B); Embedded 2017 is **42.0 KiB** (42,990 B). Static `.bss` is 0 B.
 - **Freestanding & portable.** Plain C11 core with no OS assumptions. Hardware and OS
   services are injected via small adapter structs in
-  [`include/micro_opcua/platform.h`](include/micro_opcua/platform.h) — bring your own
+  [`include/muc_opcua/platform.h`](include/muc_opcua/platform.h) — bring your own
   lwIP/socket stack, RTC, RNG, and (optionally) mbedTLS/BearSSL/PSA crypto.
 - **Cooperative, non-blocking.** A single `mu_server_poll()` call drives accept, read,
   dispatch, write, and subscription sampling/publishing. No threads required.
@@ -43,7 +43,7 @@ OPC Foundation 2017 device server profiles, so you compile in only the surface y
 ## Profiles
 
 Each profile is a build configuration (`make nano|micro|embedded`, or the
-`MICRO_OPCUA_*` CMake options). Footprint figures are a measured snapshot on Arm
+`MUC_OPCUA_*` CMake options). Footprint figures are a measured snapshot on Arm
 Cortex-M0+ with `-Os`; reproduce with `scripts/measure_size.sh all`. Full
 methodology and breakdown are in
 [docs/size/feature-size-ledger.md](docs/size/feature-size-ledger.md).
@@ -70,8 +70,8 @@ application and network stack before stack and adapter storage.
 
 ```bash
 # 1. Clone
-git clone <your-fork-url> micro-opcua
-cd micro-opcua
+git clone <your-fork-url> muc-opcua
+cd muc-opcua
 
 # 2. Build the Micro profile (Nano + subscriptions) with the example server
 make micro
@@ -83,7 +83,7 @@ build/micro/examples/minimal_server
 You should see:
 
 ```
-Initializing Micro OPC UA Server...
+Initializing muc-opcua Server...
 Server initialized successfully. Listening on opc.tcp://localhost:4840
 ```
 
@@ -104,10 +104,10 @@ Run `make help` for a summary. The example binary always lands at
 The library never allocates. You declare the storage and buffers, fill in a config with
 your platform adapters and address space, then poll. Condensed from
 [`examples/minimal_server/main.c`](examples/minimal_server/main.c) and
-[`include/micro_opcua/server.h`](include/micro_opcua/server.h):
+[`include/muc_opcua/server.h`](include/muc_opcua/server.h):
 
 ```c
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 
 /* Caller-owned, no-heap storage. Size tracks the compiled feature set. */
 static opcua_byte_t server_storage[MU_SERVER_STORAGE_BYTES];
@@ -123,7 +123,7 @@ int main(void)
 
     /* Identity / discovery */
     config.endpoint_url     = "opc.tcp://0.0.0.0:4840";
-    config.application_uri   = "urn:device:micro_opcua:server";
+    config.application_uri   = "urn:device:muc_opcua:server";
     config.application_name  = "My Device";
 
     /* Caller-owned transport buffers */
@@ -136,7 +136,7 @@ int main(void)
     config.max_secure_channels = MU_MAX_SECURE_CHANNELS;
 
     /* Platform adapters: you implement these for your board.
-       (See include/micro_opcua/platform.h.) */
+       (See include/muc_opcua/platform.h.) */
     my_tcp_adapter_init(&config.tcp_adapter);          /* listen/accept/read/write/close */
     config.time_adapter.get_time    = my_get_utc_time; /* 100ns ticks since 1601 */
     config.time_adapter.get_tick_ms = my_get_tick_ms;  /* monotonic ms */
@@ -158,7 +158,7 @@ int main(void)
 }
 ```
 
-Key entry points (all in [`include/micro_opcua/server.h`](include/micro_opcua/server.h)):
+Key entry points (all in [`include/muc_opcua/server.h`](include/muc_opcua/server.h)):
 
 - `mu_server_init(storage, storage_size, config, &server)` — bind caller storage + config.
 - `mu_server_poll(server)` — run one non-blocking iteration (accept/read/dispatch/write/sample).
@@ -166,7 +166,7 @@ Key entry points (all in [`include/micro_opcua/server.h`](include/micro_opcua/se
 - `mu_server_config_validate(config)` — pre-flight a config.
 
 Your data lives in a `mu_address_space_t` of `mu_node_t`s
-([`include/micro_opcua/address_space.h`](include/micro_opcua/address_space.h)). Variable
+([`include/muc_opcua/address_space.h`](include/muc_opcua/address_space.h)). Variable
 values are either static or served live through a read callback
 (`mu_read_callback_t`) — ideal for sensor registers.
 
@@ -174,7 +174,7 @@ values are either static or served live through a read callback
 
 ## Supported OPC UA surface
 
-micro-opcua transports OPC UA TCP (`opc.tcp`) with UA-SecureConversation and UA-Binary
+muc-opcua transports OPC UA TCP (`opc.tcp`) with UA-SecureConversation and UA-Binary
 encoding. Implemented service sets are profile-targeting subsets with bounded
 multi-session and secure-channel capacity controlled by the build configuration:
 
@@ -209,40 +209,40 @@ The `make` targets are thin wrappers over CMake. To configure directly:
 
 ```bash
 cmake -S . -B build \
-  -DMICRO_OPCUA_BUILD_EXAMPLES=ON \
-  -DMICRO_OPCUA_SUBSCRIPTIONS=ON \    # micro profile
-  -DMICRO_OPCUA_SECURITY=OFF          # ON adds Basic256Sha256 (embedded)
+  -DMUC_OPCUA_BUILD_EXAMPLES=ON \
+  -DMUC_OPCUA_SUBSCRIPTIONS=ON \    # micro profile
+  -DMUC_OPCUA_SECURITY=OFF          # ON adds Basic256Sha256 (embedded)
 cmake --build build
 ```
 
 Selected options (see [CMakeLists.txt](CMakeLists.txt) and
-[cmake/MicroOpcUaOptions.cmake](cmake/MicroOpcUaOptions.cmake)):
+[cmake/MucOpcUaOptions.cmake](cmake/MucOpcUaOptions.cmake)):
 
 | Option | Default | Purpose |
 |---|---|---|
-| `MICRO_OPCUA_SUBSCRIPTIONS` | ON | Data-change subscription engine (Micro tier) |
-| `MICRO_OPCUA_SECURITY` | ON | SecurityPolicy Basic256Sha256 (Embedded tier) |
-| `MICRO_OPCUA_BASE_NODES` | ON | Standard Base Information node set |
-| `MICRO_OPCUA_SERVICE_READ` / `_BROWSE` / `_DISCOVERY` / `_REGISTER_NODES` | ON | Per-service code gating |
-| `MICRO_OPCUA_BUILD_EXAMPLES` / `_BUILD_TESTS` / `_BUILD_FUZZERS` | OFF | Build extras |
-| `MICRO_OPCUA_PLATFORM` | `host` | Target: `host`, `external`, `pico`, `arduino-skeleton` |
+| `MUC_OPCUA_SUBSCRIPTIONS` | ON | Data-change subscription engine (Micro tier) |
+| `MUC_OPCUA_SECURITY` | ON | SecurityPolicy Basic256Sha256 (Embedded tier) |
+| `MUC_OPCUA_BASE_NODES` | ON | Standard Base Information node set |
+| `MUC_OPCUA_SERVICE_READ` / `_BROWSE` / `_DISCOVERY` / `_REGISTER_NODES` | ON | Per-service code gating |
+| `MUC_OPCUA_BUILD_EXAMPLES` / `_BUILD_TESTS` / `_BUILD_FUZZERS` | OFF | Build extras |
+| `MUC_OPCUA_PLATFORM` | `host` | Target: `host`, `external`, `pico`, `arduino-skeleton` |
 
 ### Tests
 
 ```bash
 make test          # configure with tests + run the full ctest suite
 # or:
-cmake -S . -B build/test -DMICRO_OPCUA_BUILD_TESTS=ON
+cmake -S . -B build/test -DMUC_OPCUA_BUILD_TESTS=ON
 cmake --build build/test
 cd build/test && ctest --output-on-failure
 ```
 
-The host build links a POSIX TCP adapter and (with `MICRO_OPCUA_SECURITY=ON`) an OpenSSL
+The host build links a POSIX TCP adapter and (with `MUC_OPCUA_SECURITY=ON`) an OpenSSL
 crypto adapter for interop against real OPC UA clients.
 
 ### Cross-compiling for RP2040
 
-Set `-DMICRO_OPCUA_PLATFORM=pico` with `PICO_SDK_PATH` pointing at a Pico SDK checkout
+Set `-DMUC_OPCUA_PLATFORM=pico` with `PICO_SDK_PATH` pointing at a Pico SDK checkout
 (the SDK is imported before `project()`); an Arduino skeleton lives under
 [`platform/arduino`](platform/arduino).
 
@@ -274,7 +274,7 @@ Set `-DMICRO_OPCUA_PLATFORM=pico` with `PICO_SDK_PATH` pointing at a Pico SDK ch
 ## Repository layout
 
 ```
-include/micro_opcua/   Public API headers (server.h, platform.h, address_space.h, ...)
+include/muc_opcua/   Public API headers (server.h, platform.h, address_space.h, ...)
 src/
   core/                Server state machine, dispatch, sessions, channels
   encoding/            OPC UA Binary encode/decode

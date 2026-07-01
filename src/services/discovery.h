@@ -1,10 +1,10 @@
 /* src/services/discovery.h */
-#ifndef MICRO_OPCUA_SERVICES_DISCOVERY_H
-#define MICRO_OPCUA_SERVICES_DISCOVERY_H
+#ifndef MUC_OPCUA_SERVICES_DISCOVERY_H
+#define MUC_OPCUA_SERVICES_DISCOVERY_H
 
 #include "../security/security_policy.h" /* mu_message_security_mode_t */
-#include "micro_opcua/encoding.h"
-#include "micro_opcua/server.h"
+#include "muc_opcua/encoding.h"
+#include "muc_opcua/server.h"
 
 typedef enum {
     MU_APPLICATION_TYPE_SERVER = 0,
@@ -73,4 +73,4 @@ opcua_statuscode_t mu_application_description_encode(mu_binary_writer_t *writer,
                                                      const mu_application_description_t *desc);
 opcua_statuscode_t mu_endpoint_description_encode(mu_binary_writer_t *writer, const mu_endpoint_description_t *desc);
 
-#endif /* MICRO_OPCUA_SERVICES_DISCOVERY_H */
+#endif /* MUC_OPCUA_SERVICES_DISCOVERY_H */

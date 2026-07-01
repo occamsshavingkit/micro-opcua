@@ -1,6 +1,6 @@
 /* tests/unit/test_uasc_framing.c */
 #include "../../src/core/uasc.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 #include <string.h>
 

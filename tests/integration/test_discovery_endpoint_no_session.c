@@ -1,5 +1,5 @@
 /* tests/integration/test_discovery_endpoint_no_session.c */
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 
 void setUp(void) {}

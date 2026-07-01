@@ -1,5 +1,5 @@
 /* tests/unit/test_user_token_encrypted.c */
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 #include <string.h>
 

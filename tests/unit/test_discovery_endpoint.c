@@ -1,7 +1,7 @@
 /* tests/unit/test_discovery_endpoint.c
  * Discovery services (FindServers, GetEndpoints) are usable on an open
  * SecureChannel without an activated Session (OPC 10000-4 5.5). */
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 
 void setUp(void) {}

@@ -2,21 +2,21 @@
 #include "subscription.h"
 #include <string.h>
 
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
 #include <math.h>
 #endif
 
-#if MICRO_OPCUA_SUBSCRIPTIONS
+#if MUC_OPCUA_SUBSCRIPTIONS
 
 #include "../core/server_internal.h"
 #include "../core/service_dispatch.h"
-#include "micro_opcua/address_space.h"
+#include "muc_opcua/address_space.h"
 #include "service_header.h"
 
 #define MU_PUBLISH_BODY_BYTES 512u
 #define MU_ID_DATACHANGENOTIFICATION_ENCODING_DEFAULTBINARY 811u
 
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
 /* OPC-10000-4 §7.20.1 / OPC-10000-6 StatusCode: InfoType=DataValue + Overflow. */
 #define MU_STATUSCODE_INFOTYPE_DATAVALUE_OVERFLOW 0x00000480u
 #ifndef MU_STATUS_BAD_TOOMANYOPERATIONS
@@ -66,7 +66,7 @@ static bool variant_scalar_equal(const mu_variant_t *a, const mu_variant_t *b) {
     }
 }
 
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
 static bool variant_numeric_to_double(const mu_variant_t *value, opcua_double_t *out) {
     if (value->is_array) {
         return false;
@@ -405,7 +405,7 @@ static opcua_uint32_t allocate_monitored_item_id(mu_subscriptions_t *subs) {
     return 0u;
 }
 
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
 static mu_monitored_item_t *find_monitored_item_in_subscription(mu_subscriptions_t *subs,
                                                                 opcua_uint32_t subscription_id,
                                                                 opcua_uint32_t monitored_item_id) {
@@ -499,7 +499,7 @@ static void backpatch_int32(opcua_byte_t *buffer, size_t position, opcua_int32_t
 
 static bool monitored_item_reportable(const mu_monitored_item_t *item, const mu_subscription_t *sub) {
     return item->in_use && item->subscription_id == sub->subscription_id &&
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
            (item->pending || item->queue_count > 0u) &&
 #else
            item->pending &&
@@ -507,7 +507,7 @@ static bool monitored_item_reportable(const mu_monitored_item_t *item, const mu_
            item->monitoring_mode == MU_MONITORING_MODE_REPORTING;
 }
 
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
 static bool monitored_item_in_subscription(const mu_monitored_item_t *item, const mu_subscription_t *sub) {
     return item->in_use && item->subscription_id == sub->subscription_id;
 }
@@ -549,7 +549,7 @@ static bool count_queue_entries(opcua_int32_t *count, opcua_uint32_t max_notific
 }
 #endif
 
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
 static opcua_int32_t count_reportable_items(const struct mu_server *server, mu_subscription_t *sub) {
     opcua_int32_t count = 0;
     opcua_uint32_t max_notifications = sub->max_notifications_per_publish;
@@ -588,7 +588,7 @@ static opcua_int32_t count_reportable_items(const struct mu_server *server, cons
 }
 #endif
 
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
 static void prepare_reportable_queues(struct mu_server *server, const mu_subscription_t *sub) {
     for (size_t i = 0; i < MU_MAX_MONITORED_ITEMS; ++i) {
         mu_monitored_item_t *item = &server->subs.monitored_items[i];
@@ -719,7 +719,7 @@ static opcua_statuscode_t write_data_change_notification(mu_binary_writer_t *w, 
             continue;
         }
 
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
         opcua_uint32_t queue_size = item->queue_size;
         opcua_byte_t entry_index = item->queue_head;
         if (queue_size == 0u) {
@@ -770,7 +770,7 @@ static opcua_statuscode_t write_data_change_notification(mu_binary_writer_t *w, 
 #endif
     }
 
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
     for (size_t i = 0; i < MU_MAX_MONITORED_ITEMS && report_count > 0; ++i) {
         const mu_monitored_item_t *item = &server->subs.monitored_items[i];
         if (!monitored_item_reports_by_trigger(server, sub, item)) {
@@ -823,7 +823,7 @@ static opcua_statuscode_t write_data_change_notification(mu_binary_writer_t *w, 
     return MU_STATUS_GOOD;
 }
 
-#ifdef MICRO_OPCUA_EVENTS
+#ifdef MUC_OPCUA_EVENTS
 static opcua_statuscode_t write_event_notification_list(mu_binary_writer_t *w, struct mu_server *server,
                                                         const mu_subscription_t *sub) {
     mu_nodeid_t type_id = {0, MU_NODEID_NUMERIC, {914}};
@@ -964,7 +964,7 @@ static opcua_statuscode_t build_publish_response(struct mu_server *server, const
     s = mu_binary_write_int32(&w, 0);
     if (s != MU_STATUS_GOOD)
         return s;
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
     s = mu_binary_write_boolean(&w, include_data && sub->more_notifications);
 #else
     s = mu_binary_write_boolean(&w, false);
@@ -985,7 +985,7 @@ static opcua_statuscode_t build_publish_response(struct mu_server *server, const
         if (report_count > 0) {
             notification_data_count++;
         }
-#ifdef MICRO_OPCUA_EVENTS
+#ifdef MUC_OPCUA_EVENTS
         if (sub->event_queue.count > 0) {
             notification_data_count++;
         }
@@ -1001,7 +1001,7 @@ static opcua_statuscode_t build_publish_response(struct mu_server *server, const
             if (s != MU_STATUS_GOOD)
                 return s;
         }
-#ifdef MICRO_OPCUA_EVENTS
+#ifdef MUC_OPCUA_EVENTS
         if (sub->event_queue.count > 0) {
             s = write_event_notification_list(&w, server, sub);
             if (s != MU_STATUS_GOOD)
@@ -1109,7 +1109,7 @@ static void publish_due(struct mu_server *server, opcua_uint64_t now_ms) {
             continue;
         }
 
-#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+#ifdef MUC_OPCUA_MULTIPLE_CONNECTIONS
         /* Resolve connection for this subscription's session */
         mu_connection_t *conn_match = NULL;
         mu_session_t *session = NULL;
@@ -1139,11 +1139,11 @@ static void publish_due(struct mu_server *server, opcua_uint64_t now_ms) {
         opcua_int32_t report_count = 0;
         bool has_data = false;
         bool has_events = false;
-#ifdef MICRO_OPCUA_EVENTS
+#ifdef MUC_OPCUA_EVENTS
         has_events = (sub->event_queue.count > 0);
 #endif
         if (sub->publishing_enabled) {
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
             prepare_reportable_queues(server, sub);
             enqueue_resend_data(server, sub);
 #endif
@@ -1174,12 +1174,12 @@ static void publish_due(struct mu_server *server, opcua_uint64_t now_ms) {
                     sent_response_too_large_fault = (s == MU_STATUS_GOOD);
                 }
                 if (s == MU_STATUS_GOOD && !sent_response_too_large_fault) {
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
                     clear_reported_items(server, sub, report_count);
 #else
                     clear_reported_items(server, sub);
 #endif
-#ifdef MICRO_OPCUA_EVENTS
+#ifdef MUC_OPCUA_EVENTS
                     if (has_events) {
                         mu_subscription_t *mutable_sub = (mu_subscription_t *)sub;
                         mutable_sub->event_queue.head = 0;
@@ -1227,7 +1227,7 @@ static void publish_due(struct mu_server *server, opcua_uint64_t now_ms) {
 
         advance_publish_timer(sub, now_ms);
 
-#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+#ifdef MUC_OPCUA_MULTIPLE_CONNECTIONS
         server->active_conn = NULL;
 #endif
     }
@@ -1474,7 +1474,7 @@ opcua_statuscode_t mu_monitored_item_delete(mu_subscriptions_t *subs, opcua_uint
     return MU_STATUS_BAD_MONITOREDITEMIDINVALID;
 }
 
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
 opcua_statuscode_t mu_monitored_item_add_trigger_link(mu_subscriptions_t *subs, opcua_uint32_t subscription_id,
                                                       opcua_uint32_t triggering_item_id,
                                                       opcua_uint32_t linked_item_id) {
@@ -1589,7 +1589,7 @@ void mu_subscriptions_tick(struct mu_server *server, opcua_uint64_t now_ms) {
             continue;
         }
 
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
         if (item->has_aggregate) {
             if ((opcua_double_t)(now_ms - (opcua_uint64_t)item->aggregate_state.last_calculation) >=
                 item->aggregate_state.processing_interval) {
@@ -1602,7 +1602,7 @@ void mu_subscriptions_tick(struct mu_server *server, opcua_uint64_t now_ms) {
             continue;
         }
 
-#ifdef MICRO_OPCUA_EVENTS
+#ifdef MUC_OPCUA_EVENTS
         if (item->attribute_id == 12u) {
             continue;
         }
@@ -1612,7 +1612,7 @@ void mu_subscriptions_tick(struct mu_server *server, opcua_uint64_t now_ms) {
         memset(&cur, 0, sizeof(cur));
         opcua_statuscode_t status = read_monitored_item_value(item, &cur);
 
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
         if (item->has_aggregate) {
             if (status == MU_STATUS_GOOD) {
                 monitored_item_accumulate_aggregate(item, &cur);
@@ -1625,7 +1625,7 @@ void mu_subscriptions_tick(struct mu_server *server, opcua_uint64_t now_ms) {
         }
 #endif
 
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
         if (item->has_value && (!item->has_reported || (item->pending && item->queue_count == 0u))) {
             monitored_item_prepare_pending_queue(item);
         }
@@ -1635,13 +1635,13 @@ void mu_subscriptions_tick(struct mu_server *server, opcua_uint64_t now_ms) {
             item->last_value = cur;
             item->last_status = status;
             item->has_value = true;
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
             monitored_item_enqueue_report(item, &cur, status);
 #else
             item->pending = true;
 #endif
         } else if (monitored_item_sample_changed(item, &cur, status)) {
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
             if (monitored_item_change_reportable(item, &cur, status)) {
                 item->last_value = cur;
                 item->last_status = status;
@@ -1660,4 +1660,4 @@ void mu_subscriptions_tick(struct mu_server *server, opcua_uint64_t now_ms) {
     publish_due(server, now_ms);
 }
 
-#endif /* MICRO_OPCUA_SUBSCRIPTIONS */
+#endif /* MUC_OPCUA_SUBSCRIPTIONS */

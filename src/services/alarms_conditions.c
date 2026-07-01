@@ -1,8 +1,8 @@
-#include "micro_opcua/services/alarms_conditions.h"
+#include "muc_opcua/services/alarms_conditions.h"
 #include "../core/server_internal.h"
 #include <string.h>
 
-#ifdef MICRO_OPCUA_SERVICE_ALARMS_CONDITIONS
+#ifdef MUC_OPCUA_SERVICE_ALARMS_CONDITIONS
 
 #define MU_NODEID_ACKNOWLEDGEABLECONDITIONTYPE_ACKNOWLEDGE 9111
 #define MU_NODEID_ACKNOWLEDGEABLECONDITIONTYPE_CONFIRM 9113
@@ -139,4 +139,4 @@ mu_status_t mu_alarms_conditions_method_dispatch(mu_server_t *server, const mu_n
     return MU_STATUS_BAD_METHODINVALID;
 }
 
-#endif /* MICRO_OPCUA_SERVICE_ALARMS_CONDITIONS */
+#endif /* MUC_OPCUA_SERVICE_ALARMS_CONDITIONS */

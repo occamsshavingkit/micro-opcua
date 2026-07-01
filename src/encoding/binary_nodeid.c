@@ -1,5 +1,5 @@
 /* src/encoding/binary_nodeid.c */
-#include "micro_opcua/encoding.h"
+#include "muc_opcua/encoding.h"
 
 opcua_statuscode_t mu_binary_read_nodeid(mu_binary_reader_t *reader, mu_nodeid_t *value) {
     opcua_byte_t encoding_mask;
@@ -147,7 +147,7 @@ opcua_statuscode_t mu_binary_write_expanded_nodeid(mu_binary_writer_t *writer, c
     if (!value)
         return MU_STATUS_BAD_ENCODINGERROR;
 
-    /* For Micro OPC UA, we don't emit NamespaceUri or ServerIndex. We just encode as NodeId. */
+    /* For muc-opcua, we don't emit NamespaceUri or ServerIndex. We just encode as NodeId. */
     /* This satisfies basic server requirements where all nodes are local. */
     return mu_binary_write_nodeid(writer, &value->node_id);
 }

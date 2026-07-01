@@ -1,6 +1,6 @@
 # Interop Validation (asyncua)
 
-Validates micro-opcua against a real, standards-compliant OPC UA client instead
+Validates muc-opcua against a real, standards-compliant OPC UA client instead
 of self-authored fixtures. This operationalises **FR-026**: adopt/adapt the
 async-opcua interop suite once the minimal connect/discover/browse/read path
 works (it now does).
@@ -25,7 +25,7 @@ CI jobs (the devcontainer also provisions the toolchains for local/Codespace run
    - `tests/interop/run_interop_dotnet.sh` — builds the client, starts the
      server, runs the checks.
 
-micro-opcua is **server-only**, so only the *their-client → our-server* leg of
+muc-opcua is **server-only**, so only the *their-client → our-server* leg of
 the async-opcua harness applies; the reverse leg (our client → their server) is
 N/A.
 
@@ -36,7 +36,7 @@ View service sets. So a single run covers the whole Nano-profile surface.
 ## Running
 
 ```sh
-cmake -S . -B build/host -DMICRO_OPCUA_BUILD_EXAMPLES=ON -DMICRO_OPCUA_PLATFORM=host
+cmake -S . -B build/host -DMUC_OPCUA_BUILD_EXAMPLES=ON -DMUC_OPCUA_PLATFORM=host
 cmake --build build/host --target minimal_server
 pip install asyncua            # or use the devcontainer, which installs it
 tests/interop/run_interop.sh

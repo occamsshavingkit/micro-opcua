@@ -232,7 +232,7 @@ opcua_statuscode_t mu_browse_response_encode(mu_binary_writer_t *writer, const m
 opcua_statuscode_t mu_browse_process_with_user_index(const mu_address_space_t *address_space,
                                                      const mu_address_space_index_t *user_index,
                                                      const mu_address_space_t *dynamic,
-#ifdef MICRO_OPCUA_SERVICE_NODEMANAGEMENT
+#ifdef MUC_OPCUA_SERVICE_NODEMANAGEMENT
                                                      const mu_dynamic_reference_t *dyn_refs, size_t dyn_refs_count,
 #endif
                                                      const mu_browse_request_t *req, mu_browse_result_t *results,
@@ -321,7 +321,7 @@ opcua_statuscode_t mu_browse_process_with_user_index(const mu_address_space_t *a
                 }
             }
         }
-#ifdef MICRO_OPCUA_SERVICE_NODEMANAGEMENT
+#ifdef MUC_OPCUA_SERVICE_NODEMANAGEMENT
         /* Also iterate over dynamic references */
         if (dyn_refs && dyn_refs_count > 0) {
             for (size_t j = 0; j < dyn_refs_count; ++j) {
@@ -394,7 +394,7 @@ opcua_statuscode_t mu_browse_process(const mu_address_space_t *address_space, co
                                      const mu_browse_request_t *req, mu_browse_result_t *results, size_t max_results,
                                      mu_reference_description_t *ref_pool, size_t max_total_refs) {
     return mu_browse_process_with_user_index(address_space, NULL, dynamic,
-#ifdef MICRO_OPCUA_SERVICE_NODEMANAGEMENT
+#ifdef MUC_OPCUA_SERVICE_NODEMANAGEMENT
                                              NULL, 0,
 #endif
                                              req, results, max_results, ref_pool, max_total_refs);

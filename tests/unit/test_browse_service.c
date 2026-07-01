@@ -1,5 +1,5 @@
 /* tests/unit/test_browse_service.c */
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 
 void setUp(void) {}

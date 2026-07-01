@@ -1,6 +1,6 @@
 /* src/address_space/node_id.c */
 #include "base_nodes.h"
-#include "micro_opcua/address_space.h"
+#include "muc_opcua/address_space.h"
 #include <string.h>
 
 #undef mu_address_space_find_node

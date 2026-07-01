@@ -1,6 +1,6 @@
 # Embedded-Readiness Review
 
-A whole-project review of micro-opcua against embedded-systems best practices
+A whole-project review of muc-opcua against embedded-systems best practices
 (resource-constrained MCU target: RP2040/Pico, Cortex-M0+, no FPU, small stack,
 no heap). Conducted 2026-06-26 across four dimensions: memory/stack, code
 size/modularity, concurrency/I-O/robustness, and portability/MCU-correctness.
@@ -25,13 +25,13 @@ the older review text as historical context.
 
 Current evidence:
 
-- Host/full default build with `MICRO_OPCUA_OPTIMIZE_SIZE=ON` reports
+- Host/full default build with `MUC_OPCUA_OPTIMIZE_SIZE=ON` reports
   `text=96,398 B`, `data=6,224 B`, `bss=0 B`, `dec=102,622 B`, which is
   `56,311 B` below the host baseline `text=152,709 B`.
 - ARM Cortex-M0+ matrix passes: nano `16,366/0/0/16,366`, micro
   `23,873/0/0/23,873`, embedded `43,078/0/0/43,078`, full-featured
   `51,172/0/0/51,172`.
-- Pico embedded build produces `libmicro_opcua.a`, `pico_minimal_server.elf`,
+- Pico embedded build produces `libmuc_opcua.a`, `pico_minimal_server.elf`,
   and `pico_minimal_server.uf2`; the ELF measures `text=73,428`, `data=0`,
   `bss=119,340`, `dec=192,768`.
 - Host stack check passes at `3,040 B` and Pico stack check passes at `2,776 B`,
@@ -67,7 +67,7 @@ rg -n 'malloc|calloc|realloc|free\(|OPENSSL_malloc' src include tests
 ```
 
 Result: exit code `0` with 92 textual matches; transcript:
-`/tmp/micro-opcua-review/t090a-no-heap-grep.log`.
+`/tmp/muc-opcua-review/t090a-no-heap-grep.log`.
 
 Classification of the relevant matches:
 
@@ -120,10 +120,10 @@ cannot produce measurements.
 Transport storage and sizing evidence:
 
 - Public server configuration exposes caller-owned `receive_buffer` and
-  `send_buffer` pointers plus their sizes in `include/micro_opcua/server.h`.
+  `send_buffer` pointers plus their sizes in `include/muc_opcua/server.h`.
   `src/core/server.c` rejects initialization when either buffer is missing or
   smaller than `MU_MIN_CHUNK_SIZE`.
-- `include/micro_opcua/config.h` defines `MU_MIN_CHUNK_SIZE` as `8192` and
+- `include/muc_opcua/config.h` defines `MU_MIN_CHUNK_SIZE` as `8192` and
   keeps `MU_CONNECTION_RX_BUFFER_SIZE` at or above that floor. Historical size
   evidence in `docs/size/feature-size-ledger.md` accounts for RX/TX transport
   buffers as caller-provided memory: `2 x 8192 = 16 KiB` in addition to
@@ -151,8 +151,8 @@ ctest --test-dir build/test -R '^(test_tcp_connection|test_message_chunk_errors)
 ```
 
 Result: both commands exited `0`. Transcripts:
-`/tmp/micro-opcua-review/t090b-transport-build.log` and
-`/tmp/micro-opcua-review/t090b-transport-ctest.log`. `CTest` reported
+`/tmp/muc-opcua-review/t090b-transport-build.log` and
+`/tmp/muc-opcua-review/t090b-transport-ctest.log`. `CTest` reported
 `2/2` tests passed, `0` failed, total real time `0.00 sec`. The detailed
 `build/test/Testing/Temporary/LastTest.log` output recorded
 `test_message_chunk_errors` as `8 Tests 0 Failures 0 Ignored` and
@@ -195,16 +195,16 @@ scripts, or task status.
 Current host/full archive evidence from T088a/T088c:
 
 ```sh
-size -t build/src/libmicro_opcua.a
-nm -S --size-sort build/src/libmicro_opcua.a | rg ' [BbDd] '
+size -t build/src/libmuc_opcua.a
+nm -S --size-sort build/src/libmuc_opcua.a | rg ' [BbDd] '
 ```
 
 Result: both checks are recorded as completed in T088c. `size -t` exited `0`
 with GNU `size` 2.42 and reported totals `text=166738`, `data=6224`, `bss=0`,
 `dec=172962`; transcript:
-`/tmp/micro-opcua-size/t088c-host-full-size-totals.log`. The `nm`/`rg` review
+`/tmp/muc-opcua-size/t088c-host-full-size-totals.log`. The `nm`/`rg` review
 exited `0` with GNU `nm` 2.42; transcript:
-`/tmp/micro-opcua-size/t088c-host-full-nm-data-bss.log`.
+`/tmp/muc-opcua-size/t088c-host-full-nm-data-bss.log`.
 
 Static-storage interpretation:
 
@@ -233,15 +233,15 @@ Embedded/nano status from T088b/T088c:
 BUILD_ROOT=build/audit-size-arm scripts/measure_size.sh all
 BUILD_ROOT=build/audit-size-arm scripts/measure_size.sh nano
 BUILD_ROOT=build/audit-size-arm scripts/measure_size.sh embedded
-find build/audit-size-arm -path '*/src/libmicro_opcua.a' -printf '%p\n'
+find build/audit-size-arm -path '*/src/libmuc_opcua.a' -printf '%p\n'
 ```
 
 Historical T090c result: the original ARM matrix, nano, and embedded size
 attempts exited `2` before current archives were produced. Transcripts:
-`/tmp/micro-opcua-size/t088b-arm-size-matrix.log`,
-`/tmp/micro-opcua-size/t088b-arm-nano-size.log`,
-`/tmp/micro-opcua-size/t088b-arm-embedded-size.log`, and
-`/tmp/micro-opcua-size/t088c-audit-arm-archive-find.log`. The archive find
+`/tmp/muc-opcua-size/t088b-arm-size-matrix.log`,
+`/tmp/muc-opcua-size/t088b-arm-nano-size.log`,
+`/tmp/muc-opcua-size/t088b-arm-embedded-size.log`, and
+`/tmp/muc-opcua-size/t088c-audit-arm-archive-find.log`. The archive find
 exited `0` but printed no archive paths.
 
 Historical blockers from that pre-remediation run: nano failed on
@@ -294,7 +294,7 @@ Application-headroom assessment:
 
 | Budget item | Evidence | Review result | Readiness risk |
 |---|---|---|---|
-| Host/full `.text` growth under `+8 KiB` | T102b: default full build with `MICRO_OPCUA_OPTIMIZE_SIZE=ON` reports `text=96,398 B`, `data=6,224 B`, `bss=0 B`; pre-change baseline `text=152,709 B`. | **PASS**. Delta is `-56,311 B`, below the `< 8,192 B` growth budget. | Low for the default constrained-device build. |
+| Host/full `.text` growth under `+8 KiB` | T102b: default full build with `MUC_OPCUA_OPTIMIZE_SIZE=ON` reports `text=96,398 B`, `data=6,224 B`, `bss=0 B`; pre-change baseline `text=152,709 B`. | **PASS**. Delta is `-56,311 B`, below the `< 8,192 B` growth budget. | Low for the default constrained-device build. |
 | Nano `.text` growth under `+4 KiB` | T102b ARM matrix: nano `text=16,366 B`, `data=0`, `bss=0`. | **PASS / current value recorded**. | Low for current measured nano archive. |
 | Embedded `.text` growth under `+4 KiB` | T102b ARM matrix: embedded `text=43,078 B`, `data=0`, `bss=0`; Pico embedded artifacts also build. | **PASS / current value recorded**. | Low for current measured embedded archive and Pico build presence. |
 | No new default static RAM | Host/full archive `.data=6,224 B`, `.bss=0 B`; ARM archives `.data=0`, `.bss=0`; caller-storage absolutes recorded with `MU_CONNECTION_BASE_STORAGE_BYTES=1,328 B`. | **PASS / absolute caller-storage evidence recorded**. | Low for archive static RAM; caller storage is documented as integrator-provided memory. |
@@ -343,7 +343,7 @@ handle_data_chunk_secure → mu_service_dispatch`/`mu_sym_chunk_unwrap`), summin
 ~25 KB before the crypto adapter's own usage. The RP2040 Pico SDK default stack
 is 2 KB/core; even a bumped 8 KB blows ~3×. The **plaintext path is fine (~5.5 KB)**
 because it writes dispatch output directly into `send_buffer` with no large
-locals — so enabling `MICRO_OPCUA_SECURITY` raises peak stack ~5×. Nothing
+locals — so enabling `MUC_OPCUA_SECURITY` raises peak stack ~5×. Nothing
 reserves, documents, or guards this.
 
 Fix (in order of impact):
@@ -399,15 +399,15 @@ Fix: check the status, and on a short write either retain the unsent tail behind
 send-cursor drained on later polls, or close the connection (reclaiming the slot).
 
 ### H4 — No size-oriented build flags (`-Os`, function/data sections, `--gc-sections`) — ADDRESSED
-**Status:** Fixed. `cmake/MicroOpcUaCodegen.cmake` compiles the library with
+**Status:** Fixed. `cmake/MucOpcUaCodegen.cmake` compiles the library with
 `-ffunction-sections -fdata-sections` and exports `-Wl,--gc-sections` as an
-INTERFACE link option, so every executable linking `micro_opcua` strips
+INTERFACE link option, so every executable linking `muc_opcua` strips
 unreferenced functions/data at link time (verified: dead `mu_is_unsupported_service`
-is absent from the linked example). An opt-in `MICRO_OPCUA_OPTIMIZE_SIZE` adds
+is absent from the linked example). An opt-in `MUC_OPCUA_OPTIMIZE_SIZE` adds
 `-Os`. Original finding:
 
 
-`CMakeLists.txt`, `cmake/MicroOpcUaWarnings.cmake`, `platform/arduino/platformio.ini`.
+`CMakeLists.txt`, `cmake/MucOpcUaWarnings.cmake`, `platform/arduino/platformio.ini`.
 No `-Os`/`-Oz`, no `-ffunction-sections -fdata-sections`, no `-Wl,--gc-sections`,
 no default `CMAKE_BUILD_TYPE` (a bare build is `-O0`). Without section GC the
 linker keeps whole translation units even if one symbol is referenced, so the
@@ -417,7 +417,7 @@ builds, and the Arduino `platformio.ini` do not.)
 
 Fix: add `-ffunction-sections -fdata-sections` to core compile options and
 propagate `-Wl,--gc-sections` to executables; default to a size build type when
-unset; optionally an `MICRO_OPCUA_LTO` option. This is the biggest single
+unset; optionally an `MUC_OPCUA_LTO` option. This is the biggest single
 footprint lever and unlocks stripping for the items under MED/LOW.
 
 ---
@@ -437,14 +437,14 @@ Fix: feed the decoded sequence number from each unwrap into
 `mu_sequence_validate(&channel.sequence, ...)` and abort the channel on non-GOOD.
 
 ### M2 — Services are all-or-nothing — ADDRESSED
-**Status:** Fixed. New `MICRO_OPCUA_SERVICE_READ`, `MICRO_OPCUA_SERVICE_BROWSE`, and `MICRO_OPCUA_SERVICE_DISCOVERY` options (default ON) gate the service source files and the matching dispatch-table rows + switch cases, so unselected services compile out entirely (verified: a minimal None-only build without Read/Browse/Discovery is ~22 KB smaller and excludes read.c/browse.c). The OpenSecureChannel/Session services remain always-present; discovery.c's endpoint encoder stays (CreateSession needs it). Original finding:
+**Status:** Fixed. New `MUC_OPCUA_SERVICE_READ`, `MUC_OPCUA_SERVICE_BROWSE`, and `MUC_OPCUA_SERVICE_DISCOVERY` options (default ON) gate the service source files and the matching dispatch-table rows + switch cases, so unselected services compile out entirely (verified: a minimal None-only build without Read/Browse/Discovery is ~22 KB smaller and excludes read.c/browse.c). The OpenSecureChannel/Session services remain always-present; discovery.c's endpoint encoder stays (CreateSession needs it). Original finding:
 
 
 `src/CMakeLists.txt:11-16`, `src/core/service_dispatch.c` (`g_supported_services[]`
-+ dispatch `switch`). Only `MICRO_OPCUA_SECURITY` gates anything; Browse, Read,
++ dispatch `switch`). Only `MUC_OPCUA_SECURITY` gates anything; Browse, Read,
 Discovery (GetEndpoints/FindServers), and Session are always compiled and the
 dispatch table/switch pins them all in even under `--gc-sections`.
-Fix: per-service `option(MICRO_OPCUA_SERVICE_BROWSE|READ|DISCOVERY|...)`, gating
+Fix: per-service `option(MUC_OPCUA_SERVICE_BROWSE|READ|DISCOVERY|...)`, gating
 both the `target_sources` and the matching rows in `g_supported_services[]` and
 the dispatch `switch` so unselected services compile out at the table level.
 

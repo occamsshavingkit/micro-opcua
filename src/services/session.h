@@ -1,10 +1,10 @@
 /* src/services/session.h */
-#ifndef MICRO_OPCUA_SERVICES_SESSION_H
-#define MICRO_OPCUA_SERVICES_SESSION_H
+#ifndef MUC_OPCUA_SERVICES_SESSION_H
+#define MUC_OPCUA_SERVICES_SESSION_H
 
-#include "micro_opcua/opcua_types.h"
-#include "micro_opcua/platform.h"
-#include "micro_opcua/status.h"
+#include "muc_opcua/opcua_types.h"
+#include "muc_opcua/platform.h"
+#include "muc_opcua/status.h"
 #include <stddef.h>
 
 typedef enum { MU_SESSION_STATE_CLOSED = 0, MU_SESSION_STATE_CREATED, MU_SESSION_STATE_ACTIVATED } mu_session_state_t;
@@ -18,7 +18,7 @@ typedef struct {
        Cortex-M0+ target has no FPU). */
     opcua_uint32_t revised_session_timeout_ms;
     opcua_byte_t server_nonce[32];
-#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+#ifdef MUC_OPCUA_MULTIPLE_CONNECTIONS
     opcua_uint32_t secure_channel_id;
 #endif
 } mu_session_t;
@@ -62,4 +62,4 @@ opcua_statuscode_t mu_session_activate(mu_session_t *session, opcua_uint32_t aut
 
 opcua_statuscode_t mu_session_close(mu_session_t *session, opcua_uint32_t auth_token, bool delete_subscriptions);
 
-#endif /* MICRO_OPCUA_SERVICES_SESSION_H */
+#endif /* MUC_OPCUA_SERVICES_SESSION_H */

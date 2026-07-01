@@ -1,7 +1,7 @@
 /* src/platform/wolfssl_crypto_adapter.c */
-#ifdef MICRO_OPCUA_HAVE_WOLFSSL
-#include "micro_opcua/platform.h"
-#include "micro_opcua/status.h"
+#ifdef MUC_OPCUA_HAVE_WOLFSSL
+#include "muc_opcua/platform.h"
+#include "muc_opcua/status.h"
 #include <stdlib.h>
 #include <string.h>
 #include <wolfssl/options.h>

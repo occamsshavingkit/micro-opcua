@@ -1,5 +1,5 @@
 /* src/encoding/binary_extension_object.c */
-#include "micro_opcua/encoding.h"
+#include "muc_opcua/encoding.h"
 
 typedef opcua_statuscode_t (*mu_extension_object_body_decoder_t)(mu_binary_reader_t *body_reader, void *context);
 

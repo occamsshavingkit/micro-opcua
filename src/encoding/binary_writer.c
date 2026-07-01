@@ -1,6 +1,6 @@
 /* src/encoding/binary_writer.c */
 #include "binary_le.h"
-#include "micro_opcua/encoding.h"
+#include "muc_opcua/encoding.h"
 #include <string.h>
 
 void mu_binary_writer_init(mu_binary_writer_t *writer, opcua_byte_t *buffer, size_t length) {

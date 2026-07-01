@@ -1,6 +1,6 @@
 /* tests/unit/test_platform_adapter_contract.c */
 
-#include "micro_opcua/platform.h"
+#include "muc_opcua/platform.h"
 #include <unity.h>
 
 void setUp(void) {}

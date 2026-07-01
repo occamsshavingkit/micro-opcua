@@ -11,7 +11,7 @@ Core 2017 Server Facet* and requires the OPC UA TCP binary transport.
 - **Embedded** = Micro + security policies + the Standard DataChange Subscription facet
   + full type-system exposure.
 
-micro-opcua provides profile-targeted CMake configurations for Nano-, Micro-,
+muc-opcua provides profile-targeted CMake configurations for Nano-, Micro-,
 and Embedded-oriented feature sets; these remain profile-targeting labels scoped
 to OPC-10000-7 §4.2/§4.3 evidence.
 

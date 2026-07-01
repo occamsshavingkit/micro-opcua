@@ -1,6 +1,6 @@
 # Architecture Overview
 
-`micro-opcua` is a freestanding C11 OPC UA **server** library for deeply embedded
+`muc-opcua` is a freestanding C11 OPC UA **server** library for deeply embedded
 targets (down to a Cortex-M0+ class MCU). It implements the OPC UA TCP / UA-SC /
 UA-Binary stack with **no heap allocation**, talking to its host through a narrow
 set of platform adapters. This document explains how the pieces fit together; for
@@ -19,10 +19,10 @@ the per-service and per-profile conformance detail, follow the links into
 | Principle | How it shows up in the code |
 |-----------|-----------------------------|
 | **Freestanding C11** | Only `<stddef.h>`, `<string.h>`, `<stdbool.h>`, fixed-width ints. No libc allocator, no OS calls outside the adapters. |
-| **No heap — caller-provided memory** | `mu_server_init(void *storage, size_t storage_size, ...)` places the entire `struct mu_server` in caller storage (typically a `static` buffer). Receive/send buffers are caller-owned (`mu_server_config_t.receive_buffer` / `send_buffer`). All session, subscription, and channel state are fixed-size arrays. See `MU_SERVER_STORAGE_BYTES` in `include/micro_opcua/config.h`. |
-| **Narrow platform-adapter boundary** | Everything host-specific is a vtable struct in `include/micro_opcua/platform.h`: TCP, time, entropy, and the optional persistence and crypto adapters. The core never calls a socket or a clock directly. |
+| **No heap — caller-provided memory** | `mu_server_init(void *storage, size_t storage_size, ...)` places the entire `struct mu_server` in caller storage (typically a `static` buffer). Receive/send buffers are caller-owned (`mu_server_config_t.receive_buffer` / `send_buffer`). All session, subscription, and channel state are fixed-size arrays. See `MU_SERVER_STORAGE_BYTES` in `include/muc_opcua/config.h`. |
+| **Narrow platform-adapter boundary** | Everything host-specific is a vtable struct in `include/muc_opcua/platform.h`: TCP, time, entropy, and the optional persistence and crypto adapters. The core never calls a socket or a clock directly. |
 | **OPC UA spec fidelity** | Handlers cite the governing clauses (OPC 10000-4/-6/-7). Wire framing, sequence-number validation, and the binary encoding follow the spec; deviations are documented as "thin path" in the service matrix. |
-| **Size discipline** | Optional services and the whole security/subscription layers compile out (`MICRO_OPCUA_*` options). Built with `--gc-sections`; the size ledger lives in [`docs/size/`](size/). |
+| **Size discipline** | Optional services and the whole security/subscription layers compile out (`MUC_OPCUA_*` options). Built with `--gc-sections`; the size ledger lives in [`docs/size/`](size/). |
 | **Multiplexed TCP connections, ≥2 logical sessions** | The poll loop services up to `MU_MAX_CONNECTIONS` (default 4) sockets concurrently. The server holds `sessions[MU_MAX_SESSIONS]` (default 2), allowing multiple OPC UA Sessions to be multiplexed across active SecureChannels. |
 | **Cooperative poll loop** | No threads, no blocking. `mu_server_poll()` does one non-blocking pass (accept → read → reassemble → dispatch → reply → subscription tick) and returns. The integrator calls it from their own super-loop or timer task. |
 
@@ -39,7 +39,7 @@ are dashed.
 flowchart TD
     App["Integrator application<br/>super-loop calls mu_server_poll()"]
 
-    subgraph Adapters["Platform adapters (include/micro_opcua/platform.h)"]
+    subgraph Adapters["Platform adapters (include/muc_opcua/platform.h)"]
         TCP["TCP adapter<br/>listen / accept / read / write"]
         TIME["Time adapter<br/>UTC + monotonic ticks"]
         ENT["Entropy adapter<br/>secure random / nonces"]
@@ -55,7 +55,7 @@ flowchart TD
         DISP["service_dispatch.c<br/>request-id -> handler table"]
     end
 
-    subgraph Sec["SecureChannel + security (optional, MICRO_OPCUA_SECURITY)"]
+    subgraph Sec["SecureChannel + security (optional, MUC_OPCUA_SECURITY)"]
         SC["secure_channel.c<br/>channel/token/keys lifetime"]
         ASYM["asym_chunk.c<br/>OPN sign+encrypt (RSA)"]
         SYM["sym_chunk.c<br/>MSG sign+encrypt (AES/HMAC)"]
@@ -181,7 +181,7 @@ Notes that the diagram compresses:
 One channel per connection (`MU_MAX_SECURE_CHANNELS == 1`). State: `channel_id`,
 `token_id`, `revised_lifetime`, an inbound `mu_sequence_validator_t`, a monotonic
 outbound `out_sequence_number`, the negotiated `policy` (None / Basic256Sha256) and
-`mode` (None / Sign / SignAndEncrypt), and — under `MICRO_OPCUA_SECURITY` — the two
+`mode` (None / Sign / SignAndEncrypt), and — under `MUC_OPCUA_SECURITY` — the two
 per-direction `mu_sym_keys_t` (client→server for decrypt/verify, server→client for
 encrypt/sign) plus a `keys_valid` flag. `OpenSecureChannel` records the mode and,
 for a secured channel, derives both key sets from the client/server nonces
@@ -200,7 +200,7 @@ and supports Anonymous, Username, or X509 identity tokens (else `Bad_IdentityTok
 RevisedSessionTimeout is stored as the **raw IEEE-754 bits** of the Duration and
 clamped by integer comparison, so no FPU is needed.
 
-### Subscriptions (`src/services/subscription.{c,h}`, `MICRO_OPCUA_SUBSCRIPTIONS`)
+### Subscriptions (`src/services/subscription.{c,h}`, `MUC_OPCUA_SUBSCRIPTIONS`)
 A no-heap data-change engine implementing the Embedded Data Change Subscription
 Server Facet. All state is fixed-size arrays inside `struct mu_server`:
 `subscriptions[MU_MAX_SUBSCRIPTIONS]`, `monitored_items[MU_MAX_MONITORED_ITEMS]`,
@@ -233,19 +233,19 @@ status in [`conformance/services.md`](conformance/services.md).
 
 There is no runtime profile switch. A profile is a **set of CMake options** that
 gate source files (via `target_sources`) and dispatch-table rows (via
-`MICRO_OPCUA_*` compile definitions). Dropping a feature removes both its code and
+`MUC_OPCUA_*` compile definitions). Dropping a feature removes both its code and
 its fixed-size state. The options live in the root `CMakeLists.txt`; the source
 gating is in `src/CMakeLists.txt`.
 
 | CMake option | Compile define | Gates |
 |--------------|----------------|-------|
-| `MICRO_OPCUA_SERVICE_READ` | `MICRO_OPCUA_SERVICE_READ` | `read.c` + the Read dispatch row |
-| `MICRO_OPCUA_SERVICE_BROWSE` | `MICRO_OPCUA_SERVICE_BROWSE` | `browse.c` + Browse/BrowseNext/Translate rows |
-| `MICRO_OPCUA_SERVICE_DISCOVERY` | `MICRO_OPCUA_SERVICE_DISCOVERY` | GetEndpoints/FindServers rows |
-| `MICRO_OPCUA_SERVICE_REGISTER_NODES` | `MICRO_OPCUA_SERVICE_REGISTER_NODES` | RegisterNodes/UnregisterNodes rows |
-| `MICRO_OPCUA_BASE_NODES` | `MICRO_OPCUA_BASE_NODES` | the standard Base Information node-set content |
-| `MICRO_OPCUA_SUBSCRIPTIONS` | `MICRO_OPCUA_SUBSCRIPTIONS` | `subscription.c` + all subscription/MonitoredItem rows + engine state |
-| `MICRO_OPCUA_SECURITY` | `MICRO_OPCUA_SECURITY` | `asym_chunk.c`, `sym_chunk.c`, `key_derivation.c`, `certificate.c` + secure paths + `secure_scratch` |
+| `MUC_OPCUA_SERVICE_READ` | `MUC_OPCUA_SERVICE_READ` | `read.c` + the Read dispatch row |
+| `MUC_OPCUA_SERVICE_BROWSE` | `MUC_OPCUA_SERVICE_BROWSE` | `browse.c` + Browse/BrowseNext/Translate rows |
+| `MUC_OPCUA_SERVICE_DISCOVERY` | `MUC_OPCUA_SERVICE_DISCOVERY` | GetEndpoints/FindServers rows |
+| `MUC_OPCUA_SERVICE_REGISTER_NODES` | `MUC_OPCUA_SERVICE_REGISTER_NODES` | RegisterNodes/UnregisterNodes rows |
+| `MUC_OPCUA_BASE_NODES` | `MUC_OPCUA_BASE_NODES` | the standard Base Information node-set content |
+| `MUC_OPCUA_SUBSCRIPTIONS` | `MUC_OPCUA_SUBSCRIPTIONS` | `subscription.c` + all subscription/MonitoredItem rows + engine state |
+| `MUC_OPCUA_SECURITY` | `MUC_OPCUA_SECURITY` | `asym_chunk.c`, `sym_chunk.c`, `key_derivation.c`, `certificate.c` + secure paths + `secure_scratch` |
 
 The dispatch table (`g_supported_services[]` in `service_dispatch.c`) is built with
 `#ifdef`/`#if` around each row, so an unbuilt service is simply absent from the
@@ -256,11 +256,11 @@ Profile shorthand (the `Makefile` wires these into `make nano` / `make micro`):
 
 - **Nano** = Core Server Facet + UA-TCP/UA-SC/UA-Binary + SecurityPolicy None +
   Anonymous identity. Subscriptions OFF.
-- **Micro** = Nano + data-change subscriptions (`MICRO_OPCUA_SUBSCRIPTIONS`).
+- **Micro** = Nano + data-change subscriptions (`MUC_OPCUA_SUBSCRIPTIONS`).
 - (All profiles multiplex up to `MU_MAX_SESSIONS` (default 2) logical sessions over the
   `MU_MAX_CONNECTIONS` TCP connections — it is a core capability, not profile-specific.)
 - **Embedded (2017)** = security policies on top, i.e.
-  `MICRO_OPCUA_SECURITY` (Basic256Sha256) and Standard DataChange subscriptions.
+  `MUC_OPCUA_SECURITY` (Basic256Sha256) and Standard DataChange subscriptions.
 - **Full-Featured** = Embedded + Write service, Events, Methods, Diagnostics, and Dynamic Nodes.
 
 Profile definitions and current status:
@@ -272,7 +272,7 @@ Profile definitions and current status:
 ## 6. Encoding layer
 
 `src/encoding/*` implements the **OPC UA Binary** encoding (OPC 10000-6 §5) over the
-public API in [`include/micro_opcua/encoding.h`](../include/micro_opcua/encoding.h).
+public API in [`include/muc_opcua/encoding.h`](../include/muc_opcua/encoding.h).
 
 - **Byte-at-a-time, endian-portable.** The primitive helpers in
   `encoding/binary_le.h` read and write multi-byte integers with explicit shifts
@@ -290,7 +290,7 @@ public API in [`include/micro_opcua/encoding.h`](../include/micro_opcua/encoding
   and `DataValue` — enough for the Nano/Micro service surface.
 
 ### Bounded address-space lookup
-`src/address_space/*` plus `include/micro_opcua/address_space.h`. An address space is
+`src/address_space/*` plus `include/muc_opcua/address_space.h`. An address space is
 a flat, `const` array of `mu_node_t` (NodeId, class, browse/display name, a
 references array, and an optional value source that is either a static `Variant` or
 a read callback). Lookups use a **bounded index** (`mu_address_space_index_t`): up
@@ -304,7 +304,7 @@ the cap, it falls back to a linear scan. The standard Base Information node set
 
 ## 7. Security architecture
 
-Security is entirely optional and compiles out under `MICRO_OPCUA_SECURITY=OFF`,
+Security is entirely optional and compiles out under `MUC_OPCUA_SECURITY=OFF`,
 leaving a SecurityPolicy-None-only build with no crypto code. When enabled, the
 server supports **SecurityPolicy None and Basic256Sha256** (OPC 10000-7).
 
@@ -341,7 +341,7 @@ only) are in [`conformance/security.md`](conformance/security.md).
 
 | Path | Responsibility |
 |------|----------------|
-| `include/micro_opcua/` | Public API: `server.h` (lifecycle + config), `platform.h` (adapter vtables), `config.h` (compile-time knobs + storage sizing), `address_space.h`, `encoding.h`, `types.h`/`opcua_types.h`/`opcua_ids.h`, `status.h`. |
+| `include/muc_opcua/` | Public API: `server.h` (lifecycle + config), `platform.h` (adapter vtables), `config.h` (compile-time knobs + storage sizing), `address_space.h`, `encoding.h`, `types.h`/`opcua_types.h`/`opcua_ids.h`, `status.h`. |
 | `src/core/server.c` | Poll loop, accept, stream reassembly, plaintext + secure chunk handling, idle/lifetime timeouts, response framing. |
 | `src/core/service_dispatch.c` | Request-id → handler table; session-state gating; all service-handler implementations except discovery; response-prefix and ServiceFault helpers. |
 | `src/core/tcp_connection.c` | UA-TCP connect handshake: HELLO/ACK negotiation, ERR messages. |

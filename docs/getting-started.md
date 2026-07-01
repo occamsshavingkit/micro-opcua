@@ -1,4 +1,4 @@
-# Getting Started with micro-opcua
+# Getting Started with muc-opcua
 
 > **What you'll learn:**
 > - Build the server in each of its three profiles (`nano`, `micro`, `embedded`) and find the resulting binary
@@ -10,7 +10,7 @@
 >
 > **Time:** 20-30 minutes | **Level:** Beginner / Intermediate
 
-micro-opcua is a **freestanding C11, no-heap OPC UA server** meant to run on
+muc-opcua is a **freestanding C11, no-heap OPC UA server** meant to run on
 microcontrollers (it has been sized for an RP2040). There is no `malloc` in the
 protocol path: you hand the library a block of memory and two network buffers,
 and it does the rest. This guide gets a working server running on your **host
@@ -48,8 +48,8 @@ This tutorial was validated against CMake 3.28, GCC (host), and `asyncua` 2.0.
 
 ## 2. The three profiles (pick what you build)
 
-micro-opcua compiles to a different feature set depending on the **profile**.
-Each profile maps to one `make` target and turns specific `MICRO_OPCUA_*` CMake
+muc-opcua compiles to a different feature set depending on the **profile**.
+Each profile maps to one `make` target and turns specific `MUC_OPCUA_*` CMake
 options on or off:
 
 | Profile | Command | SecurityPolicy | Subscriptions | Core flash (Cortex-M0+ `-Os`) |
@@ -85,7 +85,7 @@ Expected (trimmed) output:
 
 ```
 >> NANO profile: SecurityPolicy None, full Nano service surface, subscriptions OFF
-cmake -S . -B build/nano -DMICRO_OPCUA_BUILD_EXAMPLES=ON -DMICRO_OPCUA_OPTIMIZE_SIZE=ON -DMICRO_OPCUA_SECURITY=OFF -DMICRO_OPCUA_SUBSCRIPTIONS=OFF
+cmake -S . -B build/nano -DMUC_OPCUA_BUILD_EXAMPLES=ON -DMUC_OPCUA_OPTIMIZE_SIZE=ON -DMUC_OPCUA_SECURITY=OFF -DMUC_OPCUA_SUBSCRIPTIONS=OFF
 ...
 [100%] Built target minimal_server
 ```
@@ -96,8 +96,8 @@ command, so you can always drop down to raw CMake if you need to:
 ```bash
 # Equivalent to `make nano`, written out longhand:
 cmake -S . -B build/nano \
-    -DMICRO_OPCUA_BUILD_EXAMPLES=ON -DMICRO_OPCUA_OPTIMIZE_SIZE=ON \
-    -DMICRO_OPCUA_SECURITY=OFF -DMICRO_OPCUA_SUBSCRIPTIONS=OFF
+    -DMUC_OPCUA_BUILD_EXAMPLES=ON -DMUC_OPCUA_OPTIMIZE_SIZE=ON \
+    -DMUC_OPCUA_SECURITY=OFF -DMUC_OPCUA_SUBSCRIPTIONS=OFF
 cmake --build build/nano
 ```
 
@@ -151,7 +151,7 @@ Start the server you just built:
 Expected output:
 
 ```
-Initializing Micro OPC UA Server...
+Initializing muc-opcua Server...
 Server initialized successfully. Listening on opc.tcp://localhost:4840
 ```
 
@@ -207,7 +207,7 @@ This is the quickest way to prove the connect → browse → read path. Save the
 following as `connect.py`:
 
 ```python
-# connect.py - connect to micro-opcua, read MyVar1, list the Objects folder
+# connect.py - connect to muc-opcua, read MyVar1, list the Objects folder
 import asyncio
 from asyncua import Client
 
@@ -303,7 +303,7 @@ Total Test time (real) =   2.85 sec
 Under the hood this is:
 
 ```bash
-cmake -S . -B build/test -DMICRO_OPCUA_BUILD_TESTS=ON
+cmake -S . -B build/test -DMUC_OPCUA_BUILD_TESTS=ON
 cmake --build build/test
 cd build/test && ctest --output-on-failure
 ```
@@ -382,7 +382,7 @@ The caller owns **all** memory: one server-storage block (sized by
 `MU_SERVER_STORAGE_BYTES`, which grows automatically when subscriptions or
 security are compiled in) plus two transport buffers. Configuration also wires
 in **platform adapters** — TCP, time, entropy, and optionally crypto — through
-function-pointer structs (`include/micro_opcua/platform.h`). On the host these
+function-pointer structs (`include/muc_opcua/platform.h`). On the host these
 are provided for you; on an MCU you implement them against your board's network
 stack and RNG. The main loop is a single non-blocking call:
 
@@ -405,17 +405,17 @@ platform resources that you budget separately.
 Use the external platform mode when your firmware provides the TCP/IP stack:
 
 ```cmake
-set(MICRO_OPCUA_PROFILE nano CACHE STRING "" FORCE)
-set(MICRO_OPCUA_PLATFORM external CACHE STRING "" FORCE)
-set(MICRO_OPCUA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(MICRO_OPCUA_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(MICRO_OPCUA_BUILD_FUZZERS OFF CACHE BOOL "" FORCE)
-set(MICRO_OPCUA_OPTIMIZE_SIZE ON CACHE BOOL "" FORCE)
+set(MUC_OPCUA_PROFILE nano CACHE STRING "" FORCE)
+set(MUC_OPCUA_PLATFORM external CACHE STRING "" FORCE)
+set(MUC_OPCUA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(MUC_OPCUA_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(MUC_OPCUA_BUILD_FUZZERS OFF CACHE BOOL "" FORCE)
+set(MUC_OPCUA_OPTIMIZE_SIZE ON CACHE BOOL "" FORCE)
 
-add_subdirectory(path/to/micro-opcua ${CMAKE_BINARY_DIR}/micro-opcua)
+add_subdirectory(path/to/muc-opcua ${CMAKE_BINARY_DIR}/muc-opcua)
 
 target_link_libraries(app PRIVATE
-    micro_opcua
+    muc_opcua
     pico_stdlib
     pico_cyw43_arch_lwip_sys_freertos
     FreeRTOS-Kernel-Heap4)
@@ -544,7 +544,7 @@ layout, continue with [the integration guide](integration-guide.md#3-implementin
 
 ## Summary
 
-- micro-opcua builds in three profiles — `make nano` (None), `make micro`
+- muc-opcua builds in three profiles — `make nano` (None), `make micro`
   (+ subscriptions), `make embedded` (+ Basic256Sha256) — each into
   `build/<profile>/examples/minimal_server`.
 - The host example listens on `opc.tcp://localhost:4840` and serves a tiny
@@ -566,7 +566,7 @@ layout, continue with [the integration guide](integration-guide.md#3-implementin
 2. **Look up the API** — every public type and function
    (`mu_server_init`, `mu_server_poll`, the config and adapter structs) is
    documented in **[docs/api-reference.md](api-reference.md)** and in the headers
-   under `include/micro_opcua/`.
+   under `include/muc_opcua/`.
 3. **Tune the footprint** — review **[docs/size/feature-size-ledger.md](size/feature-size-ledger.md)**
    to see exactly what each profile and `MU_MAX_*` knob costs in flash and RAM,
    then trim capacities to fit your target.

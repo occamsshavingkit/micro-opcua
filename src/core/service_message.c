@@ -1,6 +1,6 @@
 /* src/core/service_message.c */
 #include "service_message.h"
-#include "micro_opcua/encoding.h"
+#include "muc_opcua/encoding.h"
 
 opcua_statuscode_t mu_parse_service_prefix(const opcua_byte_t *buffer, size_t length, size_t *offset,
                                            mu_nodeid_t *node_id) {

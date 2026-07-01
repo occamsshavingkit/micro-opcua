@@ -1,12 +1,12 @@
 /* tests/unit/test_wolfssl_adapter.c */
-#include "micro_opcua/platform.h"
-#include "micro_opcua/status.h"
+#include "muc_opcua/platform.h"
+#include "muc_opcua/status.h"
 #include "platform/host_crypto_adapter.h"
 #include "unity.h"
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef MICRO_OPCUA_HAVE_WOLFSSL
+#ifdef MUC_OPCUA_HAVE_WOLFSSL
 #include <openssl/evp.h>
 #include <openssl/x509.h>
 
@@ -147,7 +147,7 @@ void test_wolfssl_dummy(void) {
 
 int main(void) {
     UNITY_BEGIN();
-#ifdef MICRO_OPCUA_HAVE_WOLFSSL
+#ifdef MUC_OPCUA_HAVE_WOLFSSL
     RUN_TEST(test_wolfssl_adapter_all);
 #else
     RUN_TEST(test_wolfssl_dummy);

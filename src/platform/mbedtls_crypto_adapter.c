@@ -1,7 +1,7 @@
 /* src/platform/mbedtls_crypto_adapter.c */
-#ifdef MICRO_OPCUA_HAVE_MBEDTLS
-#include "micro_opcua/platform.h"
-#include "micro_opcua/status.h"
+#ifdef MUC_OPCUA_HAVE_MBEDTLS
+#include "muc_opcua/platform.h"
+#include "muc_opcua/status.h"
 #include <mbedtls/aes.h>
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/entropy.h>

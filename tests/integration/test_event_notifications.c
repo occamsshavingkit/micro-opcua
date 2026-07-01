@@ -2,7 +2,7 @@
 #include "../../src/core/server_internal.h"
 #include "../../src/services/subscription.h"
 #include "fake_platform.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "service_builders.h"
 #include "unity.h"
 #include <string.h>
@@ -348,7 +348,7 @@ static opcua_uint64_t test_get_tick_ms(void *c) {
 }
 
 void test_alarm_event_generation_and_publishing(void) {
-#if MICRO_OPCUA_SUBSCRIPTIONS && MICRO_OPCUA_EVENTS
+#if MUC_OPCUA_SUBSCRIPTIONS && MUC_OPCUA_EVENTS
     mock_t mock;
     memset(&mock, 0, sizeof(mock));
     enqueue_connect(&mock);

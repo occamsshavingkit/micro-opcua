@@ -1,6 +1,6 @@
-#include "micro_opcua/config.h"
-#include "micro_opcua/server.h"
-#include "micro_opcua/services/history.h"
+#include "muc_opcua/config.h"
+#include "muc_opcua/server.h"
+#include "muc_opcua/services/history.h"
 #include "unity.h"
 #include <stdint.h>
 #include <string.h>
@@ -8,12 +8,12 @@
 void setUp(void) {}
 void tearDown(void) {}
 
-#ifdef MICRO_OPCUA_SERVICE_HISTORY
+#ifdef MUC_OPCUA_SERVICE_HISTORY
 
 #include "../../src/core/server_internal.h"
 #include "../../src/services/history.h"
 #include "../../src/services/service_header.h"
-#include "micro_opcua/opcua_ids.h"
+#include "muc_opcua/opcua_ids.h"
 
 opcua_statuscode_t handle_history_read(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                        size_t *response_length);
@@ -60,7 +60,7 @@ static void write_history_read_request_with_continuation_point(mu_binary_writer_
 }
 
 void test_history_read_decode(void) {
-#ifdef MICRO_OPCUA_SERVICE_HISTORY
+#ifdef MUC_OPCUA_SERVICE_HISTORY
     opcua_byte_t buf[256];
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, buf, sizeof(buf));
@@ -134,7 +134,7 @@ void test_history_read_decode(void) {
 }
 
 void test_history_read_details_extension_object_truncated_body_returns_decoding_error(void) {
-#ifdef MICRO_OPCUA_SERVICE_HISTORY
+#ifdef MUC_OPCUA_SERVICE_HISTORY
     opcua_byte_t buf[256];
     mu_binary_writer_t w;
     const opcua_int32_t encoded_details_body_len = 22;
@@ -176,7 +176,7 @@ void test_history_read_details_extension_object_truncated_body_returns_decoding_
 }
 
 void test_history_read_decode_continuation_point_is_owned_from_request_buffer(void) {
-#ifdef MICRO_OPCUA_SERVICE_HISTORY
+#ifdef MUC_OPCUA_SERVICE_HISTORY
     opcua_byte_t buf[256];
     const opcua_byte_t continuation_point[] = {'O', 'W', 'N', '1'};
     mu_binary_writer_t w;
@@ -233,7 +233,7 @@ void test_history_read_decode_continuation_point_is_owned_from_request_buffer(vo
 }
 
 void test_history_read_decode_continuation_point_stable_after_later_request_reuses_buffer(void) {
-#ifdef MICRO_OPCUA_SERVICE_HISTORY
+#ifdef MUC_OPCUA_SERVICE_HISTORY
     opcua_byte_t buf[256];
     const opcua_byte_t first_continuation_point[] = {'F', 'I', 'R', 'S', 'T', '1'};
     const opcua_byte_t later_continuation_point[] = {'L', 'A', 'T', 'E', 'R', '2'};
@@ -279,7 +279,7 @@ void test_history_read_decode_continuation_point_stable_after_later_request_reus
 }
 
 void test_history_read_encode(void) {
-#ifdef MICRO_OPCUA_SERVICE_HISTORY
+#ifdef MUC_OPCUA_SERVICE_HISTORY
     opcua_byte_t buf[256];
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, buf, sizeof(buf));
@@ -411,7 +411,7 @@ static opcua_statuscode_t mock_read_raw_modified(void *context, const mu_nodeid_
 }
 
 void test_history_read_dispatch(void) {
-#ifdef MICRO_OPCUA_SERVICE_HISTORY
+#ifdef MUC_OPCUA_SERVICE_HISTORY
     mu_history_adapter_t adapter;
     memset(&adapter, 0, sizeof(adapter));
     adapter.read_raw_modified = mock_read_raw_modified;
@@ -566,7 +566,7 @@ void test_history_read_dispatch(void) {
 }
 
 void test_history_read_pagination(void) {
-#ifdef MICRO_OPCUA_SERVICE_HISTORY
+#ifdef MUC_OPCUA_SERVICE_HISTORY
     mu_history_adapter_t adapter;
     memset(&adapter, 0, sizeof(adapter));
     adapter.read_raw_modified = mock_read_raw_modified;
@@ -808,7 +808,7 @@ static opcua_statuscode_t mock_delete_raw_modified(void *context, const mu_nodei
 }
 
 void test_history_update_decode(void) {
-#ifdef MICRO_OPCUA_SERVICE_HISTORY
+#ifdef MUC_OPCUA_SERVICE_HISTORY
     opcua_byte_t buf[256];
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, buf, sizeof(buf));
@@ -879,7 +879,7 @@ void test_history_update_decode(void) {
 }
 
 void test_history_update_dispatch(void) {
-#ifdef MICRO_OPCUA_SERVICE_HISTORY
+#ifdef MUC_OPCUA_SERVICE_HISTORY
     mu_history_adapter_t adapter;
     memset(&adapter, 0, sizeof(adapter));
     adapter.update_data = mock_update_data;
@@ -1025,11 +1025,11 @@ void test_history_update_dispatch(void) {
 #endif
 }
 
-#endif // MICRO_OPCUA_SERVICE_HISTORY
+#endif // MUC_OPCUA_SERVICE_HISTORY
 
 int main(void) {
     UNITY_BEGIN();
-#ifdef MICRO_OPCUA_SERVICE_HISTORY
+#ifdef MUC_OPCUA_SERVICE_HISTORY
     RUN_TEST(test_history_read_decode);
     RUN_TEST(test_history_read_details_extension_object_truncated_body_returns_decoding_error);
     RUN_TEST(test_history_read_decode_continuation_point_is_owned_from_request_buffer);

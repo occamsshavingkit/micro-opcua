@@ -1,7 +1,7 @@
 /* tests/unit/test_write_service.c */
 #include "core/server_internal.h"
 #include "core/service_dispatch.h"
-#include "micro_opcua/encoding.h"
+#include "muc_opcua/encoding.h"
 #include "unity.h"
 #include <string.h>
 
@@ -155,7 +155,7 @@ static void run_write_items(mu_server_t *server, const write_request_item_t *ite
     decode_write_response_results(resp_buffer, resp_len, request_handle, results, item_count);
 }
 
-#ifdef MICRO_OPCUA_SERVICE_WRITE
+#ifdef MUC_OPCUA_SERVICE_WRITE
 void test_write_service_basic(void) {
     /* Initialize mock server structure */
     mu_server_t server;
@@ -616,7 +616,7 @@ void test_write_service_batch_matches_individual_operation_results_and_callback_
 
 int main(void) {
     UNITY_BEGIN();
-#ifdef MICRO_OPCUA_SERVICE_WRITE
+#ifdef MUC_OPCUA_SERVICE_WRITE
     RUN_TEST(test_write_service_basic);
     RUN_TEST(test_write_service_type_mismatch);
     RUN_TEST(test_write_service_batch);

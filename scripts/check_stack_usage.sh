@@ -55,7 +55,7 @@ while IFS= read -r -d '' file; do
 done < <(find "$build_dir" -type f -name '*.su' -print0)
 
 if [ "${#su_files[@]}" -eq 0 ]; then
-    echo "error: no .su files found under $build_dir; configure with MICRO_OPCUA_STACK_USAGE=ON and rebuild" >&2
+    echo "error: no .su files found under $build_dir; configure with MUC_OPCUA_STACK_USAGE=ON and rebuild" >&2
     exit 2
 fi
 

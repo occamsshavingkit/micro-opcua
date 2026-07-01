@@ -2,7 +2,7 @@
 #ifndef MINIMAL_SERVER_STATIC_ADDRESS_SPACE_H
 #define MINIMAL_SERVER_STATIC_ADDRESS_SPACE_H
 
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 
 #ifdef __cplusplus
 extern "C" {

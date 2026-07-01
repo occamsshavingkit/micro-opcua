@@ -1,5 +1,5 @@
 /* tests/unit/test_binary_extension_object_errors.c */
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 
 typedef opcua_statuscode_t (*test_extension_object_decoder_t)(mu_binary_reader_t *body_reader, void *context);

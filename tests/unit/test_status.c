@@ -1,6 +1,6 @@
 /* tests/unit/test_status.c */
 
-#include "micro_opcua/status.h"
+#include "muc_opcua/status.h"
 #include <unity.h>
 
 void setUp(void) {}

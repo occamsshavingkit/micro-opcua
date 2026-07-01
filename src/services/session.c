@@ -43,7 +43,7 @@ void mu_session_init(mu_session_t *session) {
         session->auth_token = 0;
         session->revised_session_timeout_ms = 0;
         memset(session->server_nonce, 0, sizeof(session->server_nonce));
-#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+#ifdef MUC_OPCUA_MULTIPLE_CONNECTIONS
         session->secure_channel_id = 0;
 #endif
     }
@@ -197,7 +197,7 @@ opcua_statuscode_t mu_session_create_with_identifiers(mu_session_t *session, opc
 
     session->session_id = assigned_session_id;
     session->auth_token = assigned_auth_token;
-#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+#ifdef MUC_OPCUA_MULTIPLE_CONNECTIONS
     /* OPC-10000-4 section 5.7.2.1 binds a Session to the SecureChannel that
        created it; later service checks validate use through that channel. */
     session->secure_channel_id = creating_secure_channel_id;
@@ -228,7 +228,7 @@ opcua_statuscode_t mu_session_validate_secure_channel(const mu_session_t *sessio
     if (!session)
         return MU_STATUS_BAD_INTERNALERROR;
 
-#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+#ifdef MUC_OPCUA_MULTIPLE_CONNECTIONS
     /* OPC-10000-4 section 7.38.2: reject Session use through a SecureChannel
        different from the one that created the Session. */
     if (session->secure_channel_id != active_secure_channel_id) {

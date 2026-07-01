@@ -1,12 +1,12 @@
 /* src/core/server.c */
-#include "micro_opcua/server.h"
+#include "muc_opcua/server.h"
 #include "../services/secure_channel.h"
 #include "message_chunk.h"
-#include "micro_opcua/encoding.h"
+#include "muc_opcua/encoding.h"
 #include "server_internal.h"
 #include "service_message.h"
 #include "uasc.h"
-#ifdef MICRO_OPCUA_SECURITY
+#ifdef MUC_OPCUA_SECURITY
 #include "../security/asym_chunk.h"
 #include "../security/sym_chunk.h"
 #endif
@@ -106,7 +106,7 @@ opcua_statuscode_t mu_server_init(void *storage, size_t storage_size, const mu_s
         mu_base_runtime_init(&server->runtime_base, &server->config.time_adapter, start);
     }
     server->is_running = true;
-#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+#ifdef MUC_OPCUA_MULTIPLE_CONNECTIONS
     for (size_t i = 0; i < MU_MAX_CONNECTIONS; ++i) {
         server->conns[i].client_handle = NULL;
         mu_tcp_connection_init(&server->conns[i].tcp_conn);
@@ -123,13 +123,13 @@ opcua_statuscode_t mu_server_init(void *storage, size_t storage_size, const mu_s
         mu_session_init(&server->sessions[i]);
     }
     server->active_session = NULL;
-#if MICRO_OPCUA_SUBSCRIPTIONS
+#if MUC_OPCUA_SUBSCRIPTIONS
     mu_subscriptions_init(&server->subs);
 #endif
-#ifdef MICRO_OPCUA_SERVICE_NODEMANAGEMENT
+#ifdef MUC_OPCUA_SERVICE_NODEMANAGEMENT
     memset(&server->dynamic_address_space, 0, sizeof(server->dynamic_address_space));
 #endif
-#ifdef MICRO_OPCUA_SERVICE_QUERY
+#ifdef MUC_OPCUA_SERVICE_QUERY
     for (size_t i = 0; i < MU_MAX_QUERY_CONTINUATION_POINTS; ++i) {
         server->query_context.continuation_points[i].id.length = -1;
         server->query_context.continuation_points[i].id.data = NULL;
@@ -157,7 +157,7 @@ opcua_statuscode_t mu_server_init(void *storage, size_t storage_size, const mu_s
    in place in the receive buffer and need no scratch here. */
 #define MU_SECURE_OPN_REQ_MAX 1024
 
-#ifdef MICRO_OPCUA_SECURITY
+#ifdef MUC_OPCUA_SECURITY
 _Static_assert(MU_SECURE_RESP_MAX + MU_SECURE_OPN_REQ_MAX <= MU_SECURE_SCRATCH_SIZE,
                "secure scratch must hold response and OPN request buffers");
 #endif
@@ -186,14 +186,14 @@ static void send_tcp_error_chunk(mu_server_t *server, opcua_statuscode_t error_c
     }
 }
 
-#if MICRO_OPCUA_SUBSCRIPTIONS
+#if MUC_OPCUA_SUBSCRIPTIONS
 opcua_statuscode_t mu_server_emit_message(mu_server_t *server, opcua_uint32_t request_id, const opcua_byte_t *body,
                                           size_t body_len) {
     if (server == NULL || body == NULL) {
         return MU_STATUS_BAD_INTERNALERROR;
     }
 
-#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+#ifdef MUC_OPCUA_MULTIPLE_CONNECTIONS
     /* If active_conn is NULL, find connection by active session's secure_channel_id */
     if (server->active_conn == NULL && server->active_session != NULL) {
         for (size_t i = 0; i < MU_MAX_CONNECTIONS; ++i) {
@@ -209,7 +209,7 @@ opcua_statuscode_t mu_server_emit_message(mu_server_t *server, opcua_uint32_t re
     }
 #endif
 
-#ifdef MICRO_OPCUA_SECURITY
+#ifdef MUC_OPCUA_SECURITY
     if (server_secure_channel.mode != MU_MESSAGE_SECURITY_MODE_NONE) {
         size_t total = 0;
         opcua_statuscode_t status;
@@ -338,7 +338,7 @@ static void handle_data_chunk_plaintext(mu_server_t *server, const opcua_byte_t 
     opcua_byte_t *resp_body = server->config.send_buffer + body_offset;
     size_t payload_len = server->config.send_buffer_size - body_offset;
 
-#if MICRO_OPCUA_SUBSCRIPTIONS
+#if MUC_OPCUA_SUBSCRIPTIONS
     server->current_request_id = seq.request_id;
 #endif
     if (!is_ns0_numeric_nodeid(&request_type)) {
@@ -383,7 +383,7 @@ static void handle_data_chunk_plaintext(mu_server_t *server, const opcua_byte_t 
     }
 }
 
-#ifdef MICRO_OPCUA_SECURITY
+#ifdef MUC_OPCUA_SECURITY
 /* Secured (or secure-capable) OPN/MSG handling: a crypto adapter is present, so
    OPN chunks are unwrapped/wrapped asymmetrically (None or Basic256Sha256) and
    MSG chunks symmetrically once the channel has keys. MSG chunks are decrypted in
@@ -466,7 +466,7 @@ static void handle_data_chunk_secure(mu_server_t *server, opcua_byte_t *msg, siz
     size_t req_body_len = req_len - rr.position;
 
     size_t resp_len = MU_SECURE_RESP_MAX;
-#if MICRO_OPCUA_SUBSCRIPTIONS
+#if MUC_OPCUA_SUBSCRIPTIONS
     server->current_request_id = response_request_id;
 #endif
     opcua_statuscode_t status;
@@ -512,7 +512,7 @@ static void handle_data_chunk_secure(mu_server_t *server, opcua_byte_t *msg, siz
     if (ws == MU_STATUS_GOOD)
         send_buffer_chunk(server, total);
 }
-#endif /* MICRO_OPCUA_SECURITY */
+#endif /* MUC_OPCUA_SECURITY */
 
 /* Process one complete message (HELLO during connect, otherwise an OPN/MSG/CLO
    chunk) and send any response. Sets client_handle to NULL if the connection is
@@ -555,7 +555,7 @@ static void process_message(mu_server_t *server, opcua_byte_t *msg, size_t msg_l
     if (!is_opn && !is_msg)
         return; /* unsupported chunk type: ignore */
 
-#ifdef MICRO_OPCUA_SECURITY
+#ifdef MUC_OPCUA_SECURITY
     if (server->config.crypto_adapter != NULL) {
         handle_data_chunk_secure(server, msg, msg_len, is_opn);
         return;
@@ -567,14 +567,14 @@ static void process_message(mu_server_t *server, opcua_byte_t *msg, size_t msg_l
 static opcua_statuscode_t mu_server_poll_background(mu_server_t *server) {
     (void)server;
 
-#ifdef MICRO_OPCUA_PUBSUB
+#ifdef MUC_OPCUA_PUBSUB
     opcua_statuscode_t status = mu_pubsub_poll(server);
     if (status != MU_STATUS_GOOD) {
         return status;
     }
 #endif
 
-#if MICRO_OPCUA_SUBSCRIPTIONS
+#if MUC_OPCUA_SUBSCRIPTIONS
     mu_subscriptions_tick(server, server->config.time_adapter.get_tick_ms(server->config.time_adapter.context));
 #endif
 
@@ -586,7 +586,7 @@ opcua_statuscode_t mu_server_poll(mu_server_t *server) {
         return MU_STATUS_BAD_INTERNALERROR;
     }
 
-#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+#ifdef MUC_OPCUA_MULTIPLE_CONNECTIONS
     /* 1. Try to accept a new connection if we have a free slot */
     int free_slot = -1;
     for (size_t i = 0; i < MU_MAX_CONNECTIONS; ++i) {
@@ -709,7 +709,7 @@ opcua_statuscode_t mu_server_poll(mu_server_t *server) {
                 mu_session_init(&server->sessions[i]);
             }
             server->active_session = NULL;
-#if MICRO_OPCUA_SUBSCRIPTIONS
+#if MUC_OPCUA_SUBSCRIPTIONS
             mu_subscriptions_init(&server->subs);
 #endif
             server_rx_len = 0;
@@ -817,7 +817,7 @@ opcua_statuscode_t mu_server_poll(mu_server_t *server) {
 void mu_server_close(mu_server_t *server) {
     if (server != NULL) {
         server->is_running = false;
-#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+#ifdef MUC_OPCUA_MULTIPLE_CONNECTIONS
         for (size_t i = 0; i < MU_MAX_CONNECTIONS; ++i) {
             if (server->conns[i].client_handle != NULL) {
                 server->config.tcp_adapter.close_connection(server->config.tcp_adapter.context,
@@ -835,7 +835,7 @@ void mu_server_close(mu_server_t *server) {
     }
 }
 
-#ifdef MICRO_OPCUA_CUSTOM_METHODS
+#ifdef MUC_OPCUA_CUSTOM_METHODS
 opcua_statuscode_t mu_server_register_method_callback(mu_server_t *server, const mu_nodeid_t *method_id,
                                                       mu_method_callback_t callback, void *context) {
     if (server == NULL || method_id == NULL || callback == NULL) {

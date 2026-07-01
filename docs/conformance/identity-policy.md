@@ -12,7 +12,7 @@ the user-token policies advertised for the selected endpoint.
 |---|---|---|---|
 | `SecurityPolicy#None` | `AnonymousIdentityToken` | Accepted for interoperability. | Default and profile-targeting flows keep anonymous-over-None usable. |
 | `SecurityPolicy#None` | `UserNameIdentityToken` | Not advertised and rejected by default with `Bad_IdentityTokenRejected`. | OPC-10000-4 §5.7.3.3 defines `ActivateSession` service results; current unit and integration tests require plaintext username/password-over-None rejection. |
-| Non-None secured policies | `UserNameIdentityToken` when `MICRO_OPCUA_USER_AUTH=ON` | Scoped implemented username/password activation path. | Evidence is limited to builds and tests that enable user authentication and a protecting security policy. |
+| Non-None secured policies | `UserNameIdentityToken` when `MUC_OPCUA_USER_AUTH=ON` | Scoped implemented username/password activation path. | Evidence is limited to builds and tests that enable user authentication and a protecting security policy. |
 | Secured policies with certificate support | Certificate/X509 user token where the security build and crypto adapter support it. | Scoped implemented activation path. | Evidence is limited to security-enabled builds with the required crypto adapter hooks. |
 
 `SecurityPolicy#None` remains valid for anonymous interoperability and

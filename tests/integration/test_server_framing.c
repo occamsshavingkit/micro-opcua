@@ -5,7 +5,7 @@
  * timer) coalesce/split messages, so one read() != one message. */
 #include "../../src/core/server_internal.h"
 #include "fake_platform.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 #include <string.h>
 

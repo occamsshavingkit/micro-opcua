@@ -1,6 +1,6 @@
 /* src/security/trustlist.c */
-#include "micro_opcua/security.h"
-#include "micro_opcua/status.h"
+#include "muc_opcua/security.h"
+#include "muc_opcua/status.h"
 #include <string.h>
 
 opcua_statuscode_t mu_trust_list_match(const mu_trust_list_t *trust_list, const opcua_byte_t *cert_data,

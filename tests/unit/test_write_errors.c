@@ -8,14 +8,14 @@
 
 #include "core/server_internal.h"
 #include "core/service_dispatch.h"
-#include "micro_opcua/encoding.h"
+#include "muc_opcua/encoding.h"
 #include "unity.h"
 #include <string.h>
 
 void setUp(void) {}
 void tearDown(void) {}
 
-#ifdef MICRO_OPCUA_SERVICE_WRITE
+#ifdef MUC_OPCUA_SERVICE_WRITE
 static opcua_statuscode_t dummy_write_handler(void *handle, const mu_nodeid_t *node_id, opcua_uint32_t attribute_id,
                                               const mu_variant_t *value) {
     (void)handle;
@@ -544,7 +544,7 @@ void test_write_too_many_operations_is_service_level_bad_toomanyoperations(void)
 
 int main(void) {
     UNITY_BEGIN();
-#ifdef MICRO_OPCUA_SERVICE_WRITE
+#ifdef MUC_OPCUA_SERVICE_WRITE
     RUN_TEST(test_write_service_empty_array);
     RUN_TEST(test_write_datavalue_without_value_returns_type_mismatch_without_callback);
     RUN_TEST(test_write_service_non_value_attribute);

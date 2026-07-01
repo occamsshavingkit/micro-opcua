@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and run the in-project micro-opcua hot-path speed benchmark."""
+"""Build and run the in-project muc-opcua hot-path speed benchmark."""
 
 from __future__ import annotations
 
@@ -455,9 +455,9 @@ def configure_profile(profile: str, build_root: pathlib.Path, build_type: str) -
         "-B",
         str(build_dir),
         f"-DCMAKE_BUILD_TYPE={build_type}",
-        "-DMICRO_OPCUA_BUILD_BENCHMARKS=ON",
-        "-DMICRO_OPCUA_PLATFORM=host",
-        f"-DMICRO_OPCUA_PROFILE={profile}",
+        "-DMUC_OPCUA_BUILD_BENCHMARKS=ON",
+        "-DMUC_OPCUA_PLATFORM=host",
+        f"-DMUC_OPCUA_PROFILE={profile}",
     ]
     run_command(cmd)
     run_command([os.environ.get("CMAKE", "cmake"), "--build", str(build_dir), "--target", "hotpath_benchmark"])
@@ -582,7 +582,7 @@ def run_workload(
     result["sudo_requested"] = use_sudo
     if scheduling_error:
         result["scheduling_error"] = scheduling_error
-    library_size = measure_size(build_dir / "src" / "libmicro_opcua.a")
+    library_size = measure_size(build_dir / "src" / "libmuc_opcua.a")
     result.update(library_size)
     binary_size = measure_size(binary)
     result["binary_text"] = binary_size["text"]
@@ -607,7 +607,7 @@ def build_report(results: list[dict[str, Any]], args: argparse.Namespace) -> dic
             model_name = line.split(":", 1)[1].strip()
             break
     return {
-        "schema": "micro-opcua-speed-benchmark-v1",
+        "schema": "muc-opcua-speed-benchmark-v1",
         "generated_at_utc": _dt.datetime.now(_dt.timezone.utc).isoformat(),
         "git_commit": git_commit(),
         "build_type": args.build_type,

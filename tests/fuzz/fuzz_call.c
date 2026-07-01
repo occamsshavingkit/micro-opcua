@@ -10,7 +10,7 @@
 #include <string.h>
 
 #include "../../src/core/server_internal.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 
 #define FUZZ_BODY_CAPACITY MU_DEFAULT_MAX_MESSAGE_SIZE
 #define FUZZ_RESPONSE_CAPACITY 1024u
@@ -58,7 +58,7 @@ static int prepare_server(mu_server_t *server, opcua_byte_t *send_buffer) {
         return 0;
     }
 
-#if MICRO_OPCUA_SUBSCRIPTIONS
+#if MUC_OPCUA_SUBSCRIPTIONS
     mu_subscriptions_init(&server->subs);
     {
         mu_subscription_t *sub = NULL;

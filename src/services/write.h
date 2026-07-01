@@ -1,11 +1,11 @@
 /* src/services/write.h */
-#ifndef MICRO_OPCUA_SERVICES_WRITE_H
-#define MICRO_OPCUA_SERVICES_WRITE_H
+#ifndef MUC_OPCUA_SERVICES_WRITE_H
+#define MUC_OPCUA_SERVICES_WRITE_H
 
-#include "micro_opcua/encoding.h"
-#include "micro_opcua/types.h"
+#include "muc_opcua/encoding.h"
+#include "muc_opcua/types.h"
 
-#ifdef MICRO_OPCUA_SERVICE_WRITE
+#ifdef MUC_OPCUA_SERVICE_WRITE
 
 #ifndef MU_ATTRIBUTEID_VALUE
 #define MU_ATTRIBUTEID_VALUE 13
@@ -26,6 +26,6 @@ opcua_statuscode_t mu_write_request_decode(mu_binary_reader_t *reader, mu_write_
 
 opcua_statuscode_t mu_write_response_encode(mu_binary_writer_t *writer, const mu_write_response_t *resp);
 
-#endif /* MICRO_OPCUA_SERVICE_WRITE */
+#endif /* MUC_OPCUA_SERVICE_WRITE */
 
-#endif /* MICRO_OPCUA_SERVICES_WRITE_H */
+#endif /* MUC_OPCUA_SERVICES_WRITE_H */

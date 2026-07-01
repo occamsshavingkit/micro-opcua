@@ -7,7 +7,7 @@
  * bodies must be rejected with a StatusCode and never read out of bounds.
  *
  * Meaningful coverage requires the library to be built with
- * MICRO_OPCUA_SUBSCRIPTIONS_STANDARD (and MICRO_OPCUA_SUBSCRIPTIONS); without it the
+ * MUC_OPCUA_SUBSCRIPTIONS_STANDARD (and MUC_OPCUA_SUBSCRIPTIONS); without it the
  * dispatch simply reports the service unsupported, which is still crash-free.
  */
 #include <stdbool.h>
@@ -16,7 +16,7 @@
 #include <string.h>
 
 #include "../../src/core/server_internal.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 
 #define FUZZ_REQUEST_CAPACITY MU_DEFAULT_MAX_MESSAGE_SIZE
 #define FUZZ_RESPONSE_CAPACITY 1024u
@@ -54,7 +54,7 @@ static bool prepare_server(mu_server_t *server, opcua_uint32_t *session_id_out) 
     }
     *session_id_out = session_id;
 
-#if MICRO_OPCUA_SUBSCRIPTIONS
+#if MUC_OPCUA_SUBSCRIPTIONS
     mu_subscriptions_init(&server->subs);
     {
         mu_subscription_t *sub = NULL;

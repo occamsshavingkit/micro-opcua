@@ -3,7 +3,7 @@
  * Citing OPC-10000-4 §5.11.4.2 and §5.11.4.3. */
 #include "../../src/core/server_internal.h"
 #include "fake_platform.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 #include <string.h>
 
@@ -134,7 +134,7 @@ static opcua_statuscode_t mock_write_handler(void *handle, const mu_nodeid_t *no
     return MU_STATUS_GOOD;
 }
 
-#ifdef MICRO_OPCUA_SERVICE_WRITE
+#ifdef MUC_OPCUA_SERVICE_WRITE
 void test_integration_write_errors(void) {
     mock_t mock;
     memset(&mock, 0, sizeof(mock));
@@ -322,7 +322,7 @@ void test_integration_write_errors(void) {
 
 int main(void) {
     UNITY_BEGIN();
-#ifdef MICRO_OPCUA_SERVICE_WRITE
+#ifdef MUC_OPCUA_SERVICE_WRITE
     RUN_TEST(test_integration_write_errors);
 #endif
     return UNITY_END();

@@ -1,13 +1,13 @@
 #include "../../src/services/query.h"
 #include "fake_platform.h"
-#include "micro_opcua/config.h"
-#include "micro_opcua/server.h"
+#include "muc_opcua/config.h"
+#include "muc_opcua/server.h"
 #include "unity.h"
 
 void setUp(void) {}
 void tearDown(void) {}
 
-#ifdef MICRO_OPCUA_SERVICE_QUERY
+#ifdef MUC_OPCUA_SERVICE_QUERY
 
 static opcua_byte_t rx_buf[8192];
 static opcua_byte_t tx_buf[8192];
@@ -162,11 +162,11 @@ void test_query_first_content_filter_exceeding_fixed_capacity_returns_too_many_o
         mu_query_first_request_decode(&reader, &req, NULL, 0, filter_elements, 1, filter_operands, 1));
 }
 
-#endif /* MICRO_OPCUA_SERVICE_QUERY */
+#endif /* MUC_OPCUA_SERVICE_QUERY */
 
 int main(void) {
     UNITY_BEGIN();
-#ifdef MICRO_OPCUA_SERVICE_QUERY
+#ifdef MUC_OPCUA_SERVICE_QUERY
     RUN_TEST(test_query_first_empty_address_space);
     RUN_TEST(test_query_next_release);
     RUN_TEST(test_query_next_invalid_continuation_point_returns_bad_continuation_point_invalid);

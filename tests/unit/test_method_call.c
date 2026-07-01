@@ -2,7 +2,7 @@
  *
  * Feature 005 US3: Server Call method support for OPC-10000-5 Base Info methods.
  * Active coverage is gated to the Embedded/Standard slice:
- * MICRO_OPCUA_SUBSCRIPTIONS_STANDARD + MICRO_OPCUA_BASE_TYPE_SYSTEM.
+ * MUC_OPCUA_SUBSCRIPTIONS_STANDARD + MUC_OPCUA_BASE_TYPE_SYSTEM.
  *
  * OPC-10000-4 5.12.2.2: Call Service request/response wire shape.
  * OPC-10000-5 9.1: Server/GetMonitoredItems.
@@ -15,15 +15,15 @@
 #include "../../src/core/uasc.h"
 #include "../../src/services/secure_channel.h"
 #include "../../src/services/session.h"
-#include "micro_opcua/encoding.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/encoding.h"
+#include "muc_opcua/muc_opcua.h"
 
 #include <string.h>
 
 void setUp(void) {}
 void tearDown(void) {}
 
-#if MICRO_OPCUA_SUBSCRIPTIONS && MICRO_OPCUA_SUBSCRIPTIONS_STANDARD && MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_SUBSCRIPTIONS && MUC_OPCUA_SUBSCRIPTIONS_STANDARD && MUC_OPCUA_BASE_TYPE_SYSTEM
 
 #define AUTH_TOKEN 12345u
 #define ID_SERVER_OBJECT 2253u
@@ -447,7 +447,7 @@ void test_resend_data_reissues_current_values_on_next_publish(void) {
     parse_publish_value(io.last_write, io.last_write_len, 71u, sub->subscription_id, 9001u, 10);
 }
 
-#ifdef MICRO_OPCUA_CUSTOM_METHODS
+#ifdef MUC_OPCUA_CUSTOM_METHODS
 static size_t write_custom_call_request(opcua_byte_t *buffer, size_t capacity, opcua_uint32_t request_handle,
                                         const mu_nodeid_t *object_id, const mu_nodeid_t *method_id,
                                         const mu_variant_t *args, opcua_int32_t arg_count) {
@@ -553,11 +553,11 @@ void test_method_call_us3_is_gated_to_embedded_standard_builds(void) {
 
 int main(void) {
     UNITY_BEGIN();
-#if MICRO_OPCUA_SUBSCRIPTIONS && MICRO_OPCUA_SUBSCRIPTIONS_STANDARD && MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_SUBSCRIPTIONS && MUC_OPCUA_SUBSCRIPTIONS_STANDARD && MUC_OPCUA_BASE_TYPE_SYSTEM
     RUN_TEST(test_server_call_method_nodes_are_browsable);
     RUN_TEST(test_get_monitored_items_returns_server_and_client_handles);
     RUN_TEST(test_resend_data_reissues_current_values_on_next_publish);
-#ifdef MICRO_OPCUA_CUSTOM_METHODS
+#ifdef MUC_OPCUA_CUSTOM_METHODS
     RUN_TEST(test_custom_method_callback_execution);
 #endif
 #else

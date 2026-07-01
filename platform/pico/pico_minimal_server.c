@@ -1,11 +1,11 @@
 /* platform/pico/pico_minimal_server.c
  *
- * Minimal RP2040/Pico example: brings up the micro-opcua server with the Pico
+ * Minimal RP2040/Pico example: brings up the muc-opcua server with the Pico
  * platform adapters and a tiny static address space. The Pico adapter's network
  * primitives are skeletons (no TCP/IP stack wired yet), so this builds and runs
  * the server lifecycle to validate the embedded cross-compile path.
  */
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "mu_pico_adapter.h"
 #include "pico/stdlib.h"
 #include <string.h>
@@ -44,9 +44,9 @@ int main(void)
     memset(&config, 0, sizeof(config));
 
     config.endpoint_url = "opc.tcp://0.0.0.0:4840";
-    config.application_uri = "urn:pico:micro_opcua:minimal_server";
-    config.product_uri = "urn:micro_opcua:minimal_server";
-    config.application_name = "Micro OPC UA Pico Server";
+    config.application_uri = "urn:pico:muc_opcua:minimal_server";
+    config.product_uri = "urn:muc_opcua:minimal_server";
+    config.application_name = "muc-opcua Pico Server";
 
     config.receive_buffer = g_recv_buffer;
     config.receive_buffer_size = sizeof(g_recv_buffer);
@@ -63,11 +63,11 @@ int main(void)
 
     mu_server_t *server = NULL;
     if (mu_server_init(g_storage, sizeof(g_storage), &config, &server) != MU_STATUS_GOOD) {
-        printf("Failed to initialize Micro OPC UA server\n");
+        printf("Failed to initialize muc-opcua server\n");
         return 1;
     }
 
-    printf("Micro OPC UA Pico server initialized\n");
+    printf("muc-opcua Pico server initialized\n");
 
     while (true) {
         mu_server_poll(server);

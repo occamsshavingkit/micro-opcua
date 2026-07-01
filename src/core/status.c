@@ -1,7 +1,7 @@
 /* src/core/status.c */
-#include "micro_opcua/status.h"
+#include "muc_opcua/status.h"
 
-#ifdef MICRO_OPCUA_STATUS_STRINGS
+#ifdef MUC_OPCUA_STATUS_STRINGS
 const char *mu_status_name(opcua_statuscode_t status) {
     /* Common StatusCode names are defined by OPC-10000-4 section 7.38.2. */
     switch (status) {
@@ -81,7 +81,7 @@ const char *mu_status_name(opcua_statuscode_t status) {
         return "Bad_TooManySubscriptions";
     case MU_STATUS_BAD_SUBSCRIPTIONIDINVALID:
         return "Bad_SubscriptionIdInvalid";
-#if MICRO_OPCUA_SUBSCRIPTIONS
+#if MUC_OPCUA_SUBSCRIPTIONS
     case MU_STATUS_BAD_MESSAGENOTAVAILABLE:
         return "Bad_MessageNotAvailable";
     case MU_STATUS_BAD_SEQUENCENUMBERUNKNOWN:

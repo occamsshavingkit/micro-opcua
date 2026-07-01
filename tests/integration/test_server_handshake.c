@@ -5,7 +5,7 @@
  * framing produce a real handshake. */
 #include "../../src/core/server_internal.h"
 #include "fake_platform.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "service_builders.h"
 #include "unity.h"
 #include <string.h>
@@ -13,7 +13,7 @@
 void setUp(void) {}
 void tearDown(void) {}
 
-#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+#ifdef MUC_OPCUA_MULTIPLE_CONNECTIONS
 #define GET_CLIENT_HANDLE(s) ((s)->conns[0].client_handle)
 #else
 #define GET_CLIENT_HANDLE(s) ((s)->client_handle)

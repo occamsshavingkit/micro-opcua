@@ -2,7 +2,7 @@
 #include "../../src/core/server_internal.h"
 #include "../../src/services/write.h"
 #include "fake_platform.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 #include <string.h>
 
@@ -114,7 +114,7 @@ static opcua_statuscode_t test_write_handler(void *handle, const mu_nodeid_t *no
 }
 
 void test_write_service_integration(void) {
-#ifdef MICRO_OPCUA_SERVICE_WRITE
+#ifdef MUC_OPCUA_SERVICE_WRITE
     mock_t mock;
     memset(&mock, 0, sizeof(mock));
 

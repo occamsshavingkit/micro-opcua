@@ -82,7 +82,7 @@ The default matrix covers `nano`, `micro`, `embedded`, and `full` profiles.
 `ops_per_sec * batch`. Each row also records a small same-process calibration loop
 and `normalized_ops_per_sec`; comparison uses the normalized value when present so
 CPU frequency and host load changes do not dominate the result. `text`, `data`,
-and `bss` are from `src/libmicro_opcua.a` for the matching profile build.
+and `bss` are from `src/libmuc_opcua.a` for the matching profile build.
 `binary_*` fields measure the benchmark executable and are secondary. Scheduling
 fields record requested/applied CPU affinity and realtime priority.
 

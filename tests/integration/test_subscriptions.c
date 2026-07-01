@@ -15,7 +15,7 @@
  */
 #include "../../src/core/server_internal.h"
 #include "fake_platform.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 #include <string.h>
 
@@ -556,7 +556,7 @@ void test_create_monitored_items(void) {
 /* The (default MU_MAX_MONITORED_ITEMS = 8)+1-th item in one request is rejected per-op
    with Bad_TooManyMonitoredItems (OPC 10000-4 §5.13.2.4). */
 void test_create_monitored_items_too_many(void) {
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD && MU_MAX_MONITORED_ITEMS > 32
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD && MU_MAX_MONITORED_ITEMS > 32
     TEST_PASS_MESSAGE("Standard-facet raised capacity is covered by test_subscriptions_capacity");
     return;
 #endif
@@ -1684,7 +1684,7 @@ void test_subscription_session_isolation(void) {
    RED tests authored by Claude; Codex implements the engine + dispatch.
    =================================================================================== */
 
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
 
 #define ID_DATACHANGEFILTER_ENC_BINARY 724 /* DataChangeFilter_Encoding_DefaultBinary (i=724) */
 
@@ -2154,11 +2154,11 @@ void test_standard_facet_errors(void) {
     TEST_ASSERT_EQUAL_HEX32(0x800F0000u, sr); /* Bad_NothingToDo */
 }
 
-#endif /* MICRO_OPCUA_SUBSCRIPTIONS_STANDARD */
+#endif /* MUC_OPCUA_SUBSCRIPTIONS_STANDARD */
 
 int main(void) {
     UNITY_BEGIN();
-#if MICRO_OPCUA_SUBSCRIPTIONS_STANDARD
+#if MUC_OPCUA_SUBSCRIPTIONS_STANDARD
     RUN_TEST(test_monitored_item_absolute_deadband);
 #if MU_MONITORED_QUEUE_DEPTH >= 2
     RUN_TEST(test_monitored_item_queue_overflow);

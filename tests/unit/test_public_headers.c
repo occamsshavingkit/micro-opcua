@@ -5,12 +5,12 @@
  * self-contained and compile cleanly with warnings as errors.
  */
 
-#include "micro_opcua/config.h"
-#include "micro_opcua/micro_opcua.h"
-#include "micro_opcua/platform.h"
-#include "micro_opcua/server.h"
-#include "micro_opcua/status.h"
-#include "micro_opcua/types.h"
+#include "muc_opcua/config.h"
+#include "muc_opcua/muc_opcua.h"
+#include "muc_opcua/platform.h"
+#include "muc_opcua/server.h"
+#include "muc_opcua/status.h"
+#include "muc_opcua/types.h"
 
 #include <unity.h>
 

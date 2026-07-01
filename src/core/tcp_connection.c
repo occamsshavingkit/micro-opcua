@@ -1,6 +1,6 @@
 /* src/core/tcp_connection.c */
 #include "tcp_connection.h"
-#include "micro_opcua/encoding.h"
+#include "muc_opcua/encoding.h"
 #include <string.h>
 
 static void tcp_write_uint32_le(opcua_byte_t *buffer, size_t offset, opcua_uint32_t value) {

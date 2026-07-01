@@ -1,5 +1,21 @@
 <!--
 Sync Impact Report
+Version change: 1.0.0 -> 1.0.1 (PATCH: wording-only correction, no principle
+  change, per this constitution's own Versioning policy)
+Modified principles: none; title only (the project was renamed; see
+  specs/024-rename-muc-opcua/ for rationale -- research.md Decision 8
+  resolves this as a PATCH-level correction, not a full Amendment)
+Added principles: none
+Added sections: none
+Removed sections: none
+Templates requiring updates:
+- [updated] .specify/templates/plan-template.md (include/muc_opcua/ path)
+- [updated] .specify/templates/tasks-template.md (include/muc_opcua/ path)
+Runtime guidance requiring updates:
+- [updated] AGENTS.md, CLAUDE.md (already repointed to specs/024 during planning)
+Follow-up TODOs: none
+
+Prior entry (2026-06-25, version 1.0.0):
 Version change: unversioned template -> 1.0.0
 Modified principles: none; initial ratification from template placeholders
 Added principles:
@@ -25,7 +41,7 @@ Runtime guidance requiring updates:
 Follow-up TODOs: none
 -->
 
-# micro-opcua Constitution
+# muc-opcua Constitution
 
 ## Core Principles
 
@@ -186,4 +202,4 @@ profile requirements, reproducible tooling, size discipline, or test-first proto
 work MUST be documented in the plan's Complexity Tracking section with a simpler
 alternative and the reason it was rejected.
 
-**Version**: 1.0.0 | **Ratified**: 2026-06-25 | **Last Amended**: 2026-06-25
+**Version**: 1.0.1 | **Ratified**: 2026-06-25 | **Last Amended**: 2026-07-01
