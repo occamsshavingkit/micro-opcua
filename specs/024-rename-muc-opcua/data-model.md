@@ -66,19 +66,24 @@ will turn into concrete file-level tasks.
 - **Represents**: A prose or code-sample mention of the project name, macro
   name, include path, or repository URL in a Markdown/text file.
 - **Key attributes**: file path, whether it is "living" (README, CLAUDE.md,
-  AGENTS.md, ROADMAP.md, everything under `docs/`, `.specify/memory/constitution.md`,
-  `.specify/templates/*.md`, root-level `optimize-hot-paths.md`) or "historical"
-  (`specs/001-*` through `specs/023-*` — per Decision 4 in research.md, still gets
-  the literal-string substitution, but its surrounding narrative/reasoning text is
-  never rewritten).
-- **Validation rule**: Zero remaining occurrences of any Decision-1 literal string
-  post-rename, verified by the Decision-6 regression guard.
+  AGENTS.md, ROADMAP.md, everything under `docs/` except the per-feature
+  `docs/traceability/NNN-*.md` files, `.specify/memory/constitution.md`,
+  `.specify/templates/*.md`, root-level `optimize-hot-paths.md`) or "frozen
+  history" (`specs/001-*` through `specs/023-*`, and the per-feature
+  `docs/traceability/NNN-*.md` files — per Decision 4 in research.md, these are
+  **not edited at all**, the same way past git commits aren't rewritten when a
+  project renames itself).
+- **Validation rule**: Zero remaining occurrences of any Decision-1 literal
+  string post-rename in every "living" file, verified by the Decision-6
+  regression guard; "frozen history" files are explicitly out of the guard's
+  scan and are expected to retain the old name forever.
 - **Known instances**: ~280 files matched the literal-string grep (see
   research.md Decision 5); the majority are source/test files where the only hit is
   an `#include` line or header-guard macro, already covered by the Macro/Header
   entities above — the *documentation-specific* set requiring editorial judgment
   (not just search-replace) is: `README.md`, `ROADMAP.md`, `CLAUDE.md`, `AGENTS.md`,
-  `.specify/memory/constitution.md`, everything under `docs/`, `optimize-hot-paths.md`.
+  `.specify/memory/constitution.md`, `docs/**` except `docs/traceability/NNN-*.md`,
+  `optimize-hot-paths.md`.
 
 ## Entity: CI/Dev-Environment Reference
 
@@ -105,14 +110,14 @@ will turn into concrete file-level tasks.
 
 - **Represents**: The FR-008/SC-006 automated check preventing old-name
   reintroduction.
-- **Key attributes**: scanned file set (everything tracked, minus
-  `build*/`/`.git/`), forbidden-literal set (the five Decision-1 strings, checked
-  even inside `specs/001-023` per Decision 4), allow-list (none — see Decision 6:
-  after the rename there should be zero remaining old-literal occurrences anywhere
-  in the tracked tree, including the migration note itself, which describes the
-  change using prose like "previously named MICRO_OPCUA_SECURITY" — Phase 2 tasks
-  must decide whether the migration note is itself excluded from the scan or
-  phrases the old name in a way the scanner tolerates, e.g. a code-fenced example
-  vs. an escaped/split string).
+- **Key attributes**: scanned file set (everything tracked, minus `build*/`,
+  `.git/`, `specs/001-023/**`, and the per-feature `docs/traceability/NNN-*.md`
+  files — the latter two are frozen history per Decision 4 and are expected to
+  retain the old name forever, by design), forbidden-literal set (the five
+  Decision-1 strings), allow-list (one entry: the migration note itself, which
+  describes the change using prose like "previously named
+  MICRO_OPCUA_SECURITY" — Phase 2 tasks must decide whether the migration note
+  is itself excluded from the scan or phrases the old name in a way the scanner
+  tolerates, e.g. a code-fenced example vs. an escaped/split string).
 - **Validation rule**: Fails the test/CI run on any forbidden-literal match
   outside the resolved allow-list.

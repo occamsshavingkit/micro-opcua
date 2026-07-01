@@ -7,11 +7,13 @@ forbidden substring), extended to a repo-wide sweep.
 
 ## Inputs
 
-- The set of tracked files in the repository, excluding build output directories
-  (`build*/`) and VCS metadata (`.git/`). **Explicitly includes `specs/001-023/**`
-  — no directory-based exclusion** (see research.md Decision 6's correction and
-  Decision 4: those directories get the same literal-string substitution applied
-  and must scan clean too, matching spec.md SC-002).
+- The set of tracked files in the repository, excluding:
+  - build output directories (`build*/`) and VCS metadata (`.git/`);
+  - `specs/001-023/**` and the per-feature `docs/traceability/NNN-*.md` files —
+    these are **frozen historical record** (research.md Decision 4) and are
+    expected to retain the old name forever, by design, the same way a project
+    rename doesn't rewrite already-merged commits or PR descriptions. This is a
+    permanent, two-part directory/glob exclusion, not a growing allow-list.
 - The forbidden-literal set from research.md Decision 1: `micro-opcua`,
   `micro_opcua`, `MICRO_OPCUA`, `MicroOpcUa`, `Micro-OPCUA` (case-sensitive, exact
   substring match — not a word-boundary regex, consistent with how the rename

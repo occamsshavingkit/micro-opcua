@@ -69,28 +69,49 @@ rename to fix external branding/naming confusion, not an API redesign). This kee
 the diff scoped to build-system identifiers, include paths, and prose — the things
 that actually caused the confusion the requester described.
 
-## Decision 4 — How "don't rewrite specs/001-023 narrative" coexists with a uniform literal substitution
+## Decision 4 — `specs/001-023` and their per-feature traceability docs are frozen history: left completely untouched
 
-**Decision**: The mechanical substitution set from Decision 1 IS applied inside
-`specs/001-*` through `specs/023-*` wherever one of the five literal strings occurs,
-because every occurrence found there is itself a literal identifier reference (a
-macro name, an include path, a CMake module filename, or the repo name) — e.g.
-`docs/traceability/004-optimization-fixes.md` citing `MICRO_OPCUA_LTO` as the CMake
-option a past PR added. Renaming that string to `MUC_OPCUA_LTO` does not change the
-historical *narrative* (the past PR still added that option, for the reasons
-recorded); it just keeps the reference pointing at a name that still exists in the
-current build. What is explicitly NOT touched is prose/decision reasoning text itself
-(the sentences explaining *why* a past feature was built a certain way) — no such
-prose contains any of the five literal strings anyway per the grep, so there is no
-actual tension in practice: the "don't rewrite narrative" guidance and "do fix
-copy-pasteable build references" resolve to the same mechanical action.
+**Decision (final, per explicit user direction)**: `specs/001-*` through
+`specs/023-*`, and the per-feature `docs/traceability/NNN-*.md` files that
+document those same already-shipped features, are **not edited at all** by this
+rename — not their narrative, and not their literal macro-name/include-path/
+repository-URL references either. They are treated exactly like already-merged
+git commits or PR descriptions: a project rename doesn't go back and rewrite
+history, even the parts of history that happen to quote an old build flag.
 
-**Alternatives considered**: *Leave specs/001-023 completely untouched* — rejected:
-several of them (e.g. `specs/009-core-feature-expansion/quickstart.md`,
-`specs/021-opcua-fidelity-docs/plan.md`) contain literal `cmake -S . -B ... -DMICRO_OPCUA_...`
-command lines presented as "how to reproduce this"; leaving those unrenamed would mean
-a reader following historical docs copies a command that fails against the renamed
-build system, which is precisely the stale-reference risk FR-006 exists to prevent.
+**Rationale**: The user explicitly overrode an earlier, more aggressive
+resolution of this exact question (see "History of this decision" below) with a
+direct instruction: don't fix already-completed spec-kit workflow artifacts,
+the same way a rename doesn't rename old commits. This is a clean, defensible
+line — `specs/NNN` and their matching `docs/traceability/NNN-*.md` are both
+literally the recorded output of a finished, merged spec-kit feature; nothing
+about them is "current documentation a new reader consults to use the library
+today" (that's README/docs/conformance/*.md/etc., which stay living). Leaving
+them untouched also means the regression guard (Decision 6) has one clean,
+narrow, permanent exclusion instead of a fragile per-string allow-list that has
+to keep growing.
+
+**History of this decision** (kept for traceability, since this flipped twice):
+1. Original spec draft: apply the literal substitution inside `specs/001-023`
+   too, reasoning that a reader might copy-paste a stale `-DMICRO_OPCUA_...`
+   command from a historical quickstart and have it silently fail.
+2. `/speckit-analyze` (finding C1) caught that this original position was
+   internally inconsistent between spec.md's SC-002 (which excluded
+   specs/001-023 from the "zero matches" bar) and FR-006/this decision (which
+   didn't) — and fixed it by making both sides consistently say "include."
+3. The user then overrode both prior positions with the git-history analogy:
+   exclude `specs/001-023` and the per-feature traceability docs entirely,
+   full stop. This is the version that ships. The "stale command" risk from
+   position 1 is accepted as a known, bounded, and reasonable cost — exactly
+   the same cost every renamed project accepts when old historical docs/READMEs
+   quote an old package name.
+
+**Alternatives considered**: *Apply the substitution inside specs/001-023
+because a reader might copy a stale command* (position 1 above) — superseded by
+explicit user direction; the risk is real but small (these are dated,
+clearly-historical documents, not the current getting-started path) and
+accepting it is more consistent with how version control and changelogs
+normally treat history than "silently editing old records" would be.
 
 ## Decision 5 — Full inventory of non-macro/non-include-path touch points
 
@@ -131,6 +152,17 @@ Confirmed by direct inspection, beyond the blanket literal substitution:
 - **Root-level loose file** `optimize-hot-paths.md` (referenced by spec
   022) also contains the old literal strings and is in scope as living
   documentation, not a historical `specs/` artifact.
+- **`docs/traceability/` splits into living and historical halves**: the index
+  files `sections-to-files.md`, `files-to-sections.md`, and
+  `conformance-claims.md` describe *current* cross-references and are living
+  documentation (in scope, updated). The per-feature files
+  (`004-optimization-fixes.md`, `005-embedded-profile-completion.md`,
+  `007-optional-write-service.md`, `008-user-identity-auth.md`,
+  `012-opcua-pubsub.md`, `013-advanced-security.md`,
+  `019-fix-conformance-size.md`, `022-optimize-hot-paths.md`,
+  `023-conformance-docs-subscriber.md`) are each the traceability record of one
+  already-shipped `specs/NNN` feature and are frozen history per Decision 4 —
+  out of scope, untouched.
 
 ## Decision 6 — Regression guard implementation approach (FR-008)
 
@@ -138,23 +170,20 @@ Confirmed by direct inspection, beyond the blanket literal substitution:
 (`tests/unit/test_conformance_docs.c` / `test_traceability_docs.c`, which already
 walk documentation files at test time and fail on forbidden substrings) with a new
 check — or a new small test file following the same pattern — that walks the
-**entire** tracked file set, excluding only `build*/` and `.git/` (explicitly
-**including** `specs/001-023/**` — per Decision 4, those directories get the same
-substitution applied and must contain zero old-name occurrences afterward, same as
-everywhere else), and fails if it finds `micro-opcua`, `micro_opcua`,
-`MICRO_OPCUA`, or `MicroOpcUa` as a literal substring outside of an explicit
-allow-list (the migration note itself, and nowhere else).
+tracked file set **excluding** `build*/`, `.git/`, `specs/001-023/**`, and the
+per-feature `docs/traceability/NNN-*.md` files (Decision 4 — those are frozen
+history and are expected to retain the old name forever, by design), and fails
+if it finds `micro-opcua`, `micro_opcua`, `MICRO_OPCUA`, or `MicroOpcUa` as a
+literal substring outside of that exclusion plus one explicit allow-list entry
+(the migration note itself).
 
-**Correction (post-analysis)**: An earlier draft of this decision incorrectly
-excluded `specs/001-023/**` from the guard's scan while simultaneously claiming
-those directories "should contain zero old-name occurrences afterward too" — a
-self-contradiction caught by `/speckit-analyze` (finding C1) and cross-checked
-against spec.md SC-002, which had the same exclusion and has been corrected to
-match. The resolution kept here is the one Decision 4 already argued for: full
-inclusion, no directory-based exemption, since it's the position consistent with
-FR-006 (correct copy-pasteable references everywhere) and with
-`contracts/regression-guard-contract.md`, which never specified a specs/001-023
-exclusion in the first place.
+**Revision history (post-analysis, then post-user-direction)**: This decision
+flipped twice — see Decision 4's "History of this decision" for the full
+sequence. The version shipped here (exclude `specs/001-023` and the per-feature
+traceability docs) is the final one, per explicit user direction overriding both
+the original draft and the `/speckit-analyze`-driven "include everything"
+correction that preceded it. `contracts/regression-guard-contract.md` is updated
+to match this final scope.
 
 **Rationale**: This mirrors an established, already-reviewed pattern in this
 codebase (Constitution Principle IV/VI: correctness/tooling gates enforced by CI) and
@@ -227,7 +256,10 @@ that version tier ("added principles, new mandatory quality gates...").
 ## Summary
 
 No `NEEDS CLARIFICATION` markers remain from the spec. All Technical Context
-unknowns are resolved by the decisions above (including two corrections made
-during `/speckit-analyze`: Decision 6's specs/001-023 scope, and the new
-Decision 8 on the constitution's version-bump tier); Phase 1 proceeds directly
-to design artifacts.
+unknowns are resolved by the decisions above, including two decisions that were
+each revised once during review: Decision 4/6's final scope for
+`specs/001-023`/`docs/traceability/NNN-*.md` (frozen history, excluded
+entirely — the user's explicit final call, after an intermediate
+`/speckit-analyze`-driven "include everything" correction that this supersedes),
+and Decision 8 on the constitution's version-bump tier. Phase 1 proceeds
+directly to design artifacts.

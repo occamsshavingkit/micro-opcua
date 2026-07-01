@@ -46,8 +46,8 @@ judgment.
 - **Platform adapters**: `platform/pico/`, `platform/arduino/`
 - **Examples**: `examples/minimal_server/`, `examples/pubsub_server/`
 - **Tests**: `tests/unit/`, `tests/integration/`, `tests/fuzz/`, `tests/benchmark/`, `tests/support/`, `tests/interop/`
-- **Documentation**: `docs/**`, `README.md`, `ROADMAP.md`, `CLAUDE.md`, `AGENTS.md`
-- **Historical record (literal-fix only, no narrative rewrite)**: `specs/001-023/**`
+- **Documentation**: `docs/**` (except the per-feature `docs/traceability/NNN-*.md` files), `README.md`, `ROADMAP.md`, `CLAUDE.md`, `AGENTS.md`
+- **Frozen historical record — not edited at all, same as past git commits**: `specs/001-023/**`, and the per-feature `docs/traceability/NNN-*.md` files
 
 ---
 
@@ -67,10 +67,16 @@ proves the rename is complete, before any renaming happens.
   `contracts/regression-guard-contract.md` (new `tests/unit/test_no_stale_project_name.c`
   following the existing `tests/unit/test_conformance_docs.c` pattern, or a new
   `tests/tools/check_no_stale_name.sh` if scanning non-C files like
-  `.github/workflows/ci.yml` proves awkward as a C unit test), scanning the full
-  tracked tree (excluding `build*/`, `.git/`) for the five literal patterns; run it
-  now against the current pre-rename tree and confirm it **fails loudly**, recording
-  the failure output as proof the guard actually detects what it's meant to detect
+  `.github/workflows/ci.yml` proves awkward as a C unit test), scanning the
+  tracked tree **excluding** `build*/`, `.git/`, `specs/001-023/**`, and the
+  per-feature `docs/traceability/NNN-*.md` files (the latter two are frozen
+  history — see spec.md FR-006/FR-008 and research.md Decision 4 — and are
+  expected to retain the old name forever, the same way old commits aren't
+  rewritten) for the five literal patterns; run it now against the current
+  pre-rename tree and confirm it **fails loudly** on the still-unrenamed living
+  files, recording the failure output as proof the guard actually detects what
+  it's meant to detect (and, incidentally, that its exclusion list is already
+  correctly scoped, not accidentally hiding everything)
 
 **Checkpoint**: Baseline captured; regression guard exists and is confirmed to
 catch the old name.
@@ -158,13 +164,17 @@ and tests green under the new names, with proven zero size impact.
 
 ## Phase 4: User Story 2 - Reader trusts current documentation and links (Priority: P1)
 
-**Goal**: Every living document and every historical spec's literal build
-references consistently say `muc-opcua`/`muc_opcua`/`MUC_OPCUA`, with a migration
-note explaining the breaking rename.
+**Goal**: Every living document consistently says `muc-opcua`/`muc_opcua`/
+`MUC_OPCUA`, with a migration note explaining the breaking rename.
+`specs/001-023` and the per-feature `docs/traceability/NNN-*.md` files are
+frozen history and are explicitly left alone — same as old commits.
 
-**Independent Test**: Grep README, CLAUDE.md, AGENTS.md, ROADMAP.md, `docs/**`,
-and `specs/001-023/**` for the five literal patterns; confirm zero matches
-outside the migration note (SC-002).
+**Independent Test**: Grep README, CLAUDE.md, AGENTS.md, ROADMAP.md, and
+`docs/**` (excluding the per-feature `docs/traceability/NNN-*.md` files) for
+the five literal patterns; confirm zero matches outside the migration note
+(SC-002). Separately confirm `specs/001-023/**` and the per-feature
+traceability docs are byte-for-byte unchanged (`git diff --stat` against the
+pre-rename tree shows no touches to those paths).
 
 ### Implementation for User Story 2
 
@@ -200,9 +210,15 @@ outside the migration note (SC-002).
   `pico-minimal-server.md` — prose/command/path references only; measured
   numeric values (bytes, percentages) are historical facts and stay unchanged
 - [ ] T019 [P] [US2] Update `docs/traceability/sections-to-files.md`,
-  `files-to-sections.md`, `conformance-claims.md`, and every numbered
-  `docs/traceability/NNN-feature.md` file — literal reference corrections only,
-  the recorded rationale/decisions for each past feature are untouched
+  `files-to-sections.md`, and `conformance-claims.md` — these are living
+  index files describing *current* cross-references, in scope like the rest of
+  `docs/`. **Do NOT touch** the numbered per-feature files
+  (`004-optimization-fixes.md`, `005-embedded-profile-completion.md`,
+  `007-optional-write-service.md`, `008-user-identity-auth.md`,
+  `012-opcua-pubsub.md`, `013-advanced-security.md`,
+  `019-fix-conformance-size.md`, `022-optimize-hot-paths.md`,
+  `023-conformance-docs-subscriber.md`) — those are frozen history for
+  already-shipped features, left completely alone (research.md Decision 4/5)
 - [ ] T020 [P] [US2] Update `docs/validation/*.md` (audit-hardening.md,
   audit-hardening-closure.md, fuzz.md, host-tests.md, interop.md,
   pico-cross-compile.md, sanitizers.md, static-analysis.md),
@@ -211,21 +227,18 @@ outside the migration note (SC-002).
 - [ ] T021 [P] [US2] Update `docs/architecture.md`, `docs/api-reference.md`,
   `docs/getting-started.md`, `docs/integration-guide.md`
 - [ ] T022 [P] [US2] Update root-level `optimize-hot-paths.md`
-- [ ] T023 [US2] Apply the same literal-string substitution across
-  `specs/001-minimal-embedded-server/**` through
-  `specs/023-conformance-docs-subscriber/**` (no exclusions — see spec.md
-  SC-002 and research.md Decision 4/6): correct every literal
-  `MICRO_OPCUA`/`micro_opcua`/`micro-opcua`/`MicroOpcUa` occurrence (macro names,
-  include paths, CMake module filenames, repo URLs, command examples) without
-  rewriting any narrative reasoning/decision text (research.md Decision 4 —
-  confirmed safe since the full-tree grep found no non-literal prose hits in
-  these directories). **Escape hatch**: this "blind substitute" is safe only
-  because that grep check already came back clean; if any individual
-  occurrence, on inspection, reads as narrative/reasoning rather than a literal
-  build reference (e.g. a sentence that would need rephrasing, not just a
-  token swap), stop and flag it for manual review instead of substituting —
-  do not assume the pre-verified grep is exhaustive against every possible
-  phrasing
+- [ ] T023 [US2] **Do not edit** `specs/001-minimal-embedded-server/**` through
+  `specs/023-conformance-docs-subscriber/**`, or the per-feature
+  `docs/traceability/NNN-*.md` files from T019 — per explicit user direction
+  (research.md Decision 4), these are frozen historical record, left alone
+  exactly like already-merged git commits, even where they literally quote an
+  old macro name, include path, or command that would no longer work verbatim
+  against the renamed project. This task is a **verification**, not a
+  modification: confirm no other task in this feature touched these paths
+  (`git diff --stat <pre-rename-ref>..HEAD -- specs/ docs/traceability/` should
+  show no numbered `specs/NNN-*` or `docs/traceability/NNN-*.md` entries)
+  (depends on T013-T022, since it verifies none of them strayed outside their
+  documented scope)
 - [ ] T024 [US2] Write the breaking-change migration note (FR-007): a new
   `CHANGELOG.md` entry (create the file if it doesn't exist) or
   `docs/migration-024-muc-opcua-rename.md`, stating exactly which identifiers
@@ -239,10 +252,13 @@ outside the migration note (SC-002).
   `contracts/regression-guard-contract.md` (split-string spelling of the old
   name vs. a single named-file path exclusion in T002's guard) so this note
   doesn't trip the guard
-- [ ] T025 [US2] Grep `docs/**`, `specs/001-023/**`, and the root docs
+- [ ] T025 [US2] Grep `docs/**` (excluding the per-feature
+  `docs/traceability/NNN-*.md` files) and the root docs
   (README/ROADMAP/CLAUDE/AGENTS/optimize-hot-paths) for the five literal
   patterns; confirm zero remaining matches outside the T024 migration note
-  (depends on T013-T024)
+  (SC-002). Do **not** include `specs/001-023/**` or the per-feature
+  traceability docs in this "must be zero" grep — they are expected to still
+  contain the old name (T023) (depends on T013-T024)
 
 **Checkpoint**: User Story 2 is independently complete — every living document
 and historical literal reference is consistent, and the breaking change is
@@ -289,9 +305,11 @@ consistent and green under the new name.
 
 **Purpose**: Prove the rename is complete and self-guarding.
 
-- [ ] T031 Re-run the T002 stale-old-name regression guard across the full tree;
-  confirm it now **passes** (zero matches outside the resolved T024 allow-list) —
-  SC-002, SC-006 (depends on T011, T025, T030)
+- [ ] T031 Re-run the T002 stale-old-name regression guard (over its defined
+  scope — everything except `build*/`, `.git/`, `specs/001-023/**`, and the
+  per-feature `docs/traceability/NNN-*.md` files); confirm it now **passes**
+  (zero matches outside the resolved T024 allow-list) — SC-002, SC-006
+  (depends on T011, T023, T025, T030)
 - [ ] T032 Re-run the full host `ctest` suite; confirm green — SC-001, SC-003
   (depends on T011)
 - [ ] T033 Add `docs/traceability/024-rename-muc-opcua.md` mapping this
