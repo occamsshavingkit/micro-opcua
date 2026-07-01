@@ -74,11 +74,16 @@ static const statuscode_name_entry_t known_statuscode_names[] = {
     {"Bad_TooManyMonitoredItems", MU_STATUS_BAD_TOOMANYMONITOREDITEMS},
     {"Bad_TooManySubscriptions", MU_STATUS_BAD_TOOMANYSUBSCRIPTIONS},
     {"Bad_SubscriptionIdInvalid", MU_STATUS_BAD_SUBSCRIPTIONIDINVALID},
-#if MUC_OPCUA_SUBSCRIPTIONS
-    {"Bad_MessageNotAvailable", MU_STATUS_BAD_MESSAGENOTAVAILABLE},
-    {"Bad_SequenceNumberUnknown", MU_STATUS_BAD_SEQUENCENUMBERUNKNOWN},
-    {"Bad_TooManyPublishRequests", MU_STATUS_BAD_TOOMANYPUBLISHREQUESTS},
-#endif
+    /* These three are only #defined in status.h when MUC_OPCUA_SUBSCRIPTIONS is
+       on, but this table's job is to recognize every StatusCode name the shared
+       docs may legitimately use across ANY profile, not just the one this test
+       binary happens to be compiled for -- so they're listed unconditionally,
+       by literal value, rather than referencing the (possibly-undefined) macro.
+       Their .status values are never read by is_known_statuscode_name(); only
+       .name is used, so an unconditional literal here is safe. */
+    {"Bad_MessageNotAvailable", (opcua_statuscode_t)0x807B0000},
+    {"Bad_SequenceNumberUnknown", (opcua_statuscode_t)0x807A0000},
+    {"Bad_TooManyPublishRequests", (opcua_statuscode_t)0x80780000},
     {"Bad_NothingToDo", MU_STATUS_BAD_NOTHINGTODO},
     {"Bad_NotWritable", MU_STATUS_BAD_NOTWRITABLE},
     {"Bad_WriteNotSupported", MU_STATUS_BAD_WRITENOTSUPPORTED},

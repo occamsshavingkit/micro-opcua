@@ -133,7 +133,15 @@ void test_server_profile_array_advertises_embedded_profile(void) {
     TEST_ASSERT_TRUE(string_equals(&profiles[0], embedded_profile));
 }
 
-#else
+#elif MUC_OPCUA_BASE_NODES
+/* Node 86 (the Types folder) and 2269 (ServerProfileArray) only exist at all
+   when MUC_OPCUA_BASE_NODES is on (src/address_space/base_nodes.c's whole
+   s_base_nodes[] table is #ifdef MUC_OPCUA_BASE_NODES; mu_base_address_space()
+   returns {NULL, 0} otherwise). Nano/Micro leave BASE_NODES off entirely (the
+   application supplies its own address space instead, e.g.
+   examples/minimal_server/static_address_space.c), so this "present but
+   unexpanded" check only applies to the BASE_NODES-on, BASE_TYPE_SYSTEM-off
+   combination -- not achieved by any named profile, but a valid custom build. */
 
 void test_default_build_keeps_types_folder_unexpanded(void) {
     const mu_node_t *types = base_node(86u);
@@ -167,7 +175,7 @@ int main(void) {
     RUN_TEST(test_type_hierarchies_have_subtype_references);
     RUN_TEST(test_instances_have_type_definition_references);
     RUN_TEST(test_server_profile_array_advertises_embedded_profile);
-#else
+#elif MUC_OPCUA_BASE_NODES
     RUN_TEST(test_default_build_keeps_types_folder_unexpanded);
 #endif
     return UNITY_END();

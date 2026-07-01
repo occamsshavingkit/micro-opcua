@@ -580,12 +580,20 @@ void test_dispatch_delete_subscriptions_rejects_too_many_operations_before_resul
     size_t response_capacity = sizeof(resp);
     size_t resp_len = response_capacity;
 
-    /* OPC-10000-4 §7.38.2: Bad_TooManyOperations is a service-level rejection
-       for a request that specifies too many operations, before results[] length. */
     opcua_statuscode_t service_result =
         mu_service_dispatch(&server, MU_ID_DELETESUBSCRIPTIONSREQUEST, req, req_len, resp, &resp_len);
 
+#if MUC_OPCUA_SUBSCRIPTIONS
+    /* OPC-10000-4 §7.38.2: Bad_TooManyOperations is a service-level rejection
+       for a request that specifies too many operations, before results[] length. */
     TEST_ASSERT_EQUAL_HEX32(MU_STATUS_BAD_TOOMANYOPERATIONS, service_result);
+#else
+    /* Subscriptions aren't compiled into this profile at all (the dispatch
+       table's DeleteSubscriptions row is itself `#if MUC_OPCUA_SUBSCRIPTIONS`),
+       so the generic dispatcher correctly rejects the request type as
+       unsupported before any per-request validation is reached. */
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_BAD_SERVICEUNSUPPORTED, service_result);
+#endif
     TEST_ASSERT_EQUAL(response_capacity, resp_len);
     TEST_ASSERT_EQUAL_UINT8(0xA5, resp[0]);
 }

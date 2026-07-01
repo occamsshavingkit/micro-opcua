@@ -56,7 +56,16 @@ if(MUC_OPCUA_USER_AUTH)
     target_link_libraries(test_user_auth_encrypted PRIVATE muc_opcua muc_opcua_test_support unity)
     target_include_directories(test_user_auth_encrypted PRIVATE ${CMAKE_SOURCE_DIR}/src)
     add_test(NAME test_user_auth_encrypted COMMAND test_user_auth_encrypted)
+endif()
 
+if(MUC_OPCUA_USER_AUTH AND MUC_OPCUA_SECURITY)
+    # Certificate user tokens need both: MUC_OPCUA_USER_AUTH for ActivateSession's
+    # username/certificate token dispatch, and MUC_OPCUA_SECURITY for
+    # mu_binary_read_certificate_identity_token (encoding/binary_reader.c is
+    # #ifdef MUC_OPCUA_SECURITY for that decoder, a separate condition from the
+    # username-token decoder above which only needs MUC_OPCUA_USER_AUTH). The
+    # Micro profile enables USER_AUTH but not SECURITY, so this test does not
+    # apply there.
     add_executable(test_user_auth_certificate test_user_auth_certificate.c)
     target_link_libraries(test_user_auth_certificate PRIVATE muc_opcua muc_opcua_test_support unity)
     target_include_directories(test_user_auth_certificate PRIVATE ${CMAKE_SOURCE_DIR}/src)
