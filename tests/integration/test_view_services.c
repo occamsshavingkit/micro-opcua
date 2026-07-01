@@ -308,6 +308,7 @@ void test_register_and_unregister_nodes(void) {
     mu_server_poll(server); /* ActivateSession */
 
     mu_server_poll(server); /* RegisterNodes */
+#ifdef MUC_OPCUA_SERVICE_REGISTER_NODES
     TEST_ASSERT_EQUAL(ID_REGISTERNODESRESPONSE, parse_response(mock.last_write, mock.last_write_len, &body));
     {
         opcua_int32_t n;
@@ -321,6 +322,15 @@ void test_register_and_unregister_nodes(void) {
 
     mu_server_poll(server); /* UnregisterNodes */
     TEST_ASSERT_EQUAL(ID_UNREGISTERNODESRESPONSE, parse_response(mock.last_write, mock.last_write_len, &body));
+#else
+    /* RegisterNodes/UnregisterNodes aren't compiled into this profile at all
+       (their dispatch-table rows are #ifdef MUC_OPCUA_SERVICE_REGISTER_NODES),
+       so both requests are correctly rejected as unsupported services. */
+    TEST_ASSERT_EQUAL(MU_ID_SERVICEFAULT, parse_response(mock.last_write, mock.last_write_len, &body));
+
+    mu_server_poll(server); /* UnregisterNodes */
+    TEST_ASSERT_EQUAL(MU_ID_SERVICEFAULT, parse_response(mock.last_write, mock.last_write_len, &body));
+#endif
 }
 
 /* BrowseNext: this server issues no ContinuationPoints, so any continuation point
@@ -487,7 +497,13 @@ void test_translate_browse_paths(void) {
 }
 
 /* US2a: with NO integrator address space, the library's default Base Information
-   node set must answer Read of ServerStatus.State and Browse of Server. */
+   node set must answer Read of ServerStatus.State and Browse of Server. This
+   default node set (src/address_space/base_nodes.c's s_base_nodes[]) is itself
+   entirely #ifdef MUC_OPCUA_BASE_NODES -- Nano/Micro leave it off (the
+   application is expected to supply its own address space instead), so
+   ServerStatus.State genuinely does not exist there and Read correctly returns
+   Bad_NodeIdUnknown rather than a value. */
+#if MUC_OPCUA_BASE_NODES
 void test_base_information_default_nodes(void) {
     mock_t mock;
     memset(&mock, 0, sizeof(mock));
@@ -589,9 +605,12 @@ void test_base_information_default_nodes(void) {
         TEST_ASSERT_TRUE(nrefs >= 2);
     }
 }
+#endif /* MUC_OPCUA_BASE_NODES */
 
 /* US2b: ServerStatus.CurrentTime (i=2258) is a live DateTime sourced from the time
-   adapter via a runtime-bound value source in the base node set. */
+   adapter via a runtime-bound value source in the base node set. Same
+   MUC_OPCUA_BASE_NODES dependency as test_base_information_default_nodes above. */
+#if MUC_OPCUA_BASE_NODES
 void test_server_status_current_time_is_live(void) {
     mock_t mock;
     memset(&mock, 0, sizeof(mock));
@@ -650,13 +669,16 @@ void test_server_status_current_time_is_live(void) {
     mu_binary_read_int64(&body, &dt);
     TEST_ASSERT_EQUAL_HEX64(TEST_NOW_DT, dt);
 }
+#endif /* MUC_OPCUA_BASE_NODES */
 
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_register_and_unregister_nodes);
     RUN_TEST(test_browse_next_invalid_continuation_point);
     RUN_TEST(test_translate_browse_paths);
+#if MUC_OPCUA_BASE_NODES
     RUN_TEST(test_base_information_default_nodes);
     RUN_TEST(test_server_status_current_time_is_live);
+#endif
     return UNITY_END();
 }

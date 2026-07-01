@@ -503,7 +503,12 @@ void test_delete_subscriptions(void) {
 
 /* CreateMonitoredItems (OPC 10000-4 §5.13.2): a data MonitoredItem on a valid base node
    (ServerStatus.CurrentTime, i=2258, Value) succeeds with a non-zero monitoredItemId; an
-   unknown NodeId yields per-op Bad_NodeIdUnknown (§5.13.2.4). */
+   unknown NodeId yields per-op Bad_NodeIdUnknown (§5.13.2.4).
+   This and the next two tests specifically target the *standard* i=2258 node
+   (src/address_space/base_nodes.c's s_base_nodes[], #ifdef MUC_OPCUA_BASE_NODES)
+   rather than an application-custom node like the other subscription tests in
+   this file (ns=1;i=5000), so they only apply when that node set is compiled in. */
+#if MUC_OPCUA_BASE_NODES
 void test_create_monitored_items(void) {
     mock_t mock;
     memset(&mock, 0, sizeof(mock));
@@ -681,6 +686,7 @@ void test_delete_monitored_items(void) {
     TEST_ASSERT_EQUAL_HEX32(MU_STATUS_GOOD, d0);
     TEST_ASSERT_EQUAL_HEX32(STATUS_BAD_MONITOREDITEMIDINVALID, d1);
 }
+#endif /* MUC_OPCUA_BASE_NODES */
 
 /* A controllable Int32 variable node (ns=1;i=5000) for change-detection testing. */
 static opcua_int32_t s_mon_val = 0;
@@ -2169,9 +2175,11 @@ int main(void) {
     RUN_TEST(test_create_subscription);
     RUN_TEST(test_create_subscription_too_many);
     RUN_TEST(test_delete_subscriptions);
+#if MUC_OPCUA_BASE_NODES
     RUN_TEST(test_create_monitored_items);
     RUN_TEST(test_create_monitored_items_too_many);
     RUN_TEST(test_delete_monitored_items);
+#endif
     RUN_TEST(test_sampling_detects_change);
     RUN_TEST(test_publish_delivers_data_change);
     RUN_TEST(test_publish_keep_alive);

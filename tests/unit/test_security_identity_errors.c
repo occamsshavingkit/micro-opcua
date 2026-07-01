@@ -327,11 +327,20 @@ void test_activate_session_security_policy_none_username_token_returns_identityt
     skip_response_header(&reader, &request_handle, &service_result);
     TEST_ASSERT_EQUAL(48, request_handle);
 
+#ifdef MUC_OPCUA_USER_AUTH
     /* OPC-10000-4 section 5.7.3.3 permits Bad_IdentityTokenRejected for
        ActivateSession. Section 7.38.2 defines it as a valid token rejected by
        the Server; section 7.40.2.1 requires secret-bearing tokens to follow the
        UserTokenPolicy SecurityPolicy, so SecurityPolicy None rejects by default. */
     TEST_ASSERT_EQUAL_HEX32(MU_STATUS_BAD_IDENTITYTOKENREJECTED, service_result);
+#else
+    /* Without MUC_OPCUA_USER_AUTH the server cannot decode a username token at
+       all (the token TYPE itself is unsupported), which is the more generic
+       Bad_IdentityTokenInvalid rather than the SecurityPolicy-specific
+       Bad_IdentityTokenRejected reachable only once username tokens are
+       understood (see service_dispatch.c's ActivateSession token-324 branch). */
+    TEST_ASSERT_EQUAL_HEX32(MU_STATUS_BAD_IDENTITYTOKENINVALID, service_result);
+#endif
     TEST_ASSERT_EQUAL(MU_SESSION_STATE_CREATED, server.sessions[0].state);
     TEST_ASSERT_EQUAL_UINT(0u, auth_context.calls);
 }
