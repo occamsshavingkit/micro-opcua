@@ -95,7 +95,7 @@ specs/[###-feature]/
 
 ```text
 include/
-└── micro_opcua/         # Public C API
+└── muc_opcua/         # Public C API
 src/
 ├── core/                # Platform-independent protocol core
 ├── encoding/            # OPC UA Binary encoders/decoders

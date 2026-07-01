@@ -1,6 +1,6 @@
 # Feature Size Ledger
 
-Measured footprint of the micro-opcua server across the three build profiles. The core
+Measured footprint of the muc-opcua server across the three build profiles. The core
 has **no mutable global state** (`.data`, `.bss`, and heap are all zero — no `malloc` in
 the protocol path), so all RAM is caller-provided. (Feature 004 briefly introduced ~156 B
 of file-static state; issue #197 relocated it into the caller-provided server storage,
@@ -55,7 +55,7 @@ the integrator must provide (and is the value `mu_server_init` checks against).
 - The subscription engine adds the fixed-size subscription / MonitoredItem / parked-Publish
   arrays (capacities `-D`-overridable: `MU_MAX_SUBSCRIPTIONS`=2, `MU_MAX_MONITORED_ITEMS`=8,
   `MU_MAX_PUBLISH_REQUESTS`=4); each MonitoredItem also caches its resolved node (FR-010).
-  `MU_SERVER_STORAGE_BYTES` rises to 3,328 automatically when `MICRO_OPCUA_SUBSCRIPTIONS`
+  `MU_SERVER_STORAGE_BYTES` rises to 3,328 automatically when `MUC_OPCUA_SUBSCRIPTIONS`
   is defined.
 - **Embedded 2017 grows to `MU_SERVER_STORAGE_BYTES`=63,240** because the Standard
   DataChange facet requires 100 monitored items, queue depth 2, trigger links, five
@@ -87,7 +87,7 @@ leaves roughly **240 KiB** for the application and network stack.
 Host figures are inflated by libc/printf/the POSIX TCP adapter (and OpenSSL for
 embedded) and are *not* representative of an MCU; included for CI comparison.
 
-| Profile | `libmicro_opcua.a` `.text` | `minimal_server` ELF `.text` |
+| Profile | `libmuc_opcua.a` `.text` | `minimal_server` ELF `.text` |
 |---|---|---|
 | nano | 32,169 B | 36,213 B |
 | micro | 42,552 B | 47,072 B |
@@ -95,12 +95,12 @@ embedded) and are *not* representative of an MCU; included for CI comparison.
 
 ### Feature 005 US1 host proxy (Standard DataChange facet)
 
-Measured after enabling `MICRO_OPCUA_SUBSCRIPTIONS_STANDARD=ON` with the Standard-facet
+Measured after enabling `MUC_OPCUA_SUBSCRIPTIONS_STANDARD=ON` with the Standard-facet
 capacity overrides (`MU_MAX_MONITORED_ITEMS=100`, `MU_MAX_SUBSCRIPTIONS=2`,
 `MU_MAX_PUBLISH_REQUESTS=5`, `MU_MONITORED_QUEUE_DEPTH=2`). This is a host `gcc -Os`
 proxy, not the final RP2040 US4 measurement.
 
-| Build | `libmicro_opcua.a` `.text` | `.data` | `.bss` | `sizeof(struct mu_server)` | `MU_SERVER_STORAGE_BYTES` |
+| Build | `libmuc_opcua.a` `.text` | `.data` | `.bss` | `sizeof(struct mu_server)` | `MU_SERVER_STORAGE_BYTES` |
 |---|---:|---:|---:|---:|---:|
 | default subscriptions/security host build | 93,145 B | 2,176 B | 0 B | 10,392 B | 10,496 B |
 | Standard US1 capacity build | 101,955 B | 2,200 B | 0 B | 41,960 B | 45,696 B |
@@ -113,11 +113,11 @@ and uses no heap. `MU_SERVER_STORAGE_BYTES` is intentionally conservative so it 
 
 ### Feature 005 US2 host proxy (Base Info Type System)
 
-Measured with `MICRO_OPCUA_BASE_TYPE_SYSTEM=ON`, without the Standard DataChange capacity
+Measured with `MUC_OPCUA_BASE_TYPE_SYSTEM=ON`, without the Standard DataChange capacity
 overrides. This is a host `gcc -Os` proxy for the gated namespace-0 type-system table and browse
 NodeClassMask correction, not the final RP2040 US4 measurement.
 
-| Build | `libmicro_opcua.a` `.text` | `.data` | `.bss` | `sizeof(struct mu_server)` | `MU_SERVER_STORAGE_BYTES` |
+| Build | `libmuc_opcua.a` `.text` | `.data` | `.bss` | `sizeof(struct mu_server)` | `MU_SERVER_STORAGE_BYTES` |
 |---|---:|---:|---:|---:|---:|
 | default subscriptions/security host build | 93,129 B | 2,176 B | 0 B | 10,392 B | 10,496 B |
 | Base Type System build | 96,466 B | 5,520 B | 0 B | 10,392 B | 10,496 B |
@@ -129,13 +129,13 @@ the caller-provided server context, leaves `.bss` at zero, and introduces no hea
 
 ### Feature 005 US3 host proxy (Method Call: GetMonitoredItems + ResendData)
 
-Measured with `MICRO_OPCUA_SUBSCRIPTIONS_STANDARD=ON`, `MICRO_OPCUA_BASE_TYPE_SYSTEM=ON`, and
+Measured with `MUC_OPCUA_SUBSCRIPTIONS_STANDARD=ON`, `MUC_OPCUA_BASE_TYPE_SYSTEM=ON`, and
 the Standard-facet capacity overrides (`MU_MAX_MONITORED_ITEMS=100`,
 `MU_MAX_SUBSCRIPTIONS=2`, `MU_MAX_PUBLISH_REQUESTS=5`, `MU_MONITORED_QUEUE_DEPTH=2`,
 `MU_MAX_TRIGGER_LINKS=4`). This is a host `gcc -Os` proxy for the gated Call service,
 method-node metadata, and resend/enumeration helpers.
 
-| Build | `libmicro_opcua.a` `.text` | `.data` | `.bss` | `sizeof(struct mu_server)` | `MU_SERVER_STORAGE_BYTES` |
+| Build | `libmuc_opcua.a` `.text` | `.data` | `.bss` | `sizeof(struct mu_server)` | `MU_SERVER_STORAGE_BYTES` |
 |---|---:|---:|---:|---:|---:|
 | default subscriptions/security host build | 93,129 B | 2,176 B | 0 B | 10,392 B | 10,496 B |
 | Standard+BaseType+Call capacity build | 109,297 B | 6,008 B | 0 B | 41,960 B | 45,696 B |
@@ -149,13 +149,13 @@ The US3 resend latch fits existing `mu_subscription_t` padding, so Call does not
 ### Feature 005 US4 host profile build (`make embedded`)
 
 Measured with the Makefile profile wiring:
-`MICRO_OPCUA_EMBEDDED_PROFILE=ON`, `MICRO_OPCUA_OPTIMIZE_SIZE=ON`, and the embedded capacity
+`MUC_OPCUA_EMBEDDED_PROFILE=ON`, `MUC_OPCUA_OPTIMIZE_SIZE=ON`, and the embedded capacity
 defines (`MU_MAX_MONITORED_ITEMS=100`, `MU_MAX_SUBSCRIPTIONS=2`,
 `MU_MAX_PUBLISH_REQUESTS=5`, `MU_MONITORED_QUEUE_DEPTH=2`, `MU_MAX_TRIGGER_LINKS=4`).
 
 | Artifact | `.text` | `.data` | `.bss` | Notes |
 |---|---:|---:|---:|---|
-| `build/embedded/src/libmicro_opcua.a` | 65,664 B | 6,008 B | 0 B | host optimized static library; core `.bss` remains zero |
+| `build/embedded/src/libmuc_opcua.a` | 65,664 B | 6,008 B | 0 B | host optimized static library; core `.bss` remains zero |
 | `build/embedded/examples/minimal_server` | 79,264 B | 8,068 B | 62,240 B | example-owned storage/RX/TX buffers and host runtime, not core mutable globals |
 
 Caller-provided storage for the embedded profile:
@@ -182,8 +182,8 @@ Current host/full default size evidence:
 
 | Artifact | text | data | bss | dec | Baseline | Delta / status |
 |---|---:|---:|---:|---:|---|---|
-| `build/audit-host-size-default/src/libmicro_opcua.a` (`MICRO_OPCUA_PROFILE=full`, default `MICRO_OPCUA_OPTIMIZE_SIZE=ON`) | 96,398 B | 6,224 B | 0 B | 102,622 B | host archive baseline `text=152,709 B`, `data=6,224 B`, `bss=0 B` | text `-56,311 B`; data `+0 B`; bss `+0 B`; **PASS** for the +8 KiB host/full text budget |
-| `build/audit-host-size-off/src/libmicro_opcua.a` (`MICRO_OPCUA_OPTIMIZE_SIZE=OFF`) | 166,784 B | 6,224 B | 0 B | 173,008 B | host archive baseline above | reference-only opt-out build; not the constrained-device default |
+| `build/audit-host-size-default/src/libmuc_opcua.a` (`MUC_OPCUA_PROFILE=full`, default `MUC_OPCUA_OPTIMIZE_SIZE=ON`) | 96,398 B | 6,224 B | 0 B | 102,622 B | host archive baseline `text=152,709 B`, `data=6,224 B`, `bss=0 B` | text `-56,311 B`; data `+0 B`; bss `+0 B`; **PASS** for the +8 KiB host/full text budget |
+| `build/audit-host-size-off/src/libmuc_opcua.a` (`MUC_OPCUA_OPTIMIZE_SIZE=OFF`) | 166,784 B | 6,224 B | 0 B | 173,008 B | host archive baseline above | reference-only opt-out build; not the constrained-device default |
 
 Current ARM Cortex-M0+ profile matrix:
 
@@ -198,7 +198,7 @@ Current Pico embedded-profile artifacts:
 
 | Artifact | File size / section totals | Status |
 |---|---:|---|
-| `build/t089a-pico-embedded/src/libmicro_opcua.a` | 703,784 B file size | PASS; archive produced |
+| `build/t089a-pico-embedded/src/libmuc_opcua.a` | 703,784 B file size | PASS; archive produced |
 | `build/t089a-pico-embedded/platform/pico/pico_minimal_server.elf` | 1,014,188 B file size; `text=73,428`, `data=0`, `bss=119,340`, `dec=192,768` | PASS; ELF produced and measured |
 | `build/t089a-pico-embedded/platform/pico/pico_minimal_server.uf2` | 138,752 B file size | PASS; UF2 produced |
 
@@ -206,7 +206,7 @@ Current RAM, heap, and stack evidence:
 
 | Check | Current evidence | Status |
 |---|---|---|
-| Host/full archive static RAM | `.data=6,224 B`, `.bss=0 B`, flat against baseline; `nm -S --size-sort build/src/libmicro_opcua.a \| rg ' [BbDd] '` reports initialized data only and no BSS symbols. | PASS for archive static RAM |
+| Host/full archive static RAM | `.data=6,224 B`, `.bss=0 B`, flat against baseline; `nm -S --size-sort build/src/libmuc_opcua.a \| rg ' [BbDd] '` reports initialized data only and no BSS symbols. | PASS for archive static RAM |
 | Caller-provided storage | Host/full `sizeof(struct mu_server)=116,040 B`, `MU_SERVER_STORAGE_BYTES=125,020 B`, `sizeof(mu_connection_t)=8,560 B`, `MU_CONNECTION_RX_BUFFER_SIZE=8,192 B`, `MU_CONNECTION_BASE_STORAGE_BYTES=1,328 B`; ARM embedded `sizeof(struct mu_server)=85,040 B`, `MU_SERVER_STORAGE_BYTES=98,520 B`, `sizeof(mu_connection_t)=9,480 B`; ARM nano `sizeof(struct mu_server)=664 B`, `MU_SERVER_STORAGE_BYTES=1,280 B`. | Absolute storage evidence recorded; no unbaselined delta is invented |
 | Protocol hot-path heap | Source review found no allocator calls in `src/core`, `src/encoding`, or `src/services`; remaining matches are `mu_session_find_free` false positives or adapter cleanup hooks such as `cipher_ctx_free`. | PASS for the core protocol hot path |
 | Host secured OPN stack | `scripts/check_stack_usage.sh --build-dir build/audit-embedded-stack --threshold 10240` reports `3,040 B`; threshold `10,240 B`. | PASS |
@@ -228,11 +228,11 @@ records the current absolute host evidence and the available comparison against
 gate because embedded/nano/stack evidence is tracked by separate tasks.
 
 Build/profile knobs from `build/CMakeCache.txt`:
-`MICRO_OPCUA_PROFILE=full`, `MICRO_OPCUA_BUILD_TESTS=ON`,
-`MICRO_OPCUA_PLATFORM=host`, `MICRO_OPCUA_OPTIMIZE_SIZE=OFF`,
-`MICRO_OPCUA_LTO=OFF`, `CMAKE_BUILD_TYPE=` empty, `CMAKE_C_FLAGS=` empty,
+`MUC_OPCUA_PROFILE=full`, `MUC_OPCUA_BUILD_TESTS=ON`,
+`MUC_OPCUA_PLATFORM=host`, `MUC_OPCUA_OPTIMIZE_SIZE=OFF`,
+`MUC_OPCUA_LTO=OFF`, `CMAKE_BUILD_TYPE=` empty, `CMAKE_C_FLAGS=` empty,
 compiler `/usr/bin/cc`, full-profile services enabled, OpenSSL detected through
-`MICRO_OPCUA_HAVE_OPENSSL=1`, and capacity overrides
+`MUC_OPCUA_HAVE_OPENSSL=1`, and capacity overrides
 `MU_MAX_MONITORED_ITEMS=100`, `MU_MAX_SUBSCRIPTIONS=2`,
 `MU_MAX_PUBLISH_REQUESTS=5`, `MU_MONITORED_QUEUE_DEPTH=2`,
 `MU_MAX_TRIGGER_LINKS=4`.
@@ -241,88 +241,88 @@ Commands and transcripts:
 
 ```sh
 cmake --build build
-./scripts/size-report.sh build/src/libmicro_opcua.a
-size -t build/src/libmicro_opcua.a
-nm -S --size-sort build/src/libmicro_opcua.a | rg ' [BbDd] '
+./scripts/size-report.sh build/src/libmuc_opcua.a
+size -t build/src/libmuc_opcua.a
+nm -S --size-sort build/src/libmuc_opcua.a | rg ' [BbDd] '
 rg -n 'malloc|calloc|realloc|free\(|OPENSSL_malloc' src include tests
 ```
 
-- Size/build transcript: `/tmp/micro-opcua-size/t088a-host-full-size.log`
+- Size/build transcript: `/tmp/muc-opcua-size/t088a-host-full-size.log`
   (`cmake --build build` exit code `0`; `size-report.sh` exit code `0`).
-- Totals transcript: `/tmp/micro-opcua-size/t088a-host-full-size-totals.log`
+- Totals transcript: `/tmp/muc-opcua-size/t088a-host-full-size-totals.log`
   (`size -t` exit code `0`; GNU binutils `size` 2.42).
 - Data/BSS symbol transcript:
-  `/tmp/micro-opcua-size/t088a-host-full-nm-data-bss.log` (`nm`/`rg` exit code
+  `/tmp/muc-opcua-size/t088a-host-full-nm-data-bss.log` (`nm`/`rg` exit code
   `0`; GNU binutils `nm` 2.42).
-- Heap-review transcript: `/tmp/micro-opcua-size/t088a-heap-grep.log` (`rg`
+- Heap-review transcript: `/tmp/muc-opcua-size/t088a-heap-grep.log` (`rg`
   exit code `0`).
 - Caller-storage measurement helper was compiled from stdin with the same
-  compile definitions as `build/src/libmicro_opcua.a`; build/run transcript:
-  `/tmp/micro-opcua-size/t088a-sizeof-server.build.log`; output:
-  `/tmp/micro-opcua-size/t088a-sizeof-server.run.log`; compile/run exit codes
+  compile definitions as `build/src/libmuc_opcua.a`; build/run transcript:
+  `/tmp/muc-opcua-size/t088a-sizeof-server.build.log`; output:
+  `/tmp/muc-opcua-size/t088a-sizeof-server.run.log`; compile/run exit codes
   `0`/`0`.
 
 T099b raw size-report evidence from T099a:
 
-- Build transcript: `/tmp/micro-opcua-t099a/t099a-build.log`
+- Build transcript: `/tmp/muc-opcua-t099a/t099a-build.log`
   (`cmake --build build` exit code `0`; produced
-  `build/src/libmicro_opcua.a`).
-- Size-report transcript: `/tmp/micro-opcua-t099a/t099a-size-report.log`
-  (`./scripts/size-report.sh build/src/libmicro_opcua.a` exit code `0`).
+  `build/src/libmuc_opcua.a`).
+- Size-report transcript: `/tmp/muc-opcua-t099a/t099a-size-report.log`
+  (`./scripts/size-report.sh build/src/libmuc_opcua.a` exit code `0`).
 - `size-report.sh` emitted per-object rows only, not a totals row. The summed
   raw row values are `text=166,738 B`, `data=6,224 B`, `bss=0 B`,
   `dec=172,962 B`. This preserves the known host/full budget failure recorded
   below; T099c owns the formal budget comparison.
 
 ```text
-command: ./scripts/size-report.sh build/src/libmicro_opcua.a
+command: ./scripts/size-report.sh build/src/libmuc_opcua.a
 started: 2026-06-30T08:49:57+02:00
-Size report for: build/src/libmicro_opcua.a
+Size report for: build/src/libmuc_opcua.a
    text	   data	    bss	    dec	    hex	filename
-  11243	      0	      0	  11243	   2beb	server.c.o (ex build/src/libmicro_opcua.a)
-     32	      0	      0	     32	     20	status.c.o (ex build/src/libmicro_opcua.a)
-   1966	      0	      0	   1966	    7ae	tcp_connection.c.o (ex build/src/libmicro_opcua.a)
-   1718	      0	      0	   1718	    6b6	message_chunk.c.o (ex build/src/libmicro_opcua.a)
-    309	      0	      0	    309	    135	sequence.c.o (ex build/src/libmicro_opcua.a)
-    472	      0	      0	    472	    1d8	service_message.c.o (ex build/src/libmicro_opcua.a)
-  45691	    816	      0	  46507	   b5ab	service_dispatch.c.o (ex build/src/libmicro_opcua.a)
-   1022	      0	      0	   1022	    3fe	uasc.c.o (ex build/src/libmicro_opcua.a)
-   1077	      0	      0	   1077	    435	secure_channel.c.o (ex build/src/libmicro_opcua.a)
-   2808	      0	      0	   2808	    af8	session.c.o (ex build/src/libmicro_opcua.a)
-    694	      0	      0	    694	    2b6	service_header.c.o (ex build/src/libmicro_opcua.a)
-   3256	      0	      0	   3256	    cb8	discovery.c.o (ex build/src/libmicro_opcua.a)
-     32	      0	      0	     32	     20	alarms_conditions.c.o (ex build/src/libmicro_opcua.a)
-    531	      0	      0	    531	    213	address_space.c.o (ex build/src/libmicro_opcua.a)
-   6080	   5408	      0	  11488	   2ce0	base_nodes.c.o (ex build/src/libmicro_opcua.a)
-   2270	      0	      0	   2270	    8de	node_id.c.o (ex build/src/libmicro_opcua.a)
-    529	      0	      0	    529	    211	value_source.c.o (ex build/src/libmicro_opcua.a)
-   3118	      0	      0	   3118	    c2e	binary_reader.c.o (ex build/src/libmicro_opcua.a)
-   2248	      0	      0	   2248	    8c8	binary_writer.c.o (ex build/src/libmicro_opcua.a)
-    987	      0	      0	    987	    3db	binary_string.c.o (ex build/src/libmicro_opcua.a)
-   1730	      0	      0	   1730	    6c2	binary_nodeid.c.o (ex build/src/libmicro_opcua.a)
-   1138	      0	      0	   1138	    472	binary_extension_object.c.o (ex build/src/libmicro_opcua.a)
-   2644	      0	      0	   2644	    a54	binary_variant.c.o (ex build/src/libmicro_opcua.a)
-    941	      0	      0	    941	    3ad	binary_datavalue.c.o (ex build/src/libmicro_opcua.a)
-   1200	      0	      0	   1200	    4b0	security_policy.c.o (ex build/src/libmicro_opcua.a)
-     32	      0	      0	     32	     20	opcua_ids.c.o (ex build/src/libmicro_opcua.a)
-   1965	      0	      0	   1965	    7ad	read.c.o (ex build/src/libmicro_opcua.a)
-   4286	      0	      0	   4286	   10be	browse.c.o (ex build/src/libmicro_opcua.a)
-  10937	      0	      0	  10937	   2ab9	node_management.c.o (ex build/src/libmicro_opcua.a)
-   2281	      0	      0	   2281	    8e9	query.c.o (ex build/src/libmicro_opcua.a)
-   3013	      0	      0	   3013	    bc5	binary_query.c.o (ex build/src/libmicro_opcua.a)
-  21205	      0	      0	  21205	   52d5	subscription.c.o (ex build/src/libmicro_opcua.a)
-    749	      0	      0	    749	    2ed	pubsub.c.o (ex build/src/libmicro_opcua.a)
-    323	      0	      0	    323	    143	uadp_encoder.c.o (ex build/src/libmicro_opcua.a)
-    596	      0	      0	    596	    254	host_udp_adapter.c.o (ex build/src/libmicro_opcua.a)
-    710	      0	      0	    710	    2c6	write.c.o (ex build/src/libmicro_opcua.a)
-   4416	      0	      0	   4416	   1140	history.c.o (ex build/src/libmicro_opcua.a)
-   1219	      0	      0	   1219	    4c3	key_derivation.c.o (ex build/src/libmicro_opcua.a)
-    492	      0	      0	    492	    1ec	certificate.c.o (ex build/src/libmicro_opcua.a)
-   7051	      0	      0	   7051	   1b8b	asym_chunk.c.o (ex build/src/libmicro_opcua.a)
-   4232	      0	      0	   4232	   1088	sym_chunk.c.o (ex build/src/libmicro_opcua.a)
-    278	      0	      0	    278	    116	trustlist.c.o (ex build/src/libmicro_opcua.a)
-   1636	      0	      0	   1636	    664	host_tcp_adapter.c.o (ex build/src/libmicro_opcua.a)
-   7581	      0	      0	   7581	   1d9d	host_crypto_adapter.c.o (ex build/src/libmicro_opcua.a)
+  11243	      0	      0	  11243	   2beb	server.c.o (ex build/src/libmuc_opcua.a)
+     32	      0	      0	     32	     20	status.c.o (ex build/src/libmuc_opcua.a)
+   1966	      0	      0	   1966	    7ae	tcp_connection.c.o (ex build/src/libmuc_opcua.a)
+   1718	      0	      0	   1718	    6b6	message_chunk.c.o (ex build/src/libmuc_opcua.a)
+    309	      0	      0	    309	    135	sequence.c.o (ex build/src/libmuc_opcua.a)
+    472	      0	      0	    472	    1d8	service_message.c.o (ex build/src/libmuc_opcua.a)
+  45691	    816	      0	  46507	   b5ab	service_dispatch.c.o (ex build/src/libmuc_opcua.a)
+   1022	      0	      0	   1022	    3fe	uasc.c.o (ex build/src/libmuc_opcua.a)
+   1077	      0	      0	   1077	    435	secure_channel.c.o (ex build/src/libmuc_opcua.a)
+   2808	      0	      0	   2808	    af8	session.c.o (ex build/src/libmuc_opcua.a)
+    694	      0	      0	    694	    2b6	service_header.c.o (ex build/src/libmuc_opcua.a)
+   3256	      0	      0	   3256	    cb8	discovery.c.o (ex build/src/libmuc_opcua.a)
+     32	      0	      0	     32	     20	alarms_conditions.c.o (ex build/src/libmuc_opcua.a)
+    531	      0	      0	    531	    213	address_space.c.o (ex build/src/libmuc_opcua.a)
+   6080	   5408	      0	  11488	   2ce0	base_nodes.c.o (ex build/src/libmuc_opcua.a)
+   2270	      0	      0	   2270	    8de	node_id.c.o (ex build/src/libmuc_opcua.a)
+    529	      0	      0	    529	    211	value_source.c.o (ex build/src/libmuc_opcua.a)
+   3118	      0	      0	   3118	    c2e	binary_reader.c.o (ex build/src/libmuc_opcua.a)
+   2248	      0	      0	   2248	    8c8	binary_writer.c.o (ex build/src/libmuc_opcua.a)
+    987	      0	      0	    987	    3db	binary_string.c.o (ex build/src/libmuc_opcua.a)
+   1730	      0	      0	   1730	    6c2	binary_nodeid.c.o (ex build/src/libmuc_opcua.a)
+   1138	      0	      0	   1138	    472	binary_extension_object.c.o (ex build/src/libmuc_opcua.a)
+   2644	      0	      0	   2644	    a54	binary_variant.c.o (ex build/src/libmuc_opcua.a)
+    941	      0	      0	    941	    3ad	binary_datavalue.c.o (ex build/src/libmuc_opcua.a)
+   1200	      0	      0	   1200	    4b0	security_policy.c.o (ex build/src/libmuc_opcua.a)
+     32	      0	      0	     32	     20	opcua_ids.c.o (ex build/src/libmuc_opcua.a)
+   1965	      0	      0	   1965	    7ad	read.c.o (ex build/src/libmuc_opcua.a)
+   4286	      0	      0	   4286	   10be	browse.c.o (ex build/src/libmuc_opcua.a)
+  10937	      0	      0	  10937	   2ab9	node_management.c.o (ex build/src/libmuc_opcua.a)
+   2281	      0	      0	   2281	    8e9	query.c.o (ex build/src/libmuc_opcua.a)
+   3013	      0	      0	   3013	    bc5	binary_query.c.o (ex build/src/libmuc_opcua.a)
+  21205	      0	      0	  21205	   52d5	subscription.c.o (ex build/src/libmuc_opcua.a)
+    749	      0	      0	    749	    2ed	pubsub.c.o (ex build/src/libmuc_opcua.a)
+    323	      0	      0	    323	    143	uadp_encoder.c.o (ex build/src/libmuc_opcua.a)
+    596	      0	      0	    596	    254	host_udp_adapter.c.o (ex build/src/libmuc_opcua.a)
+    710	      0	      0	    710	    2c6	write.c.o (ex build/src/libmuc_opcua.a)
+   4416	      0	      0	   4416	   1140	history.c.o (ex build/src/libmuc_opcua.a)
+   1219	      0	      0	   1219	    4c3	key_derivation.c.o (ex build/src/libmuc_opcua.a)
+    492	      0	      0	    492	    1ec	certificate.c.o (ex build/src/libmuc_opcua.a)
+   7051	      0	      0	   7051	   1b8b	asym_chunk.c.o (ex build/src/libmuc_opcua.a)
+   4232	      0	      0	   4232	   1088	sym_chunk.c.o (ex build/src/libmuc_opcua.a)
+    278	      0	      0	    278	    116	trustlist.c.o (ex build/src/libmuc_opcua.a)
+   1636	      0	      0	   1636	    664	host_tcp_adapter.c.o (ex build/src/libmuc_opcua.a)
+   7581	      0	      0	   7581	   1d9d	host_crypto_adapter.c.o (ex build/src/libmuc_opcua.a)
 exit_code: 0
 finished: 2026-06-30T08:49:57+02:00
 ```
@@ -331,7 +331,7 @@ T099c host/full budget comparison:
 
 | Artifact | Current raw size-report totals | Baseline host archive | Delta | Plan budget | Budget result |
 |---|---:|---:|---:|---|---|
-| `build/src/libmicro_opcua.a` | text 166,738 B; data 6,224 B; bss 0 B; dec 172,962 B | text 152,709 B; data 6,224 B; bss 0 B | text +14,029 B; data +0 B; bss +0 B | Host/full `.text` growth under +8 KiB (`< 8,192 B`); no new default static RAM beyond existing storage | **FAIL**: text growth exceeds the host/full flash budget by 5,837 B. Data and BSS are flat, but that does not make the resource gate pass. |
+| `build/src/libmuc_opcua.a` | text 166,738 B; data 6,224 B; bss 0 B; dec 172,962 B | text 152,709 B; data 6,224 B; bss 0 B | text +14,029 B; data +0 B; bss +0 B | Host/full `.text` growth under +8 KiB (`< 8,192 B`); no new default static RAM beyond existing storage | **FAIL**: text growth exceeds the host/full flash budget by 5,837 B. Data and BSS are flat, but that does not make the resource gate pass. |
 
 T099c conclusion: host/full flash is over budget because `+14,029 B` is greater
 than the `< 8,192 B` limit in `specs/020-audit-hardening/plan.md`. Archive
@@ -345,7 +345,7 @@ T088a host/full archive comparison:
 
 | Evidence | text | data | bss | dec | Baseline | Delta | Budget status |
 |---|---:|---:|---:|---:|---:|---:|---|
-| `build/src/libmicro_opcua.a` (`size -t`) | 166,738 B | 6,224 B | 0 B | 172,962 B | text 152,709 B; data 6,224 B; bss 0 B | text +14,029 B; data +0 B; bss +0 B | **FAIL for host/full +8 KiB text budget** |
+| `build/src/libmuc_opcua.a` (`size -t`) | 166,738 B | 6,224 B | 0 B | 172,962 B | text 152,709 B; data 6,224 B; bss 0 B | text +14,029 B; data +0 B; bss +0 B | **FAIL for host/full +8 KiB text budget** |
 
 RAM and heap evidence:
 
@@ -374,7 +374,7 @@ targets the ARM Cortex-M0+ Thumb `-Os` profile matrix required by the active
 feature's size gate: nano/embedded `.text` growth under +4 KiB, no new default
 static RAM unless justified, no protocol hot-path heap, and release-gate honesty.
 The current embedded/nano evidence is **blocked** because the ARM profile builds
-fail before producing `libmicro_opcua.a` archives, so this entry records command
+fail before producing `libmuc_opcua.a` archives, so this entry records command
 results and blockers rather than invented flash/RAM deltas.
 
 Toolchain inventory:
@@ -391,22 +391,22 @@ BUILD_ROOT=build/audit-size-arm scripts/measure_size.sh nano
 BUILD_ROOT=build/audit-size-arm scripts/measure_size.sh embedded
 ```
 
-- Matrix transcript: `/tmp/micro-opcua-size/t088b-arm-size-matrix.log`
+- Matrix transcript: `/tmp/muc-opcua-size/t088b-arm-size-matrix.log`
   (`measure_size.sh all` exit code `2`).
-- Nano transcript: `/tmp/micro-opcua-size/t088b-arm-nano-size.log`
+- Nano transcript: `/tmp/muc-opcua-size/t088b-arm-nano-size.log`
   (`measure_size.sh nano` exit code `2`).
-- Embedded transcript: `/tmp/micro-opcua-size/t088b-arm-embedded-size.log`
+- Embedded transcript: `/tmp/muc-opcua-size/t088b-arm-embedded-size.log`
   (`measure_size.sh embedded` exit code `2`).
-- `find build/audit-size-arm -path '*/src/libmicro_opcua.a' -printf '%p\n'`
+- `find build/audit-size-arm -path '*/src/libmuc_opcua.a' -printf '%p\n'`
   produced no archive paths after these failed runs.
 
 Build/profile knobs come from `scripts/measure_size.sh`: `CMAKE_SYSTEM_NAME=Generic`,
 `CMAKE_C_COMPILER=arm-none-eabi-gcc`,
 `CMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY`,
 `CMAKE_C_FLAGS="-mcpu=cortex-m0plus -mthumb"`,
-`MICRO_OPCUA_PLATFORM=arduino-skeleton`,
-`MICRO_OPCUA_OPTIMIZE_SIZE=ON`, and per-profile
-`MICRO_OPCUA_PROFILE=nano` or `MICRO_OPCUA_PROFILE=embedded`. The embedded run
+`MUC_OPCUA_PLATFORM=arduino-skeleton`,
+`MUC_OPCUA_OPTIMIZE_SIZE=ON`, and per-profile
+`MUC_OPCUA_PROFILE=nano` or `MUC_OPCUA_PROFILE=embedded`. The embedded run
 also sets `MU_MAX_SUBSCRIPTIONS=2`, `MU_MAX_MONITORED_ITEMS=100`,
 `MU_MAX_PUBLISH_REQUESTS=5`, `MU_MONITORED_QUEUE_DEPTH=2`, and
 `MU_MAX_TRIGGER_LINKS=4`.
@@ -450,8 +450,8 @@ Current host/full artifact evidence:
 
 | Artifact | Command | Result | Current `.data` | Current `.bss` | Baseline comparison | Transcript |
 |---|---|---|---:|---:|---|---|
-| `build/src/libmicro_opcua.a` | `size -t build/src/libmicro_opcua.a` | exit code `0`; GNU `size` 2.42; totals row `text=166738`, `data=6224`, `bss=0`, `dec=172962` | 6,224 B | 0 B | `docs/size/audit-hardening-baseline.md` records `data=6224`, `bss=0`; delta `data +0 B`, `bss +0 B` | `/tmp/micro-opcua-size/t088c-host-full-size-totals.log` |
-| `build/src/libmicro_opcua.a` | `nm -S --size-sort build/src/libmicro_opcua.a \| rg ' [BbDd] '` | exit code `0`; GNU `nm` 2.42; found lowercase `d` symbols only, no `B`/`b` symbols | Existing initialized data symbols only | No BSS symbols reported | Supports the host/full archive static-RAM comparison above; does not measure caller-provided `struct mu_server` storage | `/tmp/micro-opcua-size/t088c-host-full-nm-data-bss.log` |
+| `build/src/libmuc_opcua.a` | `size -t build/src/libmuc_opcua.a` | exit code `0`; GNU `size` 2.42; totals row `text=166738`, `data=6224`, `bss=0`, `dec=172962` | 6,224 B | 0 B | `docs/size/audit-hardening-baseline.md` records `data=6224`, `bss=0`; delta `data +0 B`, `bss +0 B` | `/tmp/muc-opcua-size/t088c-host-full-size-totals.log` |
+| `build/src/libmuc_opcua.a` | `nm -S --size-sort build/src/libmuc_opcua.a \| rg ' [BbDd] '` | exit code `0`; GNU `nm` 2.42; found lowercase `d` symbols only, no `B`/`b` symbols | Existing initialized data symbols only | No BSS symbols reported | Supports the host/full archive static-RAM comparison above; does not measure caller-provided `struct mu_server` storage | `/tmp/muc-opcua-size/t088c-host-full-nm-data-bss.log` |
 
 Host/full symbol review: the `.data` matches are existing initialized-data
 symbols: `g_supported_services` (`0x330` bytes), four 16-byte server array
@@ -466,9 +466,9 @@ Current embedded/nano status:
 
 | Artifact set | Command | Result | `.data` / `.bss` status | Transcript |
 |---|---|---|---|---|
-| Current T088b ARM audit build root `build/audit-size-arm` | `find build/audit-size-arm -path '*/src/libmicro_opcua.a' -printf '%p\n'` | exit code `0`; no archive paths printed | **Blocked**: no current nano/embedded archives exist to measure | `/tmp/micro-opcua-size/t088c-audit-arm-archive-find.log` |
-| Pre-existing ARM reference archives under `build/size-arm` | `size -t build/size-arm/nano/src/libmicro_opcua.a`; `size -t build/size-arm/embedded/src/libmicro_opcua.a` | exit code `0`; nano totals `data=0`, `bss=0`; embedded totals `data=0`, `bss=0` | Reference only; archive mtimes are 2026-06-29, before the current T088b build attempts, so these are not current audit-hardening release evidence | `/tmp/micro-opcua-size/t088c-preexisting-arm-summary.log` |
-| Pre-existing ARM reference archives under `build/size-arm` | `nm -S --size-sort build/size-arm/nano/src/libmicro_opcua.a build/size-arm/embedded/src/libmicro_opcua.a \| rg ' [BbDd] '` | exit code `1`; no matches | Reference only; no `.data`/`.bss` symbols found in stale nano/embedded archives | `/tmp/micro-opcua-size/t088c-preexisting-arm-nm-data-bss.log` |
+| Current T088b ARM audit build root `build/audit-size-arm` | `find build/audit-size-arm -path '*/src/libmuc_opcua.a' -printf '%p\n'` | exit code `0`; no archive paths printed | **Blocked**: no current nano/embedded archives exist to measure | `/tmp/muc-opcua-size/t088c-audit-arm-archive-find.log` |
+| Pre-existing ARM reference archives under `build/size-arm` | `size -t build/size-arm/nano/src/libmuc_opcua.a`; `size -t build/size-arm/embedded/src/libmuc_opcua.a` | exit code `0`; nano totals `data=0`, `bss=0`; embedded totals `data=0`, `bss=0` | Reference only; archive mtimes are 2026-06-29, before the current T088b build attempts, so these are not current audit-hardening release evidence | `/tmp/muc-opcua-size/t088c-preexisting-arm-summary.log` |
+| Pre-existing ARM reference archives under `build/size-arm` | `nm -S --size-sort build/size-arm/nano/src/libmuc_opcua.a build/size-arm/embedded/src/libmuc_opcua.a \| rg ' [BbDd] '` | exit code `1`; no matches | Reference only; no `.data`/`.bss` symbols found in stale nano/embedded archives | `/tmp/muc-opcua-size/t088c-preexisting-arm-nm-data-bss.log` |
 
 The current embedded/nano `.data`/`.bss` gate remains **blocked/incomplete** for
 the same reasons documented in T088b: `BUILD_ROOT=build/audit-size-arm
@@ -498,11 +498,11 @@ T088a records host/full flash over the +8 KiB budget, and T088b/T088c record
 current embedded/nano size and static-RAM evidence as blocked or incomplete.
 
 Build/profile knobs from `build/audit-embedded-stack/CMakeCache.txt`:
-`MICRO_OPCUA_PROFILE=embedded`, `MICRO_OPCUA_EMBEDDED_PROFILE=ON`,
-`MICRO_OPCUA_OPTIMIZE_SIZE=ON`, `MICRO_OPCUA_STACK_USAGE=ON`,
-`MICRO_OPCUA_STACK_USAGE_LIMIT=10240`, `MICRO_OPCUA_PLATFORM=host`,
-`CMAKE_BUILD_TYPE=Release`, compiler `/usr/bin/cc`, `MICRO_OPCUA_SECURITY=ON`,
-`MICRO_OPCUA_SUBSCRIPTIONS_STANDARD=ON`, `MICRO_OPCUA_MULTIPLE_CONNECTIONS=ON`,
+`MUC_OPCUA_PROFILE=embedded`, `MUC_OPCUA_EMBEDDED_PROFILE=ON`,
+`MUC_OPCUA_OPTIMIZE_SIZE=ON`, `MUC_OPCUA_STACK_USAGE=ON`,
+`MUC_OPCUA_STACK_USAGE_LIMIT=10240`, `MUC_OPCUA_PLATFORM=host`,
+`CMAKE_BUILD_TYPE=Release`, compiler `/usr/bin/cc`, `MUC_OPCUA_SECURITY=ON`,
+`MUC_OPCUA_SUBSCRIPTIONS_STANDARD=ON`, `MUC_OPCUA_MULTIPLE_CONNECTIONS=ON`,
 and capacity overrides `MU_MAX_MONITORED_ITEMS=100`,
 `MU_MAX_SUBSCRIPTIONS=2`, `MU_MAX_PUBLISH_REQUESTS=5`,
 `MU_MONITORED_QUEUE_DEPTH=2`, `MU_MAX_TRIGGER_LINKS=4`.
@@ -515,24 +515,24 @@ bash scripts/check_stack_usage.sh --build-dir build/audit-embedded-stack --thres
 find build/audit-embedded-stack -type f -name '*.su' | wc -l
 ```
 
-- Build transcript: `/tmp/micro-opcua-size/t088d-stack-build.log`
+- Build transcript: `/tmp/muc-opcua-size/t088d-stack-build.log`
   (`cmake --build build/audit-embedded-stack` exit code `0`; produced
-  `build/audit-embedded-stack/src/libmicro_opcua.a`).
-- Stack-check transcript: `/tmp/micro-opcua-size/t088d-stack-check.log`
+  `build/audit-embedded-stack/src/libmuc_opcua.a`).
+- Stack-check transcript: `/tmp/muc-opcua-size/t088d-stack-check.log`
   (`check_stack_usage.sh` exit code `0`).
 - Stack-usage artifacts: `37` `.su` files found under
   `build/audit-embedded-stack`.
 
 T100b refresh evidence from the T100a rerun:
 
-- Build transcript: `/tmp/micro-opcua-t100a/t100a-stack-build.log`
+- Build transcript: `/tmp/muc-opcua-t100a/t100a-stack-build.log`
   (`cmake --build build/audit-embedded-stack` exit code `0`; produced
-  `build/audit-embedded-stack/src/libmicro_opcua.a`).
-- Stack-check transcript: `/tmp/micro-opcua-t100a/t100a-stack-check.log`
+  `build/audit-embedded-stack/src/libmuc_opcua.a`).
+- Stack-check transcript: `/tmp/muc-opcua-t100a/t100a-stack-check.log`
   (`check_stack_usage.sh` exit code `0`; secured OPN stack estimate
   `3040 bytes`; threshold `10240 bytes`; stack-specific check passed).
 - Stack-usage count transcript:
-  `/tmp/micro-opcua-t100a/t100a-su-count.log` (`find ... '*.su' | wc -l`
+  `/tmp/muc-opcua-t100a/t100a-su-count.log` (`find ... '*.su' | wc -l`
   exit code `0`; `37` `.su` files found under `build/audit-embedded-stack`).
 
 Stack comparison:
@@ -576,7 +576,7 @@ and recorded stack evidence for hardening changes.
 
 | Budget item | Current evidence source | Budget evaluation | Resource risk |
 |---|---|---|---|
-| Host/full `.text` growth under +8 KiB | T102b: default full build with `MICRO_OPCUA_OPTIMIZE_SIZE=ON` reports `text=96,398 B` vs baseline `152,709 B`. | **PASS**: delta is `-56,311 B`, below the `< 8,192 B` growth budget. | Low for the default constrained-device build; the explicit `OPTIMIZE_SIZE=OFF` opt-out remains over budget as reference-only evidence. |
+| Host/full `.text` growth under +8 KiB | T102b: default full build with `MUC_OPCUA_OPTIMIZE_SIZE=ON` reports `text=96,398 B` vs baseline `152,709 B`. | **PASS**: delta is `-56,311 B`, below the `< 8,192 B` growth budget. | Low for the default constrained-device build; the explicit `OPTIMIZE_SIZE=OFF` opt-out remains over budget as reference-only evidence. |
 | Nano `.text` growth under +4 KiB | T102b ARM matrix: nano `text=16,366 B`, `data=0`, `bss=0`. | **PASS / current value recorded**: blocker cleared and size remains below the historical nano value in this ledger. | Low for current measured nano archive. |
 | Embedded `.text` growth under +4 KiB | T102b ARM matrix: embedded `text=43,078 B`, `data=0`, `bss=0`; Pico embedded artifacts also build. | **PASS / current value recorded**: blocker cleared and embedded/Pico artifacts exist. | Low for current measured embedded archive and Pico build presence. |
 | No new default static RAM | Host/full archive `.data=6,224 B`, `.bss=0 B`; ARM archives `.data=0`, `.bss=0`; caller-storage absolutes recorded with `MU_CONNECTION_BASE_STORAGE_BYTES=1,328 B`. | **PASS / absolute caller-storage evidence recorded**: archive static RAM is flat, and storage requirements are explicit. | Low for archive static RAM; caller storage is documented as integrator-provided memory. |
@@ -601,7 +601,7 @@ adapter is configured; the None path peaks at ~5.5 KiB.
 **Update (2026-06-27, feature 004-optimization-fixes, US1/FR-001):** the secured
 OpenSecureChannel path's `respbody[5120]` + `opn_buf[1024]` were relocated off the
 stack into a server-owned `secure_scratch` region (`struct mu_server`, guarded by
-`MICRO_OPCUA_SECURITY`). Worst-case secured-OPN stack measured by
+`MUC_OPCUA_SECURITY`). Worst-case secured-OPN stack measured by
 `scripts/check_stack_usage.sh` (`-fstack-usage`, host gcc) dropped from **13,664 B
 to 7,536 B** (CI gate `test_stack_budget`, threshold 10,240 B). The ~6 KiB moves
 from stack to caller storage (`MU_SERVER_STORAGE_BYTES` grows by
@@ -613,15 +613,15 @@ work — sticky-status binary codec (collapsing redundant per-call error checks)
 table-driven service dispatch (removed the parallel switch), shared subscription
 id-array handler driver, `element_size` lookup table, shared little-endian
 pack/unpack helper, removal of the dead `mu_is_unsupported_service` table, and
-gating `mu_status_name` strings behind `MICRO_OPCUA_STATUS_STRINGS`. Measured Micro
-core `.text` (host `gcc -Os`, `libmicro_opcua.a`, subscriptions on / security off):
+gating `mu_status_name` strings behind `MUC_OPCUA_STATUS_STRINGS`. Measured Micro
+core `.text` (host `gcc -Os`, `libmuc_opcua.a`, subscriptions on / security off):
 **44,561 B → 42,232 B = −2,329 B (~5.2%)** vs the post-US3 core. Net vs the
 pre-remediation baseline (`1f84905`, 43,084 B) is **−852 B (~2%)** — US1–US3 added
 parser-robustness / address-space-index / perf code that offsets part of the US4
 reduction. NOTE: SC-005's ≥8% target is **not fully met** (US4 isolated ~5.2%); the
 sticky-status conversion was applied conservatively (≈48 of ~294 call sites, to
 guarantee byte-identical output), leaving further flash on the table, and opt-in
-`MICRO_OPCUA_LTO` (default OFF) is available for additional reduction. Figures are a
+`MUC_OPCUA_LTO` (default OFF) is available for additional reduction. Figures are a
 host `-Os` proxy; ARM Thumb code density differs. All response bytes remain
 byte-identical (golden-vector regression test).
 
@@ -644,10 +644,10 @@ byte-identical (golden-vector regression test).
 
 | Profile | text | data | bss | dec | Archive |
 |---|---:|---:|---:|---:|---|
-| nano | 16,366 B | 0 B | 0 B | 16,366 B | `build/size-arm/nano/src/libmicro_opcua.a` |
-| micro | 23,873 B | 0 B | 0 B | 23,873 B | `build/size-arm/micro/src/libmicro_opcua.a` |
-| embedded | 43,078 B | 0 B | 0 B | 43,078 B | `build/size-arm/embedded/src/libmicro_opcua.a` |
-| full-featured | 51,172 B | 0 B | 0 B | 51,172 B | `build/size-arm/full-featured/src/libmicro_opcua.a` |
+| nano | 16,366 B | 0 B | 0 B | 16,366 B | `build/size-arm/nano/src/libmuc_opcua.a` |
+| micro | 23,873 B | 0 B | 0 B | 23,873 B | `build/size-arm/micro/src/libmuc_opcua.a` |
+| embedded | 43,078 B | 0 B | 0 B | 43,078 B | `build/size-arm/embedded/src/libmuc_opcua.a` |
+| full-featured | 51,172 B | 0 B | 0 B | 51,172 B | `build/size-arm/full-featured/src/libmuc_opcua.a` |
 
 Aggregate-slice conclusion: T017a-T017e had no production-code delta in this
 worktree; the aggregate updates are host tests and documentation evidence only.
@@ -664,10 +664,10 @@ profile outputs from the size script, not aggregate-slice runtime growth.
 
 | Profile | text | data | bss | dec | Archive |
 |---|---:|---:|---:|---:|---|
-| nano | 16,366 B | 0 B | 0 B | 16,366 B | `build/size-arm/nano/src/libmicro_opcua.a` |
-| micro | 23,873 B | 0 B | 0 B | 23,873 B | `build/size-arm/micro/src/libmicro_opcua.a` |
-| embedded | 43,078 B | 0 B | 0 B | 43,078 B | `build/size-arm/embedded/src/libmicro_opcua.a` |
-| full-featured | 51,172 B | 0 B | 0 B | 51,172 B | `build/size-arm/full-featured/src/libmicro_opcua.a` |
+| nano | 16,366 B | 0 B | 0 B | 16,366 B | `build/size-arm/nano/src/libmuc_opcua.a` |
+| micro | 23,873 B | 0 B | 0 B | 23,873 B | `build/size-arm/micro/src/libmuc_opcua.a` |
+| embedded | 43,078 B | 0 B | 0 B | 43,078 B | `build/size-arm/embedded/src/libmuc_opcua.a` |
+| full-featured | 51,172 B | 0 B | 0 B | 51,172 B | `build/size-arm/full-featured/src/libmuc_opcua.a` |
 
 Subscription-negative-path conclusion: US4 added negative-path tests and
 traceability documentation for MonitoredItem/Subscription invalid IDs,
@@ -695,7 +695,7 @@ size script, not subscription-negative-path runtime growth.
   - `cmake --build build/pubsub-hardening --target cppcheck`
   - `make all-profiles`
   - `BUILD_ROOT=build/pubsub-size-arm scripts/measure_size.sh all`
-  - `cmake -S . -B build/pubsub-pico -DMICRO_OPCUA_PLATFORM=pico -DPICO_SDK_FETCH_FROM_GIT=ON -DMICRO_OPCUA_BUILD_EXAMPLES=ON -DMICRO_OPCUA_PROFILE=embedded -DMICRO_OPCUA_OPTIMIZE_SIZE=ON -DMU_MAX_SUBSCRIPTIONS=2 -DMU_MAX_MONITORED_ITEMS=100 -DMU_MAX_PUBLISH_REQUESTS=5 -DMU_MONITORED_QUEUE_DEPTH=2 -DMU_MAX_TRIGGER_LINKS=4`
+  - `cmake -S . -B build/pubsub-pico -DMUC_OPCUA_PLATFORM=pico -DPICO_SDK_FETCH_FROM_GIT=ON -DMUC_OPCUA_BUILD_EXAMPLES=ON -DMUC_OPCUA_PROFILE=embedded -DMUC_OPCUA_OPTIMIZE_SIZE=ON -DMU_MAX_SUBSCRIPTIONS=2 -DMU_MAX_MONITORED_ITEMS=100 -DMU_MAX_PUBLISH_REQUESTS=5 -DMU_MONITORED_QUEUE_DEPTH=2 -DMU_MAX_TRIGGER_LINKS=4`
   - `cmake --build build/pubsub-pico -j$(nproc)`
   - `make speed-compare`
 
@@ -703,10 +703,10 @@ Current ARM Cortex-M0+ profile matrix:
 
 | Profile | text | data | bss | dec | Archive |
 |---|---:|---:|---:|---:|---|
-| nano | 16,278 B | 0 B | 0 B | 16,278 B | `build/pubsub-size-arm/nano/src/libmicro_opcua.a` |
-| micro | 23,785 B | 0 B | 0 B | 23,785 B | `build/pubsub-size-arm/micro/src/libmicro_opcua.a` |
-| embedded | 42,990 B | 0 B | 0 B | 42,990 B | `build/pubsub-size-arm/embedded/src/libmicro_opcua.a` |
-| full-featured | 51,248 B | 0 B | 0 B | 51,248 B | `build/pubsub-size-arm/full-featured/src/libmicro_opcua.a` |
+| nano | 16,278 B | 0 B | 0 B | 16,278 B | `build/pubsub-size-arm/nano/src/libmuc_opcua.a` |
+| micro | 23,785 B | 0 B | 0 B | 23,785 B | `build/pubsub-size-arm/micro/src/libmuc_opcua.a` |
+| embedded | 42,990 B | 0 B | 0 B | 42,990 B | `build/pubsub-size-arm/embedded/src/libmuc_opcua.a` |
+| full-featured | 51,248 B | 0 B | 0 B | 51,248 B | `build/pubsub-size-arm/full-featured/src/libmuc_opcua.a` |
 
 PubSub object budget for the full-featured ARM build:
 
@@ -768,10 +768,10 @@ Current ARM Cortex-M0+ profile matrix:
 
 | Profile | text | data | bss | dec | Archive |
 |---|---:|---:|---:|---:|---|
-| nano | 16,278 B | 0 B | 0 B | 16,278 B | `build/size-arm/nano/src/libmicro_opcua.a` |
-| micro | 23,785 B | 0 B | 0 B | 23,785 B | `build/size-arm/micro/src/libmicro_opcua.a` |
-| embedded | 42,990 B | 0 B | 0 B | 42,990 B | `build/size-arm/embedded/src/libmicro_opcua.a` |
-| full-featured | 51,612 B | 0 B | 0 B | 51,612 B | `build/size-arm/full-featured/src/libmicro_opcua.a` |
+| nano | 16,278 B | 0 B | 0 B | 16,278 B | `build/size-arm/nano/src/libmuc_opcua.a` |
+| micro | 23,785 B | 0 B | 0 B | 23,785 B | `build/size-arm/micro/src/libmuc_opcua.a` |
+| embedded | 42,990 B | 0 B | 0 B | 42,990 B | `build/size-arm/embedded/src/libmuc_opcua.a` |
+| full-featured | 51,612 B | 0 B | 0 B | 51,612 B | `build/size-arm/full-featured/src/libmuc_opcua.a` |
 
 Delta versus the most recent ARM matrix already recorded in this ledger:
 
@@ -806,20 +806,20 @@ Command output:
 
 ```text
 profile              text     data      bss        dec archive
-nano           16278        0        0      16278 build/size-arm/nano/src/libmicro_opcua.a
-micro          23785        0        0      23785 build/size-arm/micro/src/libmicro_opcua.a
-embedded       42990        0        0      42990 build/size-arm/embedded/src/libmicro_opcua.a
-full-featured      51612        0        0      51612 build/size-arm/full-featured/src/libmicro_opcua.a
+nano           16278        0        0      16278 build/size-arm/nano/src/libmuc_opcua.a
+micro          23785        0        0      23785 build/size-arm/micro/src/libmuc_opcua.a
+embedded       42990        0        0      42990 build/size-arm/embedded/src/libmuc_opcua.a
+full-featured      51612        0        0      51612 build/size-arm/full-featured/src/libmuc_opcua.a
 ```
 
 Current ARM Cortex-M0+ profile matrix:
 
 | Profile | text | data | bss | dec | Archive |
 |---|---:|---:|---:|---:|---|
-| nano | 16,278 B | 0 B | 0 B | 16,278 B | `build/size-arm/nano/src/libmicro_opcua.a` |
-| micro | 23,785 B | 0 B | 0 B | 23,785 B | `build/size-arm/micro/src/libmicro_opcua.a` |
-| embedded | 42,990 B | 0 B | 0 B | 42,990 B | `build/size-arm/embedded/src/libmicro_opcua.a` |
-| full-featured | 51,612 B | 0 B | 0 B | 51,612 B | `build/size-arm/full-featured/src/libmicro_opcua.a` |
+| nano | 16,278 B | 0 B | 0 B | 16,278 B | `build/size-arm/nano/src/libmuc_opcua.a` |
+| micro | 23,785 B | 0 B | 0 B | 23,785 B | `build/size-arm/micro/src/libmuc_opcua.a` |
+| embedded | 42,990 B | 0 B | 0 B | 42,990 B | `build/size-arm/embedded/src/libmuc_opcua.a` |
+| full-featured | 51,612 B | 0 B | 0 B | 51,612 B | `build/size-arm/full-featured/src/libmuc_opcua.a` |
 
 Budget comparison:
 
@@ -840,13 +840,13 @@ Budget comparison:
 
 ```text
 profile              text     data      bss        dec archive
-nano           16278        0        0      16278 build/size-arm/nano/src/libmicro_opcua.a
-micro          23785        0        0      23785 build/size-arm/micro/src/libmicro_opcua.a
-embedded       42990        0        0      42990 build/size-arm/embedded/src/libmicro_opcua.a
-full-featured      51612        0        0      51612 build/size-arm/full-featured/src/libmicro_opcua.a
+nano           16278        0        0      16278 build/size-arm/nano/src/libmuc_opcua.a
+micro          23785        0        0      23785 build/size-arm/micro/src/libmuc_opcua.a
+embedded       42990        0        0      42990 build/size-arm/embedded/src/libmuc_opcua.a
+full-featured      51612        0        0      51612 build/size-arm/full-featured/src/libmuc_opcua.a
 ```
 
-Feature 024 is a pure identifier rename (`MICRO_OPCUA_*` -> `MUC_OPCUA_*`,
+Feature 024 is a pure identifier rename (`MUC_OPCUA_*` -> `MUC_OPCUA_*`,
 `include/muc_opcua/`, `muc_opcua` CMake/target names).
 
 ### Feature 024 T012 post-rename measurement
@@ -870,7 +870,7 @@ full-featured      51610        0        0      51610 build/size-arm/full-featur
   System's `ServerArray` value in `src/address_space/base_nodes.c` (compiled
   only when `MUC_OPCUA_BASE_TYPE_SYSTEM` is on, i.e. embedded/full-featured
   only) is the literal string `"urn:muc-opcua:server"`, two ASCII characters
-  shorter than the pre-rename `"urn:micro-opcua:server"`. Renaming the
+  shorter than the pre-rename `"urn:muc-opcua:server"`. Renaming the
   identifier necessarily renames this OPC UA `ServerArray` wire value too
   (it's the server's own application URI, not an arbitrary label), and a
   shorter string is a smaller compiled `.rodata`/`.text` footprint. No

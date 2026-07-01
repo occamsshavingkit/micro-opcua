@@ -1,6 +1,6 @@
-# Micro-OPCUA Roadmap
+# Muc-OPCUA Roadmap
 
-This roadmap outlines the planned feature milestones and maintenance tasks for the `micro-opcua` project. Our goal is to balance the addition of advanced OPC UA features while maintaining our strictly bounded, zero-heap architecture.
+This roadmap outlines the planned feature milestones and maintenance tasks for the `muc-opcua` project. Our goal is to balance the addition of advanced OPC UA features while maintaining our strictly bounded, zero-heap architecture.
 
 > **Note:** Between major feature blocks, we explicitly schedule **Documentation Audits** to ensure that all guides, API references, size ledgers, and conformance matrices stay perfectly synced with the codebase.
 

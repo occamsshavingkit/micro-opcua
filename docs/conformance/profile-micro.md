@@ -17,13 +17,13 @@ claim that external profile validation has been completed.
 - **Embedded** = Micro + security policies + the Standard DataChange Subscription facet
   + full type-system exposure.
 
-micro-opcua currently targets the Nano surface documented in
+muc-opcua currently targets the Nano surface documented in
 [profile-nano.md](profile-nano.md) plus, ahead of schedule, Basic256Sha256
 (an Embedded-tier feature).
 
 ## Micro-targeted surface (the Embedded Data Change Subscription Server Facet)
 A no-heap subscription engine (`src/services/subscription.{c,h}`, compiled behind the
-`MICRO_OPCUA_SUBSCRIPTIONS` build option, ON for `make micro`). All state is fixed-size
+`MUC_OPCUA_SUBSCRIPTIONS` build option, ON for `make micro`). All state is fixed-size
 and lives in the caller-owned server struct; sampling and Publish delivery are driven
 cooperatively by `mu_server_poll`.
 

@@ -2,7 +2,7 @@
 
 This server targets the **Embedded 2017 UA Server Profile**
 (`http://opcfoundation.org/UA-Profile/Server/EmbeddedUA2017`, OPC-10000-7 §6.6.69)
-when built with `make embedded` or `-DMICRO_OPCUA_EMBEDDED_PROFILE=ON`.
+when built with `make embedded` or `-DMUC_OPCUA_EMBEDDED_PROFILE=ON`.
 
 Status is **profile-targeting**. OPC-10000-7 §4.2 governs conformance-unit and
 conformance-group claims, and OPC-10000-7 §4.3 governs profile claims. This
@@ -38,7 +38,7 @@ OPC-10000-7 §4.2 conformance-unit or §4.3 profile verification.
 
 | Group / unit | OPC-10000 citation | Status | Evidence |
 |---|---|---|---|
-| Profile claim basis | OPC-10000-7 §4.2, §4.3, §6.6.69 | Profile-targeting only | `MICRO_OPCUA_EMBEDDED_PROFILE`, `make embedded`, `docs/traceability/005-embedded-profile-completion.md`; no external CTT evidence |
+| Profile claim basis | OPC-10000-7 §4.2, §4.3, §6.6.69 | Profile-targeting only | `MUC_OPCUA_EMBEDDED_PROFILE`, `make embedded`, `docs/traceability/005-embedded-profile-completion.md`; no external CTT evidence |
 | Transport / encoding | OPC-10000-6 §5.2, §7.1.2.2, §7.1.2.3, §7.1.2.4, §7.2 | Targeted surface | `src/core/tcp_connection.c`, `src/core/message_chunk.c`, `src/encoding/*`, `tests/unit/test_tcp_connection.c`, `tests/unit/test_message_chunk_errors.c` |
 | Micro 2017 base | OPC-10000-7 Micro profile definition | Targeted behavior | `profile-micro.md`, `test_subscriptions`, `test_session`, `test_single_client_limit` |
 | SecurityPolicy None | OPC-10000-7 Core/Nano security baseline | Targeted behavior | `profile-nano.md`, handshake/interoperability tests |

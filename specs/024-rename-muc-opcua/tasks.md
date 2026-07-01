@@ -178,11 +178,11 @@ pre-rename tree shows no touches to those paths).
 
 ### Implementation for User Story 2
 
-- [ ] T013 [P] [US2] Update `README.md` (title, prose, status callouts, any
+- [X] T013 [P] [US2] Update `README.md` (title, prose, status callouts, any
   command examples)
-- [ ] T014 [P] [US2] Update `ROADMAP.md` (title `# Micro-OPCUA Roadmap` ->
+- [X] T014 [P] [US2] Update `ROADMAP.md` (title `# Micro-OPCUA Roadmap` ->
   `# Muc-OPCUA Roadmap`, body references)
-- [ ] T015 [US2] Update `.specify/memory/constitution.md`: title string
+- [X] T015 [US2] Update `.specify/memory/constitution.md`: title string
   (`# micro-opcua Constitution` -> `# muc-opcua Constitution`). Per research.md
   Decision 8, this is a **PATCH** version bump (1.0.0 -> 1.0.1, "Last Amended"
   updated to this feature's date) under the constitution's own Versioning
@@ -195,21 +195,21 @@ pre-rename tree shows no touches to those paths).
   separate rationale document is needed (not marked `[P]`: sequence after T016
   so the Sync Impact Report can truthfully say the templates were already
   reviewed)
-- [ ] T016 [P] [US2] Update `.specify/templates/plan-template.md` and
+- [X] T016 [P] [US2] Update `.specify/templates/plan-template.md` and
   `.specify/templates/tasks-template.md` path examples
   (`include/micro_opcua/` -> `include/muc_opcua/`) so future specs generated from
   these templates reference the current path
-- [ ] T017 [P] [US2] Update `docs/conformance/status.md`, `services.md`,
+- [X] T017 [P] [US2] Update `docs/conformance/status.md`, `services.md`,
   `profile-nano.md`, `profile-micro.md`, `profile-embedded.md`,
   `identity-policy.md`, `async-opcua-inventory.md` — verify every "Micro
   [Embedded Device 2017 Server] Profile" / "Micro profile" prose reference is
   left untouched (research.md Decision 2) while identifier/path/URL references
   are corrected
-- [ ] T018 [P] [US2] Update `docs/size/feature-size-ledger.md`,
+- [X] T018 [P] [US2] Update `docs/size/feature-size-ledger.md`,
   `audit-hardening-baseline.md`, `host-minimal-server.md`,
   `pico-minimal-server.md` — prose/command/path references only; measured
   numeric values (bytes, percentages) are historical facts and stay unchanged
-- [ ] T019 [P] [US2] Update `docs/traceability/sections-to-files.md`,
+- [X] T019 [P] [US2] Update `docs/traceability/sections-to-files.md`,
   `files-to-sections.md`, and `conformance-claims.md` — these are living
   index files describing *current* cross-references, in scope like the rest of
   `docs/`. **Do NOT touch** the numbered per-feature files
@@ -219,15 +219,15 @@ pre-rename tree shows no touches to those paths).
   `019-fix-conformance-size.md`, `022-optimize-hot-paths.md`,
   `023-conformance-docs-subscriber.md`) — those are frozen history for
   already-shipped features, left completely alone (research.md Decision 4/5)
-- [ ] T020 [P] [US2] Update `docs/validation/*.md` (audit-hardening.md,
+- [X] T020 [P] [US2] Update `docs/validation/*.md` (audit-hardening.md,
   audit-hardening-closure.md, fuzz.md, host-tests.md, interop.md,
   pico-cross-compile.md, sanitizers.md, static-analysis.md),
   `docs/review/*.md`, and `docs/benchmarks/*` (speed-benchmark.md,
   speed-baseline.json)
-- [ ] T021 [P] [US2] Update `docs/architecture.md`, `docs/api-reference.md`,
+- [X] T021 [P] [US2] Update `docs/architecture.md`, `docs/api-reference.md`,
   `docs/getting-started.md`, `docs/integration-guide.md`
-- [ ] T022 [P] [US2] Update root-level `optimize-hot-paths.md`
-- [ ] T023 [US2] **Do not edit** `specs/001-minimal-embedded-server/**` through
+- [X] T022 [P] [US2] Update root-level `optimize-hot-paths.md`
+- [X] T023 [US2] **Do not edit** `specs/001-minimal-embedded-server/**` through
   `specs/023-conformance-docs-subscriber/**`, or the per-feature
   `docs/traceability/NNN-*.md` files from T019 — per explicit user direction
   (research.md Decision 4), these are frozen historical record, left alone
@@ -239,7 +239,7 @@ pre-rename tree shows no touches to those paths).
   show no numbered `specs/NNN-*` or `docs/traceability/NNN-*.md` entries)
   (depends on T013-T022, since it verifies none of them strayed outside their
   documented scope)
-- [ ] T024 [US2] Write the breaking-change migration note (FR-007): a new
+- [X] T024 [US2] Write the breaking-change migration note (FR-007): a new
   `CHANGELOG.md` entry (create the file if it doesn't exist) or
   `docs/migration-024-muc-opcua-rename.md`, stating exactly which identifiers
   changed (macro prefix, include path, CMake project/target/module names) and
@@ -252,7 +252,7 @@ pre-rename tree shows no touches to those paths).
   `contracts/regression-guard-contract.md` (split-string spelling of the old
   name vs. a single named-file path exclusion in T002's guard) so this note
   doesn't trip the guard
-- [ ] T025 [US2] Grep `docs/**` (excluding the per-feature
+- [X] T025 [US2] Grep `docs/**` (excluding the per-feature
   `docs/traceability/NNN-*.md` files) and the root docs
   (README/ROADMAP/CLAUDE/AGENTS/optimize-hot-paths) for the five literal
   patterns; confirm zero remaining matches outside the T024 migration note

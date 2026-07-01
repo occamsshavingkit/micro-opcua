@@ -1,4 +1,4 @@
-# micro-opcua — Consolidated Optimization Audit (2026-06-27)
+# muc-opcua — Consolidated Optimization Audit (2026-06-27)
 
 Seven independent reviewers: 6 skill-driven subagents (memory-safety, embedded-memory-budget,
 arm-cortex code-size, code-dedup/complexity, algorithm-opt, systems-perf) + Google Antigravity.
@@ -103,7 +103,7 @@ delete_monitored_items/delete_subscriptions) share the header→count→loop→t
 
 ### T10. Enable opt-in LTO  [2 sources: code-size MED, AGY MED]
 `-Os` + sections present, but no LTO. The encoder is dozens of tiny leaf fns called hundreds of
-times — LTO inlines them. **Fix:** `MICRO_OPCUA_LTO` → `-flto`; default OFF for distributed `.a`,
+times — LTO inlines them. **Fix:** `MUC_OPCUA_LTO` → `-flto`; default OFF for distributed `.a`,
 ON for firmware-from-source. Est. several %–20%.
 
 ---
@@ -116,7 +116,7 @@ ON for firmware-from-source. Est. several %–20%.
 | T12 | systems-perf MED | `server.c:562-566` | Per-message full-remainder `memmove` → O(N²) under pipelined reads | Parse cursor; compact lazily |
 | T13 | dedup HIGH | `binary_writer.c:40-102`, `sym/asym_chunk.c`, `subscription.c:244`, `server.c` | LE u16/u32/u64 pack/unpack hand-rolled in 6 files | One inline LE header; collapse signed/unsigned twins into `write_le(v,n)` |
 | T14 | 3 sources | `binary_variant.c:121-144` | `element_size` = 18-case switch | `static const uint8_t` size table (~20 B rodata) |
-| T15 | 2 sources | `status.c:5-58` (`mu_status_name`) | ~50-case enum→string, only caller is host example | Gate behind `MICRO_OPCUA_STATUS_STRINGS`/`_DEBUG` (~1-1.5 KB MCU flash) |
+| T15 | 2 sources | `status.c:5-58` (`mu_status_name`) | ~50-case enum→string, only caller is host example | Gate behind `MUC_OPCUA_STATUS_STRINGS`/`_DEBUG` (~1-1.5 KB MCU flash) |
 | T16 | 2 sources | `status.c:55-80` | `g_unsupported_services[]`+`mu_is_unsupported_service` — **no caller, and stale** (lists BrowseNext/Translate/RegisterNodes as unsupported though implemented) | Delete table+fn+decl |
 | T17 | AGY MED | browse helpers `service_dispatch.c:1390-1530` | `browse_name_equals`/`handle_translate_browse_paths` may be unguarded by `#ifdef` → `-Werror` build break when BROWSE=OFF | Verify + wrap helpers in the service flag |
 | T18 | systems-perf MED | `asym_chunk.c:107,227-237`, `host_crypto_adapter.c:153-167` | Own-cert thumbprint (constant) re-hashed; peer cert re-parsed per OPN | Cache own thumbprint/key-bits at init; parse peer cert once |

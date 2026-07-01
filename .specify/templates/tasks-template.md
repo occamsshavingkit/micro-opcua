@@ -29,7 +29,7 @@ implementation tasks they validate.
 
 ## Path Conventions
 
-- **Public API**: `include/micro_opcua/`
+- **Public API**: `include/muc_opcua/`
 - **Core protocol**: `src/core/`, `src/encoding/`, `src/services/`
 - **Address space**: `src/address_space/`
 - **Security interfaces**: `src/security/`
@@ -77,10 +77,10 @@ implementation tasks they validate.
   in docs/traceability/[feature].md
 - [ ] T008 Document cited OPC UA sections for each supported and unsupported
   behavior in docs/traceability/[feature].md
-- [ ] T009 [P] Define public result/status API in include/micro_opcua/status.h
-- [ ] T010 [P] Define caller-provided buffer/config API in include/micro_opcua/config.h
+- [ ] T009 [P] Define public result/status API in include/muc_opcua/status.h
+- [ ] T010 [P] Define caller-provided buffer/config API in include/muc_opcua/config.h
 - [ ] T011 [P] Define platform adapter interfaces for TCP, time, entropy, and
-  persistence in include/micro_opcua/platform.h
+  persistence in include/muc_opcua/platform.h
 - [ ] T012 Establish size budget measurement command in CMake or scripts/
 - [ ] T013 Add malformed-input fixture directory for this feature under tests/fixtures/
 
@@ -109,7 +109,7 @@ implementation tasks they validate.
 
 ### Implementation for User Story 1
 
-- [ ] T018 [P] [US1] Implement [public API] in include/micro_opcua/[name].h
+- [ ] T018 [P] [US1] Implement [public API] in include/muc_opcua/[name].h
 - [ ] T019 [P] [US1] Implement [core type/encoder] in src/encoding/[name].c
 - [ ] T020 [US1] Implement [service/state transition] in src/services/[name].c
 - [ ] T021 [US1] Map unsupported cases to cited OPC UA StatusCodes in

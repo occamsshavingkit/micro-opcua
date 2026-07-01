@@ -1,7 +1,7 @@
 # Optimize Hot Paths
 
 ## Goal
-Improve micro-opcua throughput without increasing ROM, RAM, stack depth, heap use, or changing OPC UA wire-visible behavior.
+Improve muc-opcua throughput without increasing ROM, RAM, stack depth, heap use, or changing OPC UA wire-visible behavior.
 
 ## Baseline
 - Source: `docs/benchmarks/speed-baseline.json`, generated 2026-06-30 on `QuackServer`.
