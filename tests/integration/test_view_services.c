@@ -4,7 +4,7 @@
  * Claude-authored test (RED first); Codex implements the handlers to make it pass. */
 #include "../../src/core/server_internal.h"
 #include "fake_platform.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "service_builders.h"
 #include "unity.h"
 #include <string.h>

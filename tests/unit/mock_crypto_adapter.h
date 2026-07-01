@@ -2,7 +2,7 @@
 #ifndef MOCK_CRYPTO_ADAPTER_H
 #define MOCK_CRYPTO_ADAPTER_H
 
-#include "micro_opcua/platform.h"
+#include "muc_opcua/platform.h"
 #include <string.h>
 
 /* A simple mock crypto adapter for testing without a real backend */

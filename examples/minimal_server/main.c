@@ -1,7 +1,7 @@
 /* examples/minimal_server/main.c */
 #define _DEFAULT_SOURCE
 #define _XOPEN_SOURCE 500
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "static_address_space.h"
 #include <signal.h>
 #include <stdio.h>
@@ -10,12 +10,12 @@
 #include <unistd.h>
 
 #include "../../src/platform/host_tcp_adapter.h"
-#ifdef MICRO_OPCUA_HAVE_OPENSSL
+#ifdef MUC_OPCUA_HAVE_OPENSSL
 #include "../../src/platform/host_crypto_adapter.h"
 #endif
-#include "micro_opcua/services/alarms_conditions.h"
+#include "muc_opcua/services/alarms_conditions.h"
 
-#ifdef MICRO_OPCUA_SERVICE_HISTORY
+#ifdef MUC_OPCUA_SERVICE_HISTORY
 static opcua_statuscode_t minimal_read_raw_modified(
     void *context,
     const mu_nodeid_t *node_id,
@@ -64,7 +64,7 @@ static opcua_statuscode_t minimal_delete_raw_modified(
 #endif
 
 /* Size the no-heap storage block from the library's required size so it tracks the
- * compiled feature set (e.g. MICRO_OPCUA_SECURITY adds the server-owned secure
+ * compiled feature set (e.g. MUC_OPCUA_SECURITY adds the server-owned secure
  * scratch region). Using a hardcoded literal here silently under-sizes the block
  * when features are enabled and makes mu_server_init() return Bad_OutOfMemory. */
 #define STORAGE_BYTES MU_SERVER_STORAGE_BYTES
@@ -105,8 +105,8 @@ int main(void) {
     memset(&config, 0, sizeof(config));
 
     config.endpoint_url = "opc.tcp://localhost:4840";
-    config.application_uri = "urn:localhost:micro_opcua:minimal_server";
-    config.product_uri = "urn:micro_opcua:minimal_server";
+    config.application_uri = "urn:localhost:muc_opcua:minimal_server";
+    config.product_uri = "urn:muc_opcua:minimal_server";
     config.application_name = "Minimal Micro OPC UA Server";
 
     config.receive_buffer = g_recv_buffer;
@@ -130,7 +130,7 @@ int main(void) {
 
     config.entropy_adapter.generate_random = stub_generate_random;
 
-#ifdef MICRO_OPCUA_HAVE_OPENSSL
+#ifdef MUC_OPCUA_HAVE_OPENSSL
     /* Enable SecurityPolicy Basic256Sha256 by supplying a crypto adapter. The host
        adapter generates a self-signed instance certificate; the server then also
        advertises Sign and SignAndEncrypt endpoints alongside None. */
@@ -140,7 +140,7 @@ int main(void) {
         printf("SecurityPolicy Basic256Sha256 enabled (self-signed certificate)\n");
     }
 #endif
-#ifdef MICRO_OPCUA_SERVICE_HISTORY
+#ifdef MUC_OPCUA_SERVICE_HISTORY
     config.history_adapter.read_raw_modified = minimal_read_raw_modified;
     config.history_adapter.update_data = minimal_update_data;
     config.history_adapter.delete_raw_modified = minimal_delete_raw_modified;
@@ -151,7 +151,7 @@ int main(void) {
     printf("Initializing Micro OPC UA Server...\n");
     status = mu_server_init(g_server_storage, sizeof(g_server_storage), &config, &server);
     if (status != MU_STATUS_GOOD) {
-#ifdef MICRO_OPCUA_STATUS_STRINGS
+#ifdef MUC_OPCUA_STATUS_STRINGS
         printf("Failed to initialize server: %s\n", mu_status_name(status));
 #else
         printf("Failed to initialize server: 0x%08X\n", (unsigned)status);
@@ -161,7 +161,7 @@ int main(void) {
 
     printf("Server initialized successfully. Listening on %s\n", config.endpoint_url);
 
-#ifdef MICRO_OPCUA_SERVICE_ALARMS_CONDITIONS
+#ifdef MUC_OPCUA_SERVICE_ALARMS_CONDITIONS
     {
         mu_condition_id_t cid;
         cid.node_id = mu_nodeid_make_numeric(1, 12345);

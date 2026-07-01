@@ -1,11 +1,11 @@
 /* src/services/browse.h */
-#ifndef MICRO_OPCUA_SERVICES_BROWSE_H
-#define MICRO_OPCUA_SERVICES_BROWSE_H
+#ifndef MUC_OPCUA_SERVICES_BROWSE_H
+#define MUC_OPCUA_SERVICES_BROWSE_H
 
-#include "micro_opcua/address_space.h"
-#include "micro_opcua/encoding.h"
-#include "micro_opcua/opcua_types.h"
-#include "micro_opcua/status.h"
+#include "muc_opcua/address_space.h"
+#include "muc_opcua/encoding.h"
+#include "muc_opcua/opcua_types.h"
+#include "muc_opcua/status.h"
 
 typedef enum {
     MU_BROWSE_DIRECTION_FORWARD = 0,
@@ -74,4 +74,4 @@ opcua_statuscode_t mu_browse_request_decode(mu_binary_reader_t *reader, mu_brows
 /* Encodes the body of a BrowseResponse (after the ResponseHeader) */
 opcua_statuscode_t mu_browse_response_encode(mu_binary_writer_t *writer, const mu_browse_response_t *resp);
 
-#endif /* MICRO_OPCUA_SERVICES_BROWSE_H */
+#endif /* MUC_OPCUA_SERVICES_BROWSE_H */

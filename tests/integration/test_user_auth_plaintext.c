@@ -2,7 +2,7 @@
 #include "../../src/core/server_internal.h"
 #include "../../src/services/discovery.h"
 #include "fake_platform.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 #include <stdbool.h>
 #include <string.h>

@@ -1,8 +1,8 @@
 /* src/encoding/binary_le.h */
-#ifndef MICRO_OPCUA_BINARY_LE_H
-#define MICRO_OPCUA_BINARY_LE_H
+#ifndef MUC_OPCUA_BINARY_LE_H
+#define MUC_OPCUA_BINARY_LE_H
 
-#include "micro_opcua/opcua_types.h"
+#include "muc_opcua/opcua_types.h"
 
 /* Shift-based little-endian helpers; no host-endian or alignment assumptions. */
 static inline void mu_binary_le_put_u16(opcua_byte_t *dst, opcua_uint16_t value) {
@@ -43,4 +43,4 @@ static inline opcua_uint64_t mu_binary_le_get_u64(const opcua_byte_t *src) {
            ((opcua_uint64_t)src[6] << 48) | ((opcua_uint64_t)src[7] << 56);
 }
 
-#endif /* MICRO_OPCUA_BINARY_LE_H */
+#endif /* MUC_OPCUA_BINARY_LE_H */

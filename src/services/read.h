@@ -1,11 +1,11 @@
 /* src/services/read.h */
-#ifndef MICRO_OPCUA_SERVICES_READ_H
-#define MICRO_OPCUA_SERVICES_READ_H
+#ifndef MUC_OPCUA_SERVICES_READ_H
+#define MUC_OPCUA_SERVICES_READ_H
 
-#include "micro_opcua/address_space.h"
-#include "micro_opcua/encoding.h"
-#include "micro_opcua/opcua_types.h"
-#include "micro_opcua/status.h"
+#include "muc_opcua/address_space.h"
+#include "muc_opcua/encoding.h"
+#include "muc_opcua/opcua_types.h"
+#include "muc_opcua/status.h"
 
 typedef enum {
     MU_ATTRIBUTEID_NODEID = 1,
@@ -69,4 +69,4 @@ opcua_statuscode_t mu_read_process(const mu_address_space_t *address_space, cons
                                    const mu_read_request_t *req, mu_read_response_t *resp,
                                    mu_datavalue_t *results_array, size_t max_results);
 
-#endif /* MICRO_OPCUA_SERVICES_READ_H */
+#endif /* MUC_OPCUA_SERVICES_READ_H */

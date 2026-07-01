@@ -1,6 +1,6 @@
-#include "micro_opcua/encoding.h"
-#include "micro_opcua/pubsub.h"
-#include "micro_opcua/status.h"
+#include "muc_opcua/encoding.h"
+#include "muc_opcua/pubsub.h"
+#include "muc_opcua/status.h"
 #include "unity.h"
 #include <stdio.h>
 #include <string.h>

@@ -4,13 +4,13 @@
  * server's certificate, signing with the client's key); the "server" adapter
  * unwraps it (decrypting with its key, verifying against the embedded client
  * certificate). Also covers None passthrough and tamper detection. */
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "security/asym_chunk.h"
 #include "security/security_policy.h"
 #include "unity.h"
 #include <string.h>
 
-#ifdef MICRO_OPCUA_HAVE_OPENSSL
+#ifdef MUC_OPCUA_HAVE_OPENSSL
 #include "platform/host_crypto_adapter.h"
 
 static mu_crypto_adapter_t server_crypto;
@@ -205,7 +205,7 @@ int main(void) {
     return UNITY_END();
 }
 
-#else /* !MICRO_OPCUA_HAVE_OPENSSL */
+#else /* !MUC_OPCUA_HAVE_OPENSSL */
 void setUp(void) {}
 void tearDown(void) {}
 void test_asym_chunk_skipped_without_openssl(void) {

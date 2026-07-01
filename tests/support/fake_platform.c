@@ -1,5 +1,5 @@
 #include "fake_platform.h"
-#include "micro_opcua/status.h"
+#include "muc_opcua/status.h"
 #include <string.h>
 
 static opcua_statuscode_t fake_tcp_listen(void *context, const char *endpoint_url) {

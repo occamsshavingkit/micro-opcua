@@ -1,6 +1,6 @@
 /* tests/unit/test_no_heap_lifecycle.c */
 
-#include "micro_opcua/server.h"
+#include "muc_opcua/server.h"
 #include <stdlib.h>
 #include <unity.h>
 

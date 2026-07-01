@@ -2,13 +2,13 @@
  * Known-answer and roundtrip tests for the Basic256Sha256 crypto primitives and the
  * P-SHA256 key-derivation function. The primitives are exercised through the host
  * OpenSSL adapter; the KDF is the portable core logic built on top of them. */
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "security/key_derivation.h"
 #include "unity.h"
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef MICRO_OPCUA_HAVE_OPENSSL
+#ifdef MUC_OPCUA_HAVE_OPENSSL
 #include "platform/host_crypto_adapter.h"
 
 static mu_crypto_adapter_t crypto;
@@ -183,7 +183,7 @@ int main(void) {
     return UNITY_END();
 }
 
-#else /* !MICRO_OPCUA_HAVE_OPENSSL */
+#else /* !MUC_OPCUA_HAVE_OPENSSL */
 
 void setUp(void) {}
 void tearDown(void) {}

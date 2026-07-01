@@ -1,7 +1,7 @@
 #include "core/server_internal.h"
 #include "fake_platform.h"
-#include "micro_opcua/server.h"
-#include "micro_opcua/services/alarms_conditions.h"
+#include "muc_opcua/server.h"
+#include "muc_opcua/services/alarms_conditions.h"
 #include "unity.h"
 
 static mu_server_t server;
@@ -9,7 +9,7 @@ static opcua_byte_t rx_buffer[1024];
 static opcua_byte_t tx_buffer[1024];
 
 void setUp(void) {
-#ifdef MICRO_OPCUA_SERVICE_ALARMS_CONDITIONS
+#ifdef MUC_OPCUA_SERVICE_ALARMS_CONDITIONS
     fake_platform_init();
 
     mu_server_config_t config = {.endpoint_url = "opc.tcp://localhost:4840",
@@ -27,7 +27,7 @@ void setUp(void) {
 
 void tearDown(void) {}
 
-#ifdef MICRO_OPCUA_SERVICE_ALARMS_CONDITIONS
+#ifdef MUC_OPCUA_SERVICE_ALARMS_CONDITIONS
 
 void test_mu_alarms_set_active_triggers_event(void) {
     mu_condition_id_t alarm_id;
@@ -92,11 +92,11 @@ void test_mu_alarms_dialog_respond_method(void) {
     TEST_ASSERT_EQUAL(1, server.conditions[1].expected_response);
 }
 
-#endif /* MICRO_OPCUA_SERVICE_ALARMS_CONDITIONS */
+#endif /* MUC_OPCUA_SERVICE_ALARMS_CONDITIONS */
 
 int main(void) {
     UNITY_BEGIN();
-#ifdef MICRO_OPCUA_SERVICE_ALARMS_CONDITIONS
+#ifdef MUC_OPCUA_SERVICE_ALARMS_CONDITIONS
     RUN_TEST(test_mu_alarms_set_active_triggers_event);
     RUN_TEST(test_mu_alarms_acknowledge_method_call);
     RUN_TEST(test_mu_alarms_trigger_dialog);

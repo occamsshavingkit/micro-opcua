@@ -57,17 +57,17 @@ for profile in $profiles; do
     case "$profile" in
         nano)
             defs=(
-                -DMICRO_OPCUA_PROFILE=nano
+                -DMUC_OPCUA_PROFILE=nano
             )
             ;;
         micro)
             defs=(
-                -DMICRO_OPCUA_PROFILE=micro
+                -DMUC_OPCUA_PROFILE=micro
             )
             ;;
         embedded)
             defs=(
-                -DMICRO_OPCUA_PROFILE=embedded
+                -DMUC_OPCUA_PROFILE=embedded
                 -DMU_MAX_SUBSCRIPTIONS=2
                 -DMU_MAX_MONITORED_ITEMS=100
                 -DMU_MAX_PUBLISH_REQUESTS=5
@@ -77,7 +77,7 @@ for profile in $profiles; do
             ;;
         full-featured)
             defs=(
-                -DMICRO_OPCUA_PROFILE=full
+                -DMUC_OPCUA_PROFILE=full
                 -DMU_MAX_SUBSCRIPTIONS=2
                 -DMU_MAX_MONITORED_ITEMS=100
                 -DMU_MAX_PUBLISH_REQUESTS=5
@@ -88,17 +88,17 @@ for profile in $profiles; do
     esac
 
     build_dir="$build_root/$profile"
-    archive="$build_dir/src/libmicro_opcua.a"
+    archive="$build_dir/src/libmuc_opcua.a"
 
     cmake -S . -B "$build_dir" \
         -DCMAKE_SYSTEM_NAME=Generic \
         -DCMAKE_C_COMPILER=arm-none-eabi-gcc \
         -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
         -DCMAKE_C_FLAGS="-mcpu=cortex-m0plus -mthumb" \
-        -DMICRO_OPCUA_PLATFORM=arduino-skeleton \
-        -DMICRO_OPCUA_OPTIMIZE_SIZE=ON \
+        -DMUC_OPCUA_PLATFORM=arduino-skeleton \
+        -DMUC_OPCUA_OPTIMIZE_SIZE=ON \
         "${defs[@]}" >/dev/null
-    cmake --build "$build_dir" --target micro_opcua >/dev/null
+    cmake --build "$build_dir" --target muc_opcua >/dev/null
 
     arm-none-eabi-size -t "$archive" | awk -v profile="$profile" -v archive="$archive" '
         /\(TOTALS\)$/ {

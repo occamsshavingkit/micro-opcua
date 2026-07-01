@@ -1,9 +1,9 @@
 /* src/core/sequence.h */
-#ifndef MICRO_OPCUA_SEQUENCE_H
-#define MICRO_OPCUA_SEQUENCE_H
+#ifndef MUC_OPCUA_SEQUENCE_H
+#define MUC_OPCUA_SEQUENCE_H
 
-#include "micro_opcua/opcua_types.h"
-#include "micro_opcua/status.h"
+#include "muc_opcua/opcua_types.h"
+#include "muc_opcua/status.h"
 #include <stdbool.h>
 
 typedef struct {
@@ -14,4 +14,4 @@ typedef struct {
 void mu_sequence_validator_init(mu_sequence_validator_t *validator);
 opcua_statuscode_t mu_sequence_validate(mu_sequence_validator_t *validator, opcua_uint32_t sequence_number);
 
-#endif /* MICRO_OPCUA_SEQUENCE_H */
+#endif /* MUC_OPCUA_SEQUENCE_H */

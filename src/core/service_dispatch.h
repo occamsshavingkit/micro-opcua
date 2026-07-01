@@ -1,9 +1,9 @@
 /* src/core/service_dispatch.h */
-#ifndef MICRO_OPCUA_SERVICE_DISPATCH_H
-#define MICRO_OPCUA_SERVICE_DISPATCH_H
+#ifndef MUC_OPCUA_SERVICE_DISPATCH_H
+#define MUC_OPCUA_SERVICE_DISPATCH_H
 
-#include "micro_opcua/opcua_ids.h"
-#include "micro_opcua/server.h"
+#include "muc_opcua/opcua_ids.h"
+#include "muc_opcua/server.h"
 #include <stdbool.h>
 
 typedef struct {
@@ -23,10 +23,10 @@ opcua_statuscode_t mu_write_service_fault(opcua_byte_t *buffer, size_t *length, 
 opcua_statuscode_t mu_service_dispatch(mu_server_t *server, opcua_uint32_t request_id, const opcua_byte_t *request_body,
                                        size_t request_length, opcua_byte_t *response_body, size_t *response_length);
 
-#ifdef MICRO_OPCUA_SERVICE_WRITE
-#include "micro_opcua/encoding.h"
+#ifdef MUC_OPCUA_SERVICE_WRITE
+#include "muc_opcua/encoding.h"
 opcua_statuscode_t handle_write(mu_server_t *server, mu_binary_reader_t *r, mu_binary_writer_t *w,
                                 size_t *response_length);
 #endif
 
-#endif /* MICRO_OPCUA_SERVICE_DISPATCH_H */
+#endif /* MUC_OPCUA_SERVICE_DISPATCH_H */

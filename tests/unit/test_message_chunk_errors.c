@@ -2,7 +2,7 @@
 #include "../../src/core/message_chunk.h"
 #include "../../src/core/server_internal.h"
 #include "fake_platform.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 #include <string.h>
 
@@ -180,7 +180,7 @@ static void configure_transport_server(mu_server_config_t *config, message_chunk
 }
 
 static void mark_transport_and_channel_established(mu_server_t *server) {
-#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+#ifdef MUC_OPCUA_MULTIPLE_CONNECTIONS
     TEST_ASSERT_NOT_NULL(server->conns[0].client_handle);
     server->conns[0].tcp_conn.state = MU_TCP_STATE_ESTABLISHED;
     server->conns[0].secure_channel.is_open = true;

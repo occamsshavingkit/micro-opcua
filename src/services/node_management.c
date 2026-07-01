@@ -2,7 +2,7 @@
 #include "node_management.h"
 #include <string.h>
 
-#ifdef MICRO_OPCUA_SERVICE_NODEMANAGEMENT
+#ifdef MUC_OPCUA_SERVICE_NODEMANAGEMENT
 
 #define MU_OBJECTATTRIBUTES_ENCODING_DEFAULTBINARY_ID 354u
 #define MU_NODEATTRIBUTES_DISPLAYNAME_BIT (1u << 6)
@@ -680,4 +680,4 @@ opcua_statuscode_t mu_delete_references_process(mu_server_t *server, mu_binary_r
     return mu_delete_references_response_encode(w, results, count);
 }
 
-#endif /* MICRO_OPCUA_SERVICE_NODEMANAGEMENT */
+#endif /* MUC_OPCUA_SERVICE_NODEMANAGEMENT */

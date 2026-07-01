@@ -1,11 +1,11 @@
 /* src/security/certificate.h
  * Certificate thumbprint and peer-certificate validation for the secure-channel
  * handshake (OPC 10000-6 §6.7.4, OPC 10000-4 §7.2). */
-#ifndef MICRO_OPCUA_CERTIFICATE_H
-#define MICRO_OPCUA_CERTIFICATE_H
+#ifndef MUC_OPCUA_CERTIFICATE_H
+#define MUC_OPCUA_CERTIFICATE_H
 
-#include "micro_opcua/platform.h"
-#include "micro_opcua/status.h"
+#include "muc_opcua/platform.h"
+#include "muc_opcua/status.h"
 #include "security_policy.h"
 #include <stddef.h>
 
@@ -22,4 +22,4 @@ opcua_statuscode_t mu_certificate_thumbprint(const mu_crypto_adapter_t *crypto, 
 opcua_statuscode_t mu_certificate_validate(const mu_crypto_adapter_t *crypto, mu_security_policy_id_t policy,
                                            const opcua_byte_t *certificate, size_t length);
 
-#endif /* MICRO_OPCUA_CERTIFICATE_H */
+#endif /* MUC_OPCUA_CERTIFICATE_H */

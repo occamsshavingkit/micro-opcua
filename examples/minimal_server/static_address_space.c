@@ -28,12 +28,12 @@ static const mu_value_source_t s_myvar1_value = {MU_VALUESOURCE_STATIC, {.static
  * during session setup to build its namespace table. Both are String[] values.
  */
 static const mu_string_t s_namespace_array[] = {{28, (const opcua_byte_t *)"http://opcfoundation.org/UA/"},
-                                                {40, (const opcua_byte_t *)"urn:localhost:micro_opcua:minimal_server"}};
+                                                {38, (const opcua_byte_t *)"urn:localhost:muc_opcua:minimal_server"}};
 static const mu_value_source_t s_namespacearray_value = {
     MU_VALUESOURCE_STATIC,
     {.static_value = {.type = MU_TYPE_STRING, .value.array = s_namespace_array, .is_array = true, .array_length = 2}}};
 
-static const mu_string_t s_server_array[] = {{40, (const opcua_byte_t *)"urn:localhost:micro_opcua:minimal_server"}};
+static const mu_string_t s_server_array[] = {{38, (const opcua_byte_t *)"urn:localhost:muc_opcua:minimal_server"}};
 static const mu_value_source_t s_serverarray_value = {
     MU_VALUESOURCE_STATIC,
     {.static_value = {.type = MU_TYPE_STRING, .value.array = s_server_array, .is_array = true, .array_length = 1}}};

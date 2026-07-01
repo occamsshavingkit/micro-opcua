@@ -2,7 +2,7 @@
 #ifndef MU_ARDUINO_ADAPTER_H
 #define MU_ARDUINO_ADAPTER_H
 
-#include "micro_opcua/platform.h"
+#include "muc_opcua/platform.h"
 
 #ifdef __cplusplus
 extern "C" {

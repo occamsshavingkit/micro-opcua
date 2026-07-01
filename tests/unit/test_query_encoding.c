@@ -1,12 +1,12 @@
 #include "../../src/services/query.h"
-#include "micro_opcua/encoding.h"
+#include "muc_opcua/encoding.h"
 #include "unity.h"
 #include <string.h>
 
 void setUp(void) {}
 void tearDown(void) {}
 
-#ifdef MICRO_OPCUA_SERVICE_QUERY
+#ifdef MUC_OPCUA_SERVICE_QUERY
 
 void test_content_filter_decode(void) {
     /* Create a binary buffer containing a ContentFilter with 1 element: ElementOperand */
@@ -46,11 +46,11 @@ void test_query_next_request_decode(void) {
     TEST_ASSERT_EQUAL_STRING_LEN("Test", req.continuation_point.data, 4);
 }
 
-#endif /* MICRO_OPCUA_SERVICE_QUERY */
+#endif /* MUC_OPCUA_SERVICE_QUERY */
 
 int main(void) {
     UNITY_BEGIN();
-#ifdef MICRO_OPCUA_SERVICE_QUERY
+#ifdef MUC_OPCUA_SERVICE_QUERY
     RUN_TEST(test_content_filter_decode);
     RUN_TEST(test_query_next_request_decode);
 #endif

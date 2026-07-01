@@ -1,11 +1,11 @@
 /* src/services/service_header.h */
-#ifndef MICRO_OPCUA_SERVICES_SERVICE_HEADER_H
-#define MICRO_OPCUA_SERVICES_SERVICE_HEADER_H
+#ifndef MUC_OPCUA_SERVICES_SERVICE_HEADER_H
+#define MUC_OPCUA_SERVICES_SERVICE_HEADER_H
 
-#include "micro_opcua/encoding.h"
-#include "micro_opcua/opcua_types.h"
-#include "micro_opcua/status.h"
-#include "micro_opcua/types.h"
+#include "muc_opcua/encoding.h"
+#include "muc_opcua/opcua_types.h"
+#include "muc_opcua/status.h"
+#include "muc_opcua/types.h"
 
 /* RequestHeader (OPC 10000-4 7.32) - common to every service request. */
 typedef struct {
@@ -29,4 +29,4 @@ typedef struct {
 opcua_statuscode_t mu_request_header_decode(mu_binary_reader_t *reader, mu_request_header_t *header);
 opcua_statuscode_t mu_response_header_encode(mu_binary_writer_t *writer, const mu_response_header_t *header);
 
-#endif /* MICRO_OPCUA_SERVICES_SERVICE_HEADER_H */
+#endif /* MUC_OPCUA_SERVICES_SERVICE_HEADER_H */

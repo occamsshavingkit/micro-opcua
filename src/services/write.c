@@ -2,7 +2,7 @@
 #include "write.h"
 #include <stddef.h>
 
-#ifdef MICRO_OPCUA_SERVICE_WRITE
+#ifdef MUC_OPCUA_SERVICE_WRITE
 
 opcua_statuscode_t mu_write_request_decode(mu_binary_reader_t *reader, mu_write_request_t *req,
                                            mu_write_value_t *nodes_array, size_t max_nodes) {
@@ -69,4 +69,4 @@ opcua_statuscode_t mu_write_response_encode(mu_binary_writer_t *writer, const mu
     return MU_STATUS_GOOD;
 }
 
-#endif /* MICRO_OPCUA_SERVICE_WRITE */
+#endif /* MUC_OPCUA_SERVICE_WRITE */

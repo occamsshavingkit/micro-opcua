@@ -847,6 +847,35 @@ full-featured      51612        0        0      51612 build/size-arm/full-featur
 ```
 
 Feature 024 is a pure identifier rename (`MICRO_OPCUA_*` -> `MUC_OPCUA_*`,
-`include/muc_opcua/`, `muc_opcua` CMake/target names); the expected outcome is
-that the post-rename matrix (recorded by T012/T033) is byte-identical to this
-baseline.
+`include/muc_opcua/`, `muc_opcua` CMake/target names).
+
+### Feature 024 T012 post-rename measurement
+
+- **Measured**: 2026-07-01 for Feature 024 T012, after Phase 3 (User Story 1:
+  header/CMake relocation and every `#include`/macro reference update across
+  `src/`, `tests/`, `platform/`, `examples/`).
+- **Command**: `scripts/measure_size.sh all`
+
+```text
+profile              text     data      bss        dec archive
+nano           16278        0        0      16278 build/size-arm/nano/src/libmuc_opcua.a
+micro          23785        0        0      23785 build/size-arm/micro/src/libmuc_opcua.a
+embedded       42988        0        0      42988 build/size-arm/embedded/src/libmuc_opcua.a
+full-featured      51610        0        0      51610 build/size-arm/full-featured/src/libmuc_opcua.a
+```
+
+- **nano/micro**: byte-identical to the T001 baseline (16,278 B / 23,785 B).
+- **embedded/full-featured**: **-2 B** each (42,990 B -> 42,988 B; 51,612 B ->
+  51,610 B). This is not a regression or unexplained drift: the Base Info Type
+  System's `ServerArray` value in `src/address_space/base_nodes.c` (compiled
+  only when `MUC_OPCUA_BASE_TYPE_SYSTEM` is on, i.e. embedded/full-featured
+  only) is the literal string `"urn:muc-opcua:server"`, two ASCII characters
+  shorter than the pre-rename `"urn:micro-opcua:server"`. Renaming the
+  identifier necessarily renames this OPC UA `ServerArray` wire value too
+  (it's the server's own application URI, not an arbitrary label), and a
+  shorter string is a smaller compiled `.rodata`/`.text` footprint. No
+  behavior, encoding, or conformance change resulted — the `mu_string_t`
+  length field was updated to match (`{22, ...}` -> `{20, ...}`; the
+  `examples/minimal_server` `NamespaceArray`/`ServerArray` URNs were fixed the
+  same way, `{40, ...}` -> `{38, ...}`) so the wire-encoded String length is
+  exactly correct.

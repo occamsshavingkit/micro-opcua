@@ -1,5 +1,5 @@
 /* tests/fuzz/fuzz_binary_types.c */
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include <stddef.h>
 #include <stdint.h>
 

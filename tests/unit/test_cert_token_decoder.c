@@ -1,5 +1,5 @@
 /* tests/unit/test_cert_token_decoder.c */
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 #include <stdio.h>
 #include <string.h>

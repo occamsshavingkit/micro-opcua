@@ -1,5 +1,5 @@
 /* src/encoding/binary_string.c */
-#include "micro_opcua/encoding.h"
+#include "muc_opcua/encoding.h"
 #include <string.h>
 
 static opcua_statuscode_t string_reader_fail(mu_binary_reader_t *reader, opcua_statuscode_t status) {

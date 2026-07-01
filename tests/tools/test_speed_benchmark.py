@@ -91,7 +91,7 @@ def valid_result(**overrides):
 
 def valid_report(**overrides):
     report = {
-        "schema": "micro-opcua-speed-benchmark-v1",
+        "schema": "muc-opcua-speed-benchmark-v1",
         "generated_at_utc": "2026-06-30T12:00:00+00:00",
         "git_commit": "0123456789abcdef",
         "build_type": "Release",

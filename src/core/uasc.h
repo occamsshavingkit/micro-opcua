@@ -1,9 +1,9 @@
 /* src/core/uasc.h - UASC (secure channel) message chunk framing for responses. */
-#ifndef MICRO_OPCUA_UASC_H
-#define MICRO_OPCUA_UASC_H
+#ifndef MUC_OPCUA_UASC_H
+#define MUC_OPCUA_UASC_H
 
-#include "micro_opcua/opcua_types.h"
-#include "micro_opcua/status.h"
+#include "muc_opcua/opcua_types.h"
+#include "muc_opcua/status.h"
 #include <stddef.h>
 
 /* Offset where the MessageBody begins in a symmetric (MSG) response chunk:
@@ -33,4 +33,4 @@ opcua_statuscode_t mu_uasc_finalize_asymmetric_none(opcua_byte_t *buffer, size_t
                                                     opcua_uint32_t request_id, size_t body_length,
                                                     size_t *out_total_length);
 
-#endif /* MICRO_OPCUA_UASC_H */
+#endif /* MUC_OPCUA_UASC_H */

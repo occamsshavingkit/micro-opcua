@@ -1,7 +1,7 @@
 /* tests/unit/test_type_system.c
  *
  * Feature 005 US2: Base Info Type System exposure. The expanded namespace-0
- * type-system checks run only when MICRO_OPCUA_BASE_TYPE_SYSTEM is enabled.
+ * type-system checks run only when MUC_OPCUA_BASE_TYPE_SYSTEM is enabled.
  * The default build keeps a regression that the older nano/micro base-node
  * surface is unchanged.
  *
@@ -11,7 +11,7 @@
 #include "unity.h"
 
 #include "../../src/address_space/base_nodes.h"
-#include "micro_opcua/address_space.h"
+#include "muc_opcua/address_space.h"
 
 #include <string.h>
 
@@ -49,7 +49,7 @@ static bool has_forward_ref(opcua_uint32_t source_id, opcua_uint32_t ref_type_id
     return false;
 }
 
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
 
 static void assert_node(opcua_uint32_t id, mu_node_class_t node_class, const char *browse_name) {
     const mu_node_t *node = base_node(id);
@@ -162,7 +162,7 @@ void test_default_build_keeps_types_folder_unexpanded(void) {
 
 int main(void) {
     UNITY_BEGIN();
-#if MICRO_OPCUA_BASE_TYPE_SYSTEM
+#if MUC_OPCUA_BASE_TYPE_SYSTEM
     RUN_TEST(test_namespace0_type_system_nodes_are_present);
     RUN_TEST(test_type_hierarchies_have_subtype_references);
     RUN_TEST(test_instances_have_type_definition_references);

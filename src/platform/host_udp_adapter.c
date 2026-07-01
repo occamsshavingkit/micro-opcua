@@ -1,5 +1,5 @@
-#include "micro_opcua/platform.h"
-#include "micro_opcua/status.h"
+#include "muc_opcua/platform.h"
+#include "muc_opcua/status.h"
 #include <stdio.h>
 #include <string.h>
 

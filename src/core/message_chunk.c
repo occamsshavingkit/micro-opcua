@@ -1,6 +1,6 @@
 /* src/core/message_chunk.c */
 #include "message_chunk.h"
-#include "micro_opcua/encoding.h"
+#include "muc_opcua/encoding.h"
 #include "uasc.h"
 
 opcua_statuscode_t mu_parse_message_header(const opcua_byte_t *buffer, size_t length, mu_message_header_t *header) {

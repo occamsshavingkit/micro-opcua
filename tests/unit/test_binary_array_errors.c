@@ -1,5 +1,5 @@
 /* tests/unit/test_binary_array_errors.c */
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 
 opcua_statuscode_t mu_binary_read_array_length(mu_binary_reader_t *reader, opcua_int32_t *length);

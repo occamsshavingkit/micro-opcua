@@ -1,6 +1,6 @@
 /* tests/unit/test_secure_channel.c */
 #include "fake_platform.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 #include <string.h>
 
@@ -341,7 +341,7 @@ void test_secure_channel_close(void) {
     TEST_ASSERT_FALSE(channel.is_open);
 }
 
-#ifdef MICRO_OPCUA_SECURITY
+#ifdef MUC_OPCUA_SECURITY
 static void populate_derived_session_keys(mu_secure_channel_t *channel) {
     memset(&channel->client_keys, 0xA5, sizeof(channel->client_keys));
     memset(&channel->server_keys, 0x5A, sizeof(channel->server_keys));
@@ -422,7 +422,7 @@ int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_secure_channel_open_none);
     RUN_TEST(test_secure_channel_close);
-#ifdef MICRO_OPCUA_SECURITY
+#ifdef MUC_OPCUA_SECURITY
     RUN_TEST(test_secure_channel_close_and_init_zeroize_derived_session_keys);
 #endif
     RUN_TEST(test_opn_rejects_unacceptable_security_policy_without_crypto_adapter);

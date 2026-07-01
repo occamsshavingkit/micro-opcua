@@ -1,8 +1,8 @@
 /* src/core/tcp_connection.h */
-#ifndef MICRO_OPCUA_TCP_CONNECTION_H
-#define MICRO_OPCUA_TCP_CONNECTION_H
+#ifndef MUC_OPCUA_TCP_CONNECTION_H
+#define MUC_OPCUA_TCP_CONNECTION_H
 
-#include "micro_opcua/server.h"
+#include "muc_opcua/server.h"
 
 typedef enum { MU_TCP_STATE_CLOSED = 0, MU_TCP_STATE_CONNECTED, MU_TCP_STATE_ESTABLISHED } mu_tcp_state_t;
 
@@ -24,4 +24,4 @@ opcua_statuscode_t mu_tcp_process_hello(mu_tcp_connection_t *connection, const o
 opcua_statuscode_t mu_tcp_create_error_message(opcua_statuscode_t error_code, const char *reason,
                                                opcua_byte_t *err_message, size_t *err_length);
 
-#endif /* MICRO_OPCUA_TCP_CONNECTION_H */
+#endif /* MUC_OPCUA_TCP_CONNECTION_H */

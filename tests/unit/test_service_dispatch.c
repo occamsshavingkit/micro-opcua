@@ -1,5 +1,5 @@
 /* tests/unit/test_service_dispatch.c */
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 #include <string.h>
 
@@ -62,13 +62,13 @@ void test_service_dispatch_unsupported_services(void) {
     server.secure_channel.is_open = true;
 
     const opcua_uint32_t unsupported[] = {
-#ifndef MICRO_OPCUA_SERVICE_WRITE
+#ifndef MUC_OPCUA_SERVICE_WRITE
         MU_ID_WRITEREQUEST,
 #endif
-#if !(MICRO_OPCUA_SUBSCRIPTIONS && MICRO_OPCUA_SUBSCRIPTIONS_STANDARD && MICRO_OPCUA_BASE_TYPE_SYSTEM)
+#if !(MUC_OPCUA_SUBSCRIPTIONS && MUC_OPCUA_SUBSCRIPTIONS_STANDARD && MUC_OPCUA_BASE_TYPE_SYSTEM)
         MU_ID_CALLREQUEST,
 #endif
-#ifndef MICRO_OPCUA_SERVICE_HISTORY
+#ifndef MUC_OPCUA_SERVICE_HISTORY
         MU_ID_HISTORYREADREQUEST,
 #endif
         841u /* TransferSubscriptionsRequest_Encoding_DefaultBinary */

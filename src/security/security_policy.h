@@ -1,10 +1,10 @@
 /* src/security/security_policy.h
  * SecurityPolicy identification and the Basic256Sha256 algorithm-parameter table
  * (OPC 10000-7). The server supports SecurityPolicy None and Basic256Sha256. */
-#ifndef MICRO_OPCUA_SECURITY_POLICY_H
-#define MICRO_OPCUA_SECURITY_POLICY_H
+#ifndef MUC_OPCUA_SECURITY_POLICY_H
+#define MUC_OPCUA_SECURITY_POLICY_H
 
-#include "micro_opcua/opcua_types.h"
+#include "muc_opcua/opcua_types.h"
 #include <stddef.h>
 
 typedef enum {
@@ -50,4 +50,4 @@ mu_security_policy_id_t mu_security_policy_from_uri(const opcua_byte_t *uri, siz
 /* The canonical URI string for a policy id, or NULL for INVALID. */
 const char *mu_security_policy_uri(mu_security_policy_id_t id);
 
-#endif /* MICRO_OPCUA_SECURITY_POLICY_H */
+#endif /* MUC_OPCUA_SECURITY_POLICY_H */

@@ -6,7 +6,7 @@
 #ifndef MU_SERVICES_QUERY_H
 #define MU_SERVICES_QUERY_H
 
-#include "micro_opcua/types.h"
+#include "muc_opcua/types.h"
 #include "service_header.h"
 
 #ifdef __cplusplus
@@ -135,7 +135,7 @@ typedef struct {
 } mu_query_next_response_t;
 
 /* Encoding and decoding functions */
-#include "micro_opcua/encoding.h"
+#include "muc_opcua/encoding.h"
 
 opcua_statuscode_t mu_content_filter_decode(mu_binary_reader_t *reader, mu_content_filter_t *filter,
                                             mu_content_filter_element_t *elements, size_t max_elements,

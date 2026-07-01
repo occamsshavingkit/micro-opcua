@@ -5,12 +5,12 @@
  * for SignAndEncrypt, encrypted with AES-256-CBC using keys derived from the
  * channel nonces (§6.7.5). Sign-then-encrypt: the signature is inside the
  * encrypted payload. */
-#ifndef MICRO_OPCUA_SYM_CHUNK_H
-#define MICRO_OPCUA_SYM_CHUNK_H
+#ifndef MUC_OPCUA_SYM_CHUNK_H
+#define MUC_OPCUA_SYM_CHUNK_H
 
-#include "micro_opcua/config.h"
-#include "micro_opcua/platform.h"
-#include "micro_opcua/status.h"
+#include "muc_opcua/config.h"
+#include "muc_opcua/platform.h"
+#include "muc_opcua/status.h"
 #include "security_policy.h"
 #include <stddef.h>
 
@@ -61,4 +61,4 @@ opcua_statuscode_t mu_sym_chunk_unwrap(const mu_crypto_adapter_t *crypto, mu_mes
                                        const mu_sym_keys_t *keys, opcua_byte_t *chunk, size_t chunk_len,
                                        const opcua_byte_t **out_body, size_t *out_body_len, mu_sym_chunk_info_t *info);
 
-#endif /* MICRO_OPCUA_SYM_CHUNK_H */
+#endif /* MUC_OPCUA_SYM_CHUNK_H */

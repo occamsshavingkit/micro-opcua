@@ -1,8 +1,8 @@
 /* src/platform/host_tcp_adapter.h */
-#ifndef MICRO_OPCUA_HOST_TCP_ADAPTER_H
-#define MICRO_OPCUA_HOST_TCP_ADAPTER_H
+#ifndef MUC_OPCUA_HOST_TCP_ADAPTER_H
+#define MUC_OPCUA_HOST_TCP_ADAPTER_H
 
-#include "micro_opcua/platform.h"
+#include "muc_opcua/platform.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -18,4 +18,4 @@ opcua_statuscode_t mu_host_tcp_adapter_init(mu_tcp_adapter_t *adapter);
 }
 #endif
 
-#endif /* MICRO_OPCUA_HOST_TCP_ADAPTER_H */
+#endif /* MUC_OPCUA_HOST_TCP_ADAPTER_H */

@@ -1,13 +1,13 @@
 /* tests/unit/test_certificate.c
  * Certificate thumbprint computation and peer-certificate validation for
  * Basic256Sha256 (OPC 10000-6 §6.7.4 / 10000-4 §7.2). Uses the host crypto backend. */
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "security/certificate.h"
 #include "security/security_policy.h"
 #include "unity.h"
 #include <string.h>
 
-#ifdef MICRO_OPCUA_HAVE_OPENSSL
+#ifdef MUC_OPCUA_HAVE_OPENSSL
 #include "platform/host_crypto_adapter.h"
 #include <openssl/evp.h>
 
@@ -81,7 +81,7 @@ int main(void) {
     return UNITY_END();
 }
 
-#else /* !MICRO_OPCUA_HAVE_OPENSSL */
+#else /* !MUC_OPCUA_HAVE_OPENSSL */
 void setUp(void) {}
 void tearDown(void) {}
 void test_certificate_skipped_without_openssl(void) {

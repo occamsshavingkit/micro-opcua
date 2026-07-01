@@ -1,7 +1,7 @@
 /* tests/unit/test_connection_multiplex.c */
 #include "../../src/core/service_dispatch.h"
 #include "fake_platform.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 #include <string.h>
 
@@ -124,7 +124,7 @@ static void init_multiplex_server(mu_server_t *server) {
     for (size_t i = 0; i < MU_MAX_SESSIONS; ++i) {
         mu_session_init(&server->sessions[i]);
     }
-#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+#ifdef MUC_OPCUA_MULTIPLE_CONNECTIONS
     server->conns[0].client_handle = (void *)0x10;
     server->conns[0].secure_channel.is_open = true;
     server->conns[0].secure_channel.channel_id = 1;
@@ -204,7 +204,7 @@ static opcua_statuscode_t mock_write(void *context, void *handle, const opcua_by
 }
 
 void test_connection_limits(void) {
-#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+#ifdef MUC_OPCUA_MULTIPLE_CONNECTIONS
     mock_tcp_t tcp;
     memset(&tcp, 0, sizeof(tcp));
 
@@ -284,7 +284,7 @@ void test_connection_limits(void) {
 }
 
 void test_activate_session_rejects_session_created_on_different_secure_channel(void) {
-#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+#ifdef MUC_OPCUA_MULTIPLE_CONNECTIONS
     mu_server_t server;
     init_multiplex_server(&server);
 
@@ -348,7 +348,7 @@ void test_activate_session_rejects_session_created_on_different_secure_channel(v
 }
 
 void test_session_bound_service_rejects_token_from_different_secure_channel(void) {
-#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+#ifdef MUC_OPCUA_MULTIPLE_CONNECTIONS
     mu_server_t server;
     init_multiplex_server(&server);
 

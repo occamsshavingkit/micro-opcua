@@ -1,14 +1,14 @@
-#include "micro_opcua/config.h"
+#include "muc_opcua/config.h"
 
-#ifdef MICRO_OPCUA_SERVICE_HISTORY
+#ifdef MUC_OPCUA_SERVICE_HISTORY
 
 #include "../core/server_internal.h"
 #include "../core/service_message.h"
-#include "micro_opcua/encoding.h"
-#include "micro_opcua/services/history.h"
+#include "muc_opcua/encoding.h"
+#include "muc_opcua/services/history.h"
 
 #include "history.h"
-#include "micro_opcua/opcua_ids.h"
+#include "muc_opcua/opcua_ids.h"
 #include <string.h>
 
 static opcua_statuscode_t mu_history_read_store_continuation_point(mu_history_read_value_id_t *node,
@@ -421,4 +421,4 @@ opcua_statuscode_t mu_history_update_response_encode(mu_binary_writer_t *writer,
     return MU_STATUS_GOOD;
 }
 
-#endif // MICRO_OPCUA_SERVICE_HISTORY
+#endif // MUC_OPCUA_SERVICE_HISTORY

@@ -3,15 +3,15 @@
  * Sign and SignAndEncrypt modes, plus key derivation and tamper detection. A
  * single derived key set wraps and unwraps (modelling one party's send keys,
  * which its peer also derives). */
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 
-#ifdef MICRO_OPCUA_SECURITY
+#ifdef MUC_OPCUA_SECURITY
 #include "security/security_policy.h"
 #include "security/sym_chunk.h"
 #include <string.h>
 
-#ifdef MICRO_OPCUA_HAVE_OPENSSL
+#ifdef MUC_OPCUA_HAVE_OPENSSL
 #include "platform/host_crypto_adapter.h"
 static mu_crypto_adapter_t crypto;
 static mu_sym_keys_t keys;
@@ -21,7 +21,7 @@ static bool host_crypto_active;
 void setUp(void) {}
 
 void tearDown(void) {
-#ifdef MICRO_OPCUA_HAVE_OPENSSL
+#ifdef MUC_OPCUA_HAVE_OPENSSL
     if (host_crypto_active) {
         mu_host_crypto_adapter_cleanup(&crypto);
         host_crypto_active = false;
@@ -29,7 +29,7 @@ void tearDown(void) {
 #endif
 }
 
-#ifdef MICRO_OPCUA_HAVE_OPENSSL
+#ifdef MUC_OPCUA_HAVE_OPENSSL
 static void prepare_host_keys(void) {
     TEST_ASSERT_EQUAL(MU_STATUS_GOOD, mu_host_crypto_adapter_init(&crypto));
     host_crypto_active = true;
@@ -259,7 +259,7 @@ void test_cipher_context_falls_back_to_stateless_without_init_callback(void) {
     TEST_ASSERT_EQUAL_UINT(0, stub.cipher_ctx_free_calls);
 }
 
-#ifdef MICRO_OPCUA_HAVE_OPENSSL
+#ifdef MUC_OPCUA_HAVE_OPENSSL
 /* Derivation fills all key material and is deterministic; different nonces differ. */
 void test_keys_derivation_deterministic(void) {
     prepare_host_keys();
@@ -376,13 +376,13 @@ void test_wrong_keys_rejected(void) {
     TEST_ASSERT_NOT_EQUAL(MU_STATUS_GOOD, mu_sym_chunk_unwrap(&crypto, MU_MESSAGE_SECURITY_MODE_SIGN, &other, chunk,
                                                               chunk_len, &recovered, &recovered_len, &info));
 }
-#endif /* MICRO_OPCUA_HAVE_OPENSSL */
+#endif /* MUC_OPCUA_HAVE_OPENSSL */
 
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_cipher_context_prepared_once_and_reused_per_message);
     RUN_TEST(test_cipher_context_falls_back_to_stateless_without_init_callback);
-#ifdef MICRO_OPCUA_HAVE_OPENSSL
+#ifdef MUC_OPCUA_HAVE_OPENSSL
     RUN_TEST(test_keys_derivation_deterministic);
     RUN_TEST(test_sign_and_encrypt_roundtrip);
     RUN_TEST(test_sign_only_roundtrip);
@@ -392,7 +392,7 @@ int main(void) {
     return UNITY_END();
 }
 
-#else /* !MICRO_OPCUA_SECURITY */
+#else /* !MUC_OPCUA_SECURITY */
 void setUp(void) {}
 void tearDown(void) {}
 void test_sym_chunk_skipped_without_security(void) {

@@ -1,5 +1,5 @@
 /* src/address_space/value_source.c */
-#include "micro_opcua/address_space.h"
+#include "muc_opcua/address_space.h"
 #include <string.h>
 
 opcua_statuscode_t mu_value_source_read(const mu_value_source_t *source, const mu_nodeid_t *node_id,

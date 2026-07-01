@@ -132,25 +132,25 @@ clone" commands, confirm success and zero `micro_opcua/` includes remain
 
 ### Implementation for User Story 1
 
-- [ ] T007 [P] [US1] Update every `#include "micro_opcua/...".h` and every
+- [X] T007 [P] [US1] Update every `#include "micro_opcua/...".h` and every
   `MICRO_OPCUA_*` macro reference across all of `src/**` (`core/`, `encoding/`,
   `services/`, `address_space/`, `security/`, `platform/`, `generated/`) to
   `muc_opcua/`/`MUC_OPCUA_*` (depends on T003)
-- [ ] T008 [P] [US1] Update every `#include` and `MICRO_OPCUA_*` reference across
+- [X] T008 [P] [US1] Update every `#include` and `MICRO_OPCUA_*` reference across
   `tests/unit/`, `tests/integration/`, `tests/fuzz/`, `tests/benchmark/`, and
   `tests/support/` (excludes `tests/interop/`, covered under US3 T028) (depends on
   T003)
-- [ ] T009 [P] [US1] Update every `#include` and `MICRO_OPCUA_*` reference across
+- [X] T009 [P] [US1] Update every `#include` and `MICRO_OPCUA_*` reference across
   `platform/pico/` and `platform/arduino/` (depends on T003)
-- [ ] T010 [P] [US1] Update every `#include` and `MICRO_OPCUA_*` reference across
+- [X] T010 [P] [US1] Update every `#include` and `MICRO_OPCUA_*` reference across
   `examples/minimal_server/` and `examples/pubsub_server/` (depends on T003)
-- [ ] T011 [US1] Configure and build the host profile fresh
+- [X] T011 [US1] Configure and build the host profile fresh
   (`cmake -S . -B build/host -DMUC_OPCUA_BUILD_TESTS=ON -DMUC_OPCUA_BUILD_EXAMPLES=ON -DMUC_OPCUA_PLATFORM=host`,
   `cmake --build build/host`, `ctest --test-dir build/host`) using only
   `MUC_OPCUA_*` options; fix any residual old-name reference the T007-T010
   mechanical passes missed until the build and full test suite are green
   (depends on T005, T006, T007, T008, T009, T010)
-- [ ] T012 [US1] Re-run `scripts/measure_size.sh all` and diff its console
+- [X] T012 [US1] Re-run `scripts/measure_size.sh all` and diff its console
   output against the T001 baseline; confirm zero `.text`/`.data`/`.bss` delta
   for nano/micro/embedded/full-featured (SC-005). **Verification only — this
   task does not edit `docs/size/feature-size-ledger.md`**; recording the

@@ -3,7 +3,7 @@
 #include "../../src/core/server_internal.h"
 #include "../../src/core/service_dispatch.h"
 #include "fake_platform.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include <errno.h>
 #include <inttypes.h>
 #include <limits.h>

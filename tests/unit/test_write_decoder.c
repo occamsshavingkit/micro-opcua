@@ -1,6 +1,6 @@
 /* tests/unit/test_write_decoder.c */
 #include "../../src/services/write.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 #include <string.h>
 
@@ -8,7 +8,7 @@ void setUp(void) {}
 void tearDown(void) {}
 
 void test_write_request_decode_happy_path(void) {
-#ifdef MICRO_OPCUA_SERVICE_WRITE
+#ifdef MUC_OPCUA_SERVICE_WRITE
     opcua_byte_t buf[256];
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, buf, sizeof(buf));
@@ -69,7 +69,7 @@ void test_write_request_decode_happy_path(void) {
 }
 
 void test_write_request_decode_errors(void) {
-#ifdef MICRO_OPCUA_SERVICE_WRITE
+#ifdef MUC_OPCUA_SERVICE_WRITE
     opcua_byte_t buf[256];
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, buf, sizeof(buf));
@@ -88,7 +88,7 @@ void test_write_request_decode_errors(void) {
 }
 
 void test_write_response_encode(void) {
-#ifdef MICRO_OPCUA_SERVICE_WRITE
+#ifdef MUC_OPCUA_SERVICE_WRITE
     opcua_byte_t buf[256];
     mu_binary_writer_t w;
     mu_binary_writer_init(&w, buf, sizeof(buf));

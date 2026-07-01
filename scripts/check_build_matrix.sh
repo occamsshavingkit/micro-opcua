@@ -20,7 +20,7 @@ usage() {
     cat <<EOF
 Usage: $SCRIPT_NAME [--help]
 
-Configures and builds the micro_opcua static library once per optional service
+Configures and builds the muc_opcua static library once per optional service
 or feature toggle, with exactly one toggle forced OFF per build.
 
 Environment:
@@ -53,7 +53,7 @@ trap cleanup EXIT
 
 is_matrix_toggle() {
     case "$1" in
-        MICRO_OPCUA_SERVICE_*|MICRO_OPCUA_SUBSCRIPTIONS|MICRO_OPCUA_SECURITY)
+        MUC_OPCUA_SERVICE_*|MUC_OPCUA_SUBSCRIPTIONS|MUC_OPCUA_SECURITY)
             return 0
             ;;
         *)
@@ -76,7 +76,7 @@ contains_toggle() {
 }
 
 discover_toggles() {
-    local option_file="$ROOT_DIR/cmake/MicroOpcUaOptions.cmake"
+    local option_file="$ROOT_DIR/cmake/MucOpcUaOptions.cmake"
     local top_file="$ROOT_DIR/CMakeLists.txt"
     local file
     local line
@@ -118,14 +118,14 @@ join_by() {
 
 symbols_for_option() {
     case "$1" in
-        MICRO_OPCUA_SERVICE_READ)
+        MUC_OPCUA_SERVICE_READ)
             printf '%s\n' \
                 handle_read \
                 mu_read_request_decode \
                 mu_read_process \
                 mu_read_response_encode
             ;;
-        MICRO_OPCUA_SERVICE_BROWSE)
+        MUC_OPCUA_SERVICE_BROWSE)
             printf '%s\n' \
                 handle_browse \
                 handle_browse_next \
@@ -134,17 +134,17 @@ symbols_for_option() {
                 mu_browse_process \
                 mu_browse_response_encode
             ;;
-        MICRO_OPCUA_SERVICE_DISCOVERY)
+        MUC_OPCUA_SERVICE_DISCOVERY)
             printf '%s\n' \
                 handle_find_servers \
                 handle_get_endpoints
             ;;
-        MICRO_OPCUA_SERVICE_REGISTER_NODES)
+        MUC_OPCUA_SERVICE_REGISTER_NODES)
             printf '%s\n' \
                 handle_register_nodes \
                 handle_unregister_nodes
             ;;
-        MICRO_OPCUA_SUBSCRIPTIONS)
+        MUC_OPCUA_SUBSCRIPTIONS)
             printf '%s\n' \
                 handle_create_subscription \
                 handle_publish \
@@ -153,7 +153,7 @@ symbols_for_option() {
                 mu_subscription_create \
                 mu_publish_request_enqueue
             ;;
-        MICRO_OPCUA_SECURITY)
+        MUC_OPCUA_SECURITY)
             printf '%s\n' \
                 handle_data_chunk_secure \
                 mu_asym_chunk_wrap \
@@ -172,7 +172,7 @@ find_static_library() {
     while IFS= read -r -d '' candidate; do
         printf '%s\n' "$candidate"
         return 0
-    done < <(find "$build_dir" -type f \( -name 'libmicro_opcua.a' -o -name 'micro_opcua.lib' \) -print0)
+    done < <(find "$build_dir" -type f \( -name 'libmuc_opcua.a' -o -name 'muc_opcua.lib' \) -print0)
 
     return 1
 }
@@ -222,8 +222,8 @@ check_symbols_absent() {
         return 2
     fi
 
-    nm_output="$build_dir/micro_opcua.nm"
-    nm_error="$build_dir/micro_opcua.nm.err"
+    nm_output="$build_dir/muc_opcua.nm"
+    nm_error="$build_dir/muc_opcua.nm.err"
     if ! "$NM_BIN" "$library" >"$nm_output" 2>"$nm_error"; then
         SYMBOL_NOTE="WARN $NM_BIN failed on $library; skipped nm check"
         return 2
@@ -274,10 +274,10 @@ run_one_config() {
     configure_args=(
         -S "$ROOT_DIR"
         -B "$build_dir"
-        -DMICRO_OPCUA_PLATFORM=host
-        -DMICRO_OPCUA_BUILD_TESTS=OFF
-        -DMICRO_OPCUA_BUILD_EXAMPLES=OFF
-        -DMICRO_OPCUA_BUILD_FUZZERS=OFF
+        -DMUC_OPCUA_PLATFORM=host
+        -DMUC_OPCUA_BUILD_TESTS=OFF
+        -DMUC_OPCUA_BUILD_EXAMPLES=OFF
+        -DMUC_OPCUA_BUILD_FUZZERS=OFF
         -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
         "-D${option_name}=OFF"
     )
@@ -294,7 +294,7 @@ run_one_config() {
         return 1
     fi
 
-    if "$CMAKE_BIN" --build "$build_dir" --target micro_opcua >"$build_log" 2>&1; then
+    if "$CMAKE_BIN" --build "$build_dir" --target muc_opcua >"$build_log" 2>&1; then
         echo "build: PASS"
     else
         echo "build: FAIL"
@@ -388,17 +388,17 @@ main() {
 
     discover_toggles
     if [ "${#toggles[@]}" -eq 0 ]; then
-        echo "error: no optional MICRO_OPCUA service/feature toggles discovered" >&2
+        echo "error: no optional MUC_OPCUA service/feature toggles discovered" >&2
         exit 2
     fi
 
     if [ "$found_toggles_in_options_file" -eq 0 ]; then
-        echo "warning: no matrix toggles found in cmake/MicroOpcUaOptions.cmake; using top-level CMake option definitions" >&2
+        echo "warning: no matrix toggles found in cmake/MucOpcUaOptions.cmake; using top-level CMake option definitions" >&2
     fi
 
     build_parent=${BUILD_DIR:-${TMPDIR:-/tmp}}
     mkdir -p "$build_parent"
-    matrix_root=$(mktemp -d "$build_parent/micro-opcua-build-matrix.XXXXXX")
+    matrix_root=$(mktemp -d "$build_parent/muc-opcua-build-matrix.XXXXXX")
 
     echo "Discovered ${#toggles[@]} toggles: $(join_by ', ' "${toggles[@]}")"
     echo "Temporary build root: $matrix_root"

@@ -1,7 +1,7 @@
 /* tests/unit/test_event_serializer.c */
 #include "../../src/core/server_internal.h"
 #include "../../src/services/subscription.h"
-#include "micro_opcua/status.h"
+#include "muc_opcua/status.h"
 #include "unity.h"
 #include <string.h>
 
@@ -9,7 +9,7 @@ void setUp(void) {}
 void tearDown(void) {}
 
 void test_event_queue_circular_buffer(void) {
-#ifdef MICRO_OPCUA_EVENTS
+#ifdef MUC_OPCUA_EVENTS
     mu_subscriptions_t subs;
     mu_subscriptions_init(&subs);
 

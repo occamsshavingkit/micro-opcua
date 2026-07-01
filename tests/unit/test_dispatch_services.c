@@ -7,7 +7,7 @@
 #include "../../src/core/service_dispatch.h"
 #include "../../src/services/service_header.h"
 #include "../../src/services/subscription.h"
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 #include "unity.h"
 #include <string.h>
 
@@ -18,7 +18,7 @@ static opcua_datetime_t fake_time(void *c) {
     (void)c;
     return 0;
 }
-#if MICRO_OPCUA_SUBSCRIPTIONS
+#if MUC_OPCUA_SUBSCRIPTIONS
 static opcua_uint64_t fake_tick_ms(void *c) {
     (void)c;
     return 0;
@@ -208,7 +208,7 @@ void test_dispatch_truncated_create_session_body_returns_bad_decodingerror_witho
         TEST_ASSERT_EQUAL(sessions_before[i].revised_session_timeout_ms, server.sessions[i].revised_session_timeout_ms);
         TEST_ASSERT_EQUAL_MEMORY(sessions_before[i].server_nonce, server.sessions[i].server_nonce,
                                  sizeof(sessions_before[i].server_nonce));
-#ifdef MICRO_OPCUA_MULTIPLE_CONNECTIONS
+#ifdef MUC_OPCUA_MULTIPLE_CONNECTIONS
         TEST_ASSERT_EQUAL(sessions_before[i].secure_channel_id, server.sessions[i].secure_channel_id);
 #endif
     }
@@ -386,7 +386,7 @@ static void activated_server(mu_server_t *server) {
     server->secure_channel.is_open = true;
     server->config.time_adapter.get_time = fake_time;
     server->config.address_space = &s_address_space;
-#if MICRO_OPCUA_SUBSCRIPTIONS
+#if MUC_OPCUA_SUBSCRIPTIONS
     server->config.time_adapter.get_tick_ms = fake_tick_ms;
     mu_subscriptions_init(&server->subs);
 #endif
@@ -397,7 +397,7 @@ static void activated_server(mu_server_t *server) {
     mu_session_activate(&server->sessions[0], tok, 321);
 }
 
-#if MICRO_OPCUA_SUBSCRIPTIONS
+#if MUC_OPCUA_SUBSCRIPTIONS
 static opcua_uint32_t create_subscription_via_dispatch(mu_server_t *server) {
     opcua_byte_t req[256];
     mu_binary_writer_t w;
@@ -590,7 +590,7 @@ void test_dispatch_delete_subscriptions_rejects_too_many_operations_before_resul
     TEST_ASSERT_EQUAL_UINT8(0xA5, resp[0]);
 }
 
-#ifdef MICRO_OPCUA_SERVICE_WRITE
+#ifdef MUC_OPCUA_SERVICE_WRITE
 static opcua_statuscode_t counting_write_handler(void *handle, const mu_nodeid_t *node_id, opcua_uint32_t attribute_id,
                                                  const mu_variant_t *value) {
     int *count = (int *)handle;
@@ -876,10 +876,10 @@ int main(void) {
     RUN_TEST(test_dispatch_activate_session);
     RUN_TEST(test_dispatch_close_session);
     RUN_TEST(test_dispatch_delete_subscriptions_rejects_too_many_operations_before_results);
-#if MICRO_OPCUA_SUBSCRIPTIONS
+#if MUC_OPCUA_SUBSCRIPTIONS
     RUN_TEST(test_dispatch_create_monitored_item_caches_resolved_node);
 #endif
-#ifdef MICRO_OPCUA_SERVICE_WRITE
+#ifdef MUC_OPCUA_SERVICE_WRITE
     RUN_TEST(test_dispatch_truncated_write_body_returns_bad_decodingerror_without_callback);
 #endif
     RUN_TEST(test_dispatch_read_value);

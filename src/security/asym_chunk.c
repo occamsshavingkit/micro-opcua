@@ -3,7 +3,7 @@
 #include "asym_chunk.h"
 #include "certificate.h"
 #include "key_derivation.h"
-#include "micro_opcua/encoding.h"
+#include "muc_opcua/encoding.h"
 #include <string.h>
 
 /* RSA-OAEP with SHA-1 (MGF1-SHA1) overhead: plaintext block = keybytes - 2*20 - 2. */

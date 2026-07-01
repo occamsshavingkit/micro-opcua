@@ -1,7 +1,7 @@
 /* tests/unit/test_server_config.c */
 
-#include "micro_opcua/server.h"
-#include "micro_opcua/status.h"
+#include "muc_opcua/server.h"
+#include "muc_opcua/status.h"
 #include <unity.h>
 
 void setUp(void) {}

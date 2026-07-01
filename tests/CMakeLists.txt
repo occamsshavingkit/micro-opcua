@@ -2,11 +2,11 @@
 
 include(CTest)
 
-if(MICRO_OPCUA_BUILD_TESTS OR MICRO_OPCUA_BUILD_BENCHMARKS)
+if(MUC_OPCUA_BUILD_TESTS OR MUC_OPCUA_BUILD_BENCHMARKS)
     add_subdirectory(support)
 endif()
 
-if(MICRO_OPCUA_BUILD_TESTS)
+if(MUC_OPCUA_BUILD_TESTS)
     # Fetch Unity reproducibly
     include(FetchContent)
     FetchContent_Declare(
@@ -21,11 +21,11 @@ if(MICRO_OPCUA_BUILD_TESTS)
     add_subdirectory(integration)
 endif()
 
-if((MICRO_OPCUA_BUILD_TESTS OR MICRO_OPCUA_BUILD_BENCHMARKS) AND MICRO_OPCUA_IS_HOST)
+if((MUC_OPCUA_BUILD_TESTS OR MUC_OPCUA_BUILD_BENCHMARKS) AND MUC_OPCUA_IS_HOST)
     add_subdirectory(benchmark)
 endif()
 
-if(MICRO_OPCUA_BUILD_TESTS)
+if(MUC_OPCUA_BUILD_TESTS)
     find_package(Python3 COMPONENTS Interpreter)
     if(Python3_Interpreter_FOUND)
         add_test(NAME speed_benchmark_tool
@@ -34,6 +34,6 @@ if(MICRO_OPCUA_BUILD_TESTS)
     endif()
 endif()
 
-if(MICRO_OPCUA_BUILD_FUZZERS AND MICRO_OPCUA_IS_HOST)
+if(MUC_OPCUA_BUILD_FUZZERS AND MUC_OPCUA_IS_HOST)
     add_subdirectory(fuzz)
 endif()

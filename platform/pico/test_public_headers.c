@@ -1,6 +1,6 @@
 /* platform/pico/test_public_headers.c */
 
-#include "micro_opcua/micro_opcua.h"
+#include "muc_opcua/muc_opcua.h"
 
 int main(void)
 {

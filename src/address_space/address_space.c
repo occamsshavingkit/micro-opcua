@@ -1,5 +1,5 @@
 /* src/address_space/address_space.c */
-#include "micro_opcua/address_space.h"
+#include "muc_opcua/address_space.h"
 #include <stddef.h>
 
 opcua_statuscode_t mu_address_space_validate(const mu_address_space_t *address_space) {

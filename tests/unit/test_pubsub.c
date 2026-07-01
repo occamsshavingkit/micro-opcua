@@ -1,8 +1,8 @@
-#define MICRO_OPCUA_PUBSUB 1
+#define MUC_OPCUA_PUBSUB 1
 #include "../../src/core/server_internal.h"
 #include "fake_platform.h"
-#include "micro_opcua/pubsub.h"
-#include "micro_opcua/server.h"
+#include "muc_opcua/pubsub.h"
+#include "muc_opcua/server.h"
 #include "unity.h"
 #include <stdio.h>
 #include <string.h>
