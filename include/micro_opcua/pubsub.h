@@ -46,8 +46,10 @@ typedef struct {
  * The subset exposes one UInt32 PublisherId, one DataSetWriterId, and
  * scalar Variant fields decoded per OPC-10000-6 section 5.2.2.16.
  * fields points to caller-provided storage for field_capacity entries and
- * may be NULL only when field_capacity is 0; the decoder does not allocate
- * memory or retain buffer pointers after return. */
+ * may be NULL only when field_capacity is 0; the decoder does not allocate.
+ * For String, ByteString, QualifiedName, and LocalizedText Variants, the
+ * input buffer must outlive decoded field values because payload bytes may
+ * be borrowed from that buffer. */
 typedef struct {
     uint32_t publisher_id;
     uint16_t data_set_writer_id;

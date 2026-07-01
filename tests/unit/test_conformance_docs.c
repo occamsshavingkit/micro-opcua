@@ -1280,6 +1280,22 @@ void test_public_size_numbers_are_snapshot_labeled_or_reproducible(void) {
         "Measured public profile-size numbers must be snapshot-labeled or linked to reproduction commands");
 }
 
+void test_pubsub_subscriber_docs_name_borrowed_input_buffer_lifetime(void) {
+    static const char *const lifetime_docs[] = {
+        PROJECT_ROOT_DIR "/include/micro_opcua/pubsub.h",
+        PROJECT_ROOT_DIR "/docs/api-reference.md",
+        PROJECT_ROOT_DIR "/docs/integration-guide.md",
+        PROJECT_ROOT_DIR "/specs/023-conformance-docs-subscriber/contracts/pubsub-subscriber.md",
+    };
+
+    for (size_t i = 0u; i < ARRAY_COUNT(lifetime_docs); ++i) {
+        TEST_ASSERT_TRUE_MESSAGE(file_contains_text(lifetime_docs[i], "input buffer must outlive"),
+                                 "PubSub subscriber docs must state borrowed decoded-field buffer lifetime");
+        assert_file_lacks_text(lifetime_docs[i], "does not retain pointers");
+        assert_file_lacks_text(lifetime_docs[i], "does not retain buffer pointers");
+    }
+}
+
 void test_services_doc_names_negative_path_evidence_tests(void) {
     const char *services = PROJECT_ROOT_DIR "/docs/conformance/services.md";
     static const char *const invalid_id_terms[] = {
@@ -1394,6 +1410,7 @@ int main(void) {
     RUN_TEST(test_conformance_docs_use_current_query_and_nodemanagement_sections);
     RUN_TEST(test_public_docs_do_not_use_stale_aggregate_nodeids_per_opc_10000_4_7_22_4_and_opc_10000_13);
     RUN_TEST(test_public_size_numbers_are_snapshot_labeled_or_reproducible);
+    RUN_TEST(test_pubsub_subscriber_docs_name_borrowed_input_buffer_lifetime);
     RUN_TEST(test_services_doc_names_negative_path_evidence_tests);
     RUN_TEST(test_fuzz_harnesses_do_not_contain_todo_placeholder_markers_per_fr_020_sc_006);
     RUN_TEST(test_fuzz_harnesses_do_not_discard_or_ignore_input_per_fr_020_sc_006);

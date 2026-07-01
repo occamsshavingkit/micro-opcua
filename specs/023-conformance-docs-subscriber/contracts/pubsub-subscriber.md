@@ -9,7 +9,7 @@ The subscriber decode entry point accepts a UDP payload containing one scoped UA
 - Decoded scalar Variant fields.
 - Number of decoded fields.
 
-The decoder does not allocate memory, does not own the input payload, and does not retain pointers to caller buffers after return.
+The decoder does not allocate memory and does not own the input payload. Fixed-width scalar Variant values are copied into caller-provided slots. For String, ByteString, QualifiedName, and LocalizedText Variants, the input buffer must outlive decoded field values because payload bytes may be borrowed from that buffer.
 
 ## Accepted Wire Shape
 

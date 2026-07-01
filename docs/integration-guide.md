@@ -410,9 +410,11 @@ encodes one DataSetWriter per WriterGroup with a UADP PayloadHeader, a sized
 Data Key Frame, and scalar fields encoded as OPC UA Binary Variants. The field
 array is caller-owned and must outlive the registered writer group. The decoder
 is for scoped Publisher/Subscriber integration, not full PubSub Subscriber profile
-compliance. Scope follows OPC-10000-14 §5.4.2.1/§5.4.2.2 for Subscriber
-message reception, §5.4.6.2.2 for UADP over UDP, and §7.3.2.1 for UDP
-transport:
+compliance. For decoded String, ByteString, QualifiedName, or LocalizedText
+Variant fields, the input buffer must outlive decoded field values because the
+binary decoder may borrow bytes from that buffer. Scope follows OPC-10000-14
+§5.4.2.1/§5.4.2.2 for Subscriber message reception, §5.4.6.2.2 for UADP over UDP,
+and §7.3.2.1 for UDP transport:
 
 ```c
 static mu_pubsub_field_t fields[] = {
@@ -436,7 +438,8 @@ mu_pubsub_writer_group_t wg = {
 mu_server_add_writer_group(server, &wg);
 ```
 
-Decoder callers provide the UDP payload buffer and `mu_variant_t` output slots:
+Decoder callers provide the UDP payload buffer and `mu_variant_t` output slots.
+Keep the input buffer alive while reading decoded variable-length field values:
 
 ```c
 mu_variant_t decoded_fields[1]; /* caller-provided decode output slots */

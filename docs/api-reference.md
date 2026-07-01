@@ -557,9 +557,13 @@ opcua_statuscode_t mu_decode_uadp_network_message(
 ```
 
 Callers own the UDP payload buffer and the `mu_variant_t` output slots referenced by
-`mu_pubsub_received_message_t.fields`; the decoder does not allocate heap memory,
-does not retain pointers, and reports success by filling `publisher_id`,
-`data_set_writer_id`, `fields[0..field_count)`, and `field_count`.
+`mu_pubsub_received_message_t.fields`; the decoder does not allocate heap memory.
+Scalar fixed-width values are copied into the output slots. String, ByteString,
+QualifiedName, and LocalizedText Variant payloads may borrow bytes from the input
+payload. The input buffer must outlive decoded field values for those
+variable-length payloads. On success the
+decoder fills `publisher_id`, `data_set_writer_id`, `fields[0..field_count)`, and
+`field_count`.
 
 Rejected inputs and unsupported layouts return deterministic StatusCodes named by
 OPC-10000-4 §7.38.2:
