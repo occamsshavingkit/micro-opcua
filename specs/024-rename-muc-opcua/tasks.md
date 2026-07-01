@@ -56,7 +56,7 @@ judgment.
 **Purpose**: Establish the pre-rename baseline and the regression guard that
 proves the rename is complete, before any renaming happens.
 
-- [ ] T001 [P] Run `scripts/measure_size.sh all` and record its output (append a
+- [X] T001 [P] Run `scripts/measure_size.sh all` and record its output (append a
   dated "pre-024-rename baseline" note, not a numeric change, to
   `docs/size/feature-size-ledger.md`, phrased using the new `muc_opcua`/
   `MUC_OPCUA_*` names throughout so it introduces no old-name text of its own)

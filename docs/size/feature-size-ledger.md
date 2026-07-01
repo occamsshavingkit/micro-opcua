@@ -828,3 +828,25 @@ Budget comparison:
 | Scoped UADP subscriber decoder target less than 2 KiB added Arm Cortex-M0+ `.text` | The T037a/T037b delta remains nano `-88 B`, micro `-88 B`, embedded `-88 B`, and full-featured `+440 B`; the T047 matrix is identical to T037a/T037b. | PASS |
 | No mandatory static RAM | Every measured archive reports `.data=0 B` and `.bss=0 B`. | PASS |
 | Caller-provided output slots and no heap | No runtime source changes occurred after T037a/T037b for T041-T043; T047 records unchanged archive sections after documentation/test-evidence work. | PASS |
+
+### Feature 024 (rename to muc-opcua) T001 pre-rename baseline
+
+- **Measured**: 2026-07-01 for Feature 024 T001, immediately before any
+  rename work landed, as the reference point T012/T033 diff against.
+- **Command**: `scripts/measure_size.sh all`
+- **Result**: Identical to the T047 matrix directly above (as expected — no
+  code changed between T047 and this baseline). Reproduced here as an
+  explicit pre-024 checkpoint:
+
+```text
+profile              text     data      bss        dec archive
+nano           16278        0        0      16278 build/size-arm/nano/src/libmicro_opcua.a
+micro          23785        0        0      23785 build/size-arm/micro/src/libmicro_opcua.a
+embedded       42990        0        0      42990 build/size-arm/embedded/src/libmicro_opcua.a
+full-featured      51612        0        0      51612 build/size-arm/full-featured/src/libmicro_opcua.a
+```
+
+Feature 024 is a pure identifier rename (`MICRO_OPCUA_*` -> `MUC_OPCUA_*`,
+`include/muc_opcua/`, `muc_opcua` CMake/target names); the expected outcome is
+that the post-rename matrix (recorded by T012/T033) is byte-identical to this
+baseline.
