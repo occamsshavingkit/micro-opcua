@@ -1,0 +1,181 @@
+# Phase 0 Research: Rename micro-opcua to muc-opcua
+
+## Decision 1 — Exact literal-string substitution set (resolves the "Micro profile" collision risk)
+
+**Decision**: The rename is implemented as five exact, case-sensitive literal-string
+substitutions, applied uniformly across the whole tracked tree (no directory is
+skipped from the *mechanical* substitution — see Decision 4 for how this coexists
+with "don't rewrite historical narrative"):
+
+| Old literal | New literal | Where it appears |
+|---|---|---|
+| `MICRO_OPCUA` | `MUC_OPCUA` | Preprocessor macros, CMake options/cache vars, header guards (`MICRO_OPCUA_ENCODING_H` -> `MUC_OPCUA_ENCODING_H`) |
+| `micro_opcua` | `muc_opcua` | Directory `include/micro_opcua/`, `#include "micro_opcua/...".h`, CMake target/library name (`add_library(micro_opcua ...)`), `project(micro_opcua ...)`, archive filename `libmicro_opcua.a` |
+| `micro-opcua` | `muc-opcua` | GitHub URL, README/doc prose, kebab-case mentions |
+| `MicroOpcUa` | `MucOpcUa` | CMake include-module filenames (`cmake/MicroOpcUaOptions.cmake` etc.), the .NET interop harness's C# namespace (`MicroOpcUa.Interop`) |
+| `Micro-OPCUA` | `Muc-OPCUA` | One Markdown title (`ROADMAP.md` first line: `# Micro-OPCUA Roadmap`) |
+
+**Rationale**: A grep across the full tree (`grep -rEIo '[Mm][Ii][Cc][Rr][Oo][-_ ]?[Oo][Pp][Cc][Uu][Aa]'`,
+excluding `build*/`) found exactly these five case/separator variants and no others —
+1441 `MICRO_OPCUA`, 955 `micro_opcua`, 284 `micro-opcua`, 44 `MicroOpcUa`, 1
+`Micro-OPCUA`. Every one of these compound strings always has `opcua`/`OpcUa`/`OPCUA`
+directly attached to `micro`/`Micro`/`MICRO`, so a literal-string substitution (not a
+word-boundary regex on bare "micro") cannot touch the OPC Foundation's own **Micro**
+server-profile vocabulary, which never appears in one of these five compound forms.
+
+**Alternatives considered**:
+- *Regex `\bmicro\b` word-boundary rename, then manually fix profile-name
+  collisions* — rejected: this is strictly riskier (would touch "Micro Embedded
+  Device 2017 Server Profile", `MicroEmbeddedDevice2017` profile URIs, `make micro` /
+  `MICRO_OPCUA_PROFILE=micro` / `$(BUILD)/micro` build-profile plumbing, and any future
+  prose mentioning the Micro profile) for no benefit over the exact-literal approach.
+- *Case-insensitive blanket `micro` -> `muc` substring rename* — rejected outright:
+  would corrupt `MICRO_OPCUA_PROFILE=micro` (a legitimate OPC UA profile-tier value,
+  confirmed still meaning "OPC UA Micro profile" after this rename — see Decision 2),
+  `make micro` / `$(BUILD)/micro` in `Makefile`, and prose like "Micro Embedded Device
+  2017 Server Profile" throughout `docs/conformance/*` and `ROADMAP.md`.
+
+## Decision 2 — The `micro`/`nano`/`embedded`/`full` profile-tier vocabulary is explicitly OUT of scope
+
+**Decision**: `MICRO_OPCUA_PROFILE` (the CMake cache variable name) is renamed to
+`MUC_OPCUA_PROFILE` per Decision 1, but its **values** — `nano`, `micro`, `embedded`,
+`full`, `custom` — are NOT renamed. `make micro`, `$(BUILD)/micro`, and every
+"Micro profile"/"Micro Embedded Device 2017 Server Profile" prose reference in
+`docs/conformance/*`, `ROADMAP.md`, ADRs, etc. stay exactly as they are.
+
+**Rationale**: Confirmed by inspecting `CMakeLists.txt` (`set(MICRO_OPCUA_PROFILE
+"nano" CACHE STRING ...)`) and `Makefile` (`make micro:` target building
+`-DMICRO_OPCUA_PROFILE=micro`) — none of these bare `micro` occurrences match any of
+the five Decision-1 literal patterns, so they are untouched by construction, not by a
+manual carve-out. This is exactly the collision the requester flagged as a reason for
+the rename in the first place (avoid confusion between the *project* name and the OPC
+UA *Micro* profile), and the mechanical approach naturally keeps them distinct going
+forward: `MUC_OPCUA_PROFILE=micro` unambiguously reads as "the muc-opcua build,
+targeting the OPC UA Micro profile."
+
+## Decision 3 — `mu_`/`opcua_` C symbol prefixes stay unchanged
+
+**Decision**: Confirmed as **no change**. `mu_server_init`, `mu_nodeid_t`,
+`opcua_statuscode_t`, and every other `mu_`/`opcua_`-prefixed public/internal
+identifier keep their current spelling.
+
+**Rationale**: `mu_` already reads as the start of "muc" and never collided with
+anything; per FR-010 in the spec this is a planning-time decision, and no technical
+finding in the codebase (config macros, header guards, or naming collisions) argues
+for changing it. Changing ~1000s of call sites across every `.c`/`.h` file for a
+purely cosmetic gain is not justified against Size Discipline / Spec Fidelity
+principles that ask for the smallest change that achieves the stated goal (a project
+rename to fix external branding/naming confusion, not an API redesign). This keeps
+the diff scoped to build-system identifiers, include paths, and prose — the things
+that actually caused the confusion the requester described.
+
+## Decision 4 — How "don't rewrite specs/001-023 narrative" coexists with a uniform literal substitution
+
+**Decision**: The mechanical substitution set from Decision 1 IS applied inside
+`specs/001-*` through `specs/023-*` wherever one of the five literal strings occurs,
+because every occurrence found there is itself a literal identifier reference (a
+macro name, an include path, a CMake module filename, or the repo name) — e.g.
+`docs/traceability/004-optimization-fixes.md` citing `MICRO_OPCUA_LTO` as the CMake
+option a past PR added. Renaming that string to `MUC_OPCUA_LTO` does not change the
+historical *narrative* (the past PR still added that option, for the reasons
+recorded); it just keeps the reference pointing at a name that still exists in the
+current build. What is explicitly NOT touched is prose/decision reasoning text itself
+(the sentences explaining *why* a past feature was built a certain way) — no such
+prose contains any of the five literal strings anyway per the grep, so there is no
+actual tension in practice: the "don't rewrite narrative" guidance and "do fix
+copy-pasteable build references" resolve to the same mechanical action.
+
+**Alternatives considered**: *Leave specs/001-023 completely untouched* — rejected:
+several of them (e.g. `specs/009-core-feature-expansion/quickstart.md`,
+`specs/021-opcua-fidelity-docs/plan.md`) contain literal `cmake -S . -B ... -DMICRO_OPCUA_...`
+command lines presented as "how to reproduce this"; leaving those unrenamed would mean
+a reader following historical docs copies a command that fails against the renamed
+build system, which is precisely the stale-reference risk FR-006 exists to prevent.
+
+## Decision 5 — Full inventory of non-macro/non-include-path touch points
+
+Confirmed by direct inspection, beyond the blanket literal substitution:
+
+- **CMake module files** (repo-relative paths, not just content): `cmake/MicroOpcUaOptions.cmake`,
+  `cmake/MicroOpcUaCodegen.cmake`, `cmake/MicroOpcUaStaticAnalysis.cmake`,
+  `cmake/MicroOpcUaWarnings.cmake` — filenames renamed to `MucOpcUa*.cmake` (Decision 1,
+  `MicroOpcUa` -> `MucOpcUa` pattern), plus their four `include(cmake/MicroOpcUa*.cmake)`
+  call sites in the top-level `CMakeLists.txt`.
+- **Public header tree**: `include/micro_opcua/` (14 headers incl. umbrella
+  `micro_opcua.h` and the `services/` subdirectory) -> `include/muc_opcua/` with
+  umbrella `muc_opcua.h`; every `#include "micro_opcua/...".h` across `src/` (all
+  layers), `tests/` (unit/integration/fuzz/benchmark/support), `platform/`
+  (pico, arduino), and `examples/` (minimal_server, pubsub_server) updated in the
+  same pass.
+- **CMake project identity**: `project(micro_opcua VERSION 0.1.0 LANGUAGES C)` in
+  `CMakeLists.txt` and `add_library(micro_opcua STATIC ...)` +
+  `target_include_directories(micro_opcua PUBLIC ...)` in `src/CMakeLists.txt`.
+- **.NET interop harness** (`tests/interop/dotnet/`): `interop.csproj`
+  `<RootNamespace>MicroOpcUa.Interop</RootNamespace>`, `Program.cs` namespace
+  `MicroOpcUa.Interop` plus prose/URI strings (`ApplicationUri = "urn:micro-opcua:interop:client"`,
+  `SubjectName = "CN=micro-opcua-interop-client"`) — all covered by Decision 1's
+  patterns.
+- **Dev/CI metadata**: `.github/workflows/ci.yml` (every `-DMICRO_OPCUA_*` CMake
+  invocation across 6+ jobs), `.devcontainer/devcontainer.json` (`"name":
+  "micro-opcua"` and the baked `updateContentCommand` using `-DMICRO_OPCUA_*`).
+- **No badges found**: `README.md` was checked for `shields.io`/CI-badge markup
+  referencing the old repo URL and none exists today, so there is no badge-URL
+  fix-up needed beyond the prose/status-line text already covered by Decision 1.
+- **Living process docs**: `.specify/memory/constitution.md` (title: "# micro-opcua
+  Constitution"), `.specify/templates/plan-template.md`,
+  `.specify/templates/tasks-template.md`, `AGENTS.md`, `CLAUDE.md`, `ROADMAP.md`,
+  `README.md` — all in scope as living documentation per FR-004; the constitution
+  amendment itself needs a PATCH-level version bump per its own Governance section
+  (wording/non-semantic correction, not a principle change) since only its title
+  string changes, not any principle.
+- **Root-level loose file** `optimize-hot-paths.md` (referenced by spec
+  022) also contains the old literal strings and is in scope as living
+  documentation, not a historical `specs/` artifact.
+
+## Decision 6 — Regression guard implementation approach (FR-008)
+
+**Decision**: Extend the existing stale-claim test pattern
+(`tests/unit/test_conformance_docs.c` / `test_traceability_docs.c`, which already
+walk documentation files at test time and fail on forbidden substrings) with a new
+check — or a new small test file following the same pattern — that walks the tracked
+non-historical file set (everything except `specs/001-023/**`, `build*/`, and
+`.git/`) and fails if it finds `micro-opcua`, `micro_opcua`, `MICRO_OPCUA`, or
+`MicroOpcUa` as a literal substring outside of an explicit allow-list (the migration
+note itself, and — per Decision 4 — nowhere else, since specs/001-023 also get the
+substitution applied and should contain zero old-name occurrences afterward too).
+
+**Rationale**: This mirrors an established, already-reviewed pattern in this
+codebase (Constitution Principle IV/VI: correctness/tooling gates enforced by CI) and
+directly implements FR-008/SC-006 without inventing new project infrastructure (no
+new CI tool, no new dependency — plain C string scanning like the existing docs
+tests, or a `tests/tools/`-style Python script mirroring `check_build_matrix.sh`'s
+existing shell-based repo-wide grep style if a build-time C test proves awkward for
+scanning non-source files like `.github/workflows/ci.yml`). Exact mechanism (C unit
+test vs. shell script invoked from CI) is a task-level implementation detail, not a
+design decision that needs to block planning.
+
+**Alternatives considered**: *No regression guard, rely on code review* — rejected
+per FR-008, which the spec's Edge Cases section explicitly calls out as a
+requirement, precisely because a 280-file mechanical rename is exactly the kind of
+change a future contributor could partially and silently regress (e.g. copy-pasting
+an old snippet from a search engine cache or an old fork).
+
+## Decision 7 — No compatibility shim
+
+**Decision**: No forwarding header (`include/micro_opcua/micro_opcua.h` that
+`#include`s the new `muc_opcua.h`) and no `MICRO_OPCUA_*` -> `MUC_OPCUA_*` macro
+aliasing is added.
+
+**Rationale**: Per the spec's Assumptions, no published stable release exists, so
+there are no known external integrators depending on the old names to protect; the
+requester explicitly said no shim is required unless "essentially free," and even a
+single forwarding header has a real cost here — it would need to keep working through
+every future `MICRO_OPCUA_*` macro addition/removal, which reintroduces exactly the
+kind of dual-naming confusion this rename exists to eliminate. The FR-007 migration
+note communicates the breaking change instead.
+
+## Summary
+
+No `NEEDS CLARIFICATION` markers remain from the spec. All five Technical Context
+unknowns below are resolved by the decisions above; Phase 1 proceeds directly to
+design artifacts.
