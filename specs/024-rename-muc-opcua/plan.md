@@ -44,6 +44,14 @@ successful outcome is measured by "nothing changed except names."
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
+- **Constitution self-reference**: This feature edits `.specify/memory/constitution.md`
+  itself (its title string). research.md Decision 8 resolves — explicitly, per
+  `/speckit-analyze` finding A2 — that this is a PATCH-level version bump under
+  the constitution's own Versioning policy (wording-only correction, no
+  principle change), not a full MINOR/MAJOR Amendment, and that the Governance
+  section's ceremony requirements are satisfied jointly by T015/T016/T024. This
+  is not itself a Constitution Check gate item — it's a scoping note so the
+  self-reference isn't mistaken for a bootstrapping problem.
 - **Spec Fidelity**: PASS — this feature makes zero wire-visible or conformance
   claims changes; every existing StatusCode/service/encoding/conformance citation
   in `docs/conformance/*` continues to describe identical behavior, just reachable

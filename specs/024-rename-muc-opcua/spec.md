@@ -61,6 +61,7 @@ A maintainer viewing GitHub Actions runs, the repository's badges, or any CI con
 - What happens if a downstream fork or clone already depends on `MICRO_OPCUA_*` macros or `include/micro_opcua/`? (No compatibility shim is required per the input; this must be stated plainly wherever the breaking change is documented, e.g. a CHANGELOG or migration note.)
 - How does the project prevent this rename from silently regressing (someone reintroducing a `micro_opcua` reference in a later PR)? An automated guard (in the spirit of the existing `test_conformance_docs.c`/`test_traceability_docs.c` stale-claim checks) is expected.
 - What happens to the embedded size/RAM ledger numbers recorded under the old macro names in `docs/size/*`? They must still be legible as historical measurement snapshots after any macro-name text in their surrounding prose is corrected.
+- How does the rename avoid corrupting the OPC Foundation's own **Micro** server-profile vocabulary, which the project's rename is explicitly motivated by (per the Input above)? The `MUC_OPCUA_PROFILE` CMake option's accepted *values* (`nano`/`micro`/`embedded`/`full`/`custom`), the `make micro` build target, and every "Micro [Embedded Device 2017 Server] Profile" prose reference in `docs/conformance/*` and elsewhere are a bare, unprefixed `micro` — never the literal compound string `micro_opcua`/`MICRO_OPCUA`/`micro-opcua` — and MUST remain completely untouched by this rename.
 
 ## Requirements *(mandatory)*
 
@@ -104,7 +105,7 @@ A maintainer viewing GitHub Actions runs, the repository's badges, or any CI con
 ### Measurable Outcomes
 
 - **SC-001**: A fresh clone of the repository builds successfully (host profile, `ctest` green) using only `MUC_OPCUA_*` CMake options, with zero manual edits required.
-- **SC-002**: A full-text search of the repository (excluding `specs/001` through `specs/023` and any explicit migration/CHANGELOG note) for `micro-opcua`, `micro_opcua`, and `MICRO_OPCUA_` returns zero matches.
+- **SC-002**: A full-text search of the entire repository — including `specs/001` through `specs/023`, per FR-006's requirement that their literal build-system references also be corrected — for `micro-opcua`, `micro_opcua`, and `MICRO_OPCUA_` returns zero matches, with the sole exception of an explicit migration/CHANGELOG note that names the old project name for historical/migration purposes.
 - **SC-003**: All CI jobs that were green immediately before this rename (host build, sanitizer build, pico cross-compile, plus best-effort static-analysis/fuzz) are still green immediately after it.
 - **SC-004**: 100% of `#include` directives across `src/`, `tests/`, `platform/`, and `examples/` reference `muc_opcua/...` (or the umbrella `muc_opcua.h`), with zero remaining `micro_opcua/...` includes.
 - **SC-005**: The measured embedded size ledger (`scripts/measure_size.sh all` or equivalent) reproduces the same nano/micro/embedded/full-featured `.text`/`.data`/`.bss` figures (within normal noise) as the last pre-rename measurement, confirming the rename introduced no code-size regression.

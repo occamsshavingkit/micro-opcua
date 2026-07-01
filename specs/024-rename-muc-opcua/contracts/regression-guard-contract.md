@@ -8,7 +8,10 @@ forbidden substring), extended to a repo-wide sweep.
 ## Inputs
 
 - The set of tracked files in the repository, excluding build output directories
-  (`build*/`) and VCS metadata (`.git/`).
+  (`build*/`) and VCS metadata (`.git/`). **Explicitly includes `specs/001-023/**`
+  — no directory-based exclusion** (see research.md Decision 6's correction and
+  Decision 4: those directories get the same literal-string substitution applied
+  and must scan clean too, matching spec.md SC-002).
 - The forbidden-literal set from research.md Decision 1: `micro-opcua`,
   `micro_opcua`, `MICRO_OPCUA`, `MicroOpcUa`, `Micro-OPCUA` (case-sensitive, exact
   substring match — not a word-boundary regex, consistent with how the rename

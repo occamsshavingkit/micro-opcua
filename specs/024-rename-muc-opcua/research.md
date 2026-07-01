@@ -137,12 +137,24 @@ Confirmed by direct inspection, beyond the blanket literal substitution:
 **Decision**: Extend the existing stale-claim test pattern
 (`tests/unit/test_conformance_docs.c` / `test_traceability_docs.c`, which already
 walk documentation files at test time and fail on forbidden substrings) with a new
-check — or a new small test file following the same pattern — that walks the tracked
-non-historical file set (everything except `specs/001-023/**`, `build*/`, and
-`.git/`) and fails if it finds `micro-opcua`, `micro_opcua`, `MICRO_OPCUA`, or
-`MicroOpcUa` as a literal substring outside of an explicit allow-list (the migration
-note itself, and — per Decision 4 — nowhere else, since specs/001-023 also get the
-substitution applied and should contain zero old-name occurrences afterward too).
+check — or a new small test file following the same pattern — that walks the
+**entire** tracked file set, excluding only `build*/` and `.git/` (explicitly
+**including** `specs/001-023/**` — per Decision 4, those directories get the same
+substitution applied and must contain zero old-name occurrences afterward, same as
+everywhere else), and fails if it finds `micro-opcua`, `micro_opcua`,
+`MICRO_OPCUA`, or `MicroOpcUa` as a literal substring outside of an explicit
+allow-list (the migration note itself, and nowhere else).
+
+**Correction (post-analysis)**: An earlier draft of this decision incorrectly
+excluded `specs/001-023/**` from the guard's scan while simultaneously claiming
+those directories "should contain zero old-name occurrences afterward too" — a
+self-contradiction caught by `/speckit-analyze` (finding C1) and cross-checked
+against spec.md SC-002, which had the same exclusion and has been corrected to
+match. The resolution kept here is the one Decision 4 already argued for: full
+inclusion, no directory-based exemption, since it's the position consistent with
+FR-006 (correct copy-pasteable references everywhere) and with
+`contracts/regression-guard-contract.md`, which never specified a specs/001-023
+exclusion in the first place.
 
 **Rationale**: This mirrors an established, already-reviewed pattern in this
 codebase (Constitution Principle IV/VI: correctness/tooling gates enforced by CI) and
@@ -174,8 +186,48 @@ every future `MICRO_OPCUA_*` macro addition/removal, which reintroduces exactly 
 kind of dual-naming confusion this rename exists to eliminate. The FR-007 migration
 note communicates the breaking change instead.
 
+## Decision 8 — The constitution title fix is a PATCH-level correction, not a full Amendment
+
+**Decision**: Editing `.specify/memory/constitution.md`'s title (`# micro-opcua
+Constitution` -> `# muc-opcua Constitution`) is a **PATCH** version bump
+(1.0.0 -> 1.0.1) under the constitution's own Versioning policy ("PATCH:
+clarifications, wording fixes, or non-semantic corrections"), not a full
+principle-level Amendment. It nonetheless satisfies every element the
+Governance section's amendment ceremony asks for, so there is no gap even
+under the stricter reading:
+
+- *Written rationale*: this rename's spec/plan/research constitute the
+  rationale, and the Sync Impact Report comment at the top of the constitution
+  file records a one-line pointer to it.
+- *Review of affected Spec Kit templates and runtime guidance*: covered by the
+  same-feature task that updates `.specify/templates/plan-template.md` and
+  `tasks-template.md`.
+- *Migration note for active specs or plans*: this feature's own FR-007
+  migration note already documents the rename project-wide, including the
+  constitution's title; no second, separate migration note is needed.
+- *Updated semantic version and amendment date*: the PATCH bump itself, plus
+  updating "Last Amended" to this feature's date.
+
+**Rationale**: This finding came out of `/speckit-analyze` (A2): the
+constitution's Governance section doesn't explicitly distinguish "this MUST
+document is titled after the project, so a project rename touches it" from "a
+principle changed." Its own Versioning policy already draws exactly that line
+(PATCH vs. MINOR/MAJOR), so applying it here is the constitution being
+consistent with itself, not this feature inventing an exception. Since the
+constitution is treated as non-negotiable, this decision is recorded explicitly
+rather than left for the task executing it to improvise.
+
+**Alternatives considered**: *Treat it as a full amendment requiring a
+standalone rationale document and a MINOR bump* — rejected: no principle,
+scope constraint, or workflow gate changes; the Versioning policy's own PATCH
+definition covers this exactly, and manufacturing a MINOR-level ceremony for a
+title string would be inconsistent with the constitution's stated intent for
+that version tier ("added principles, new mandatory quality gates...").
+
 ## Summary
 
-No `NEEDS CLARIFICATION` markers remain from the spec. All five Technical Context
-unknowns below are resolved by the decisions above; Phase 1 proceeds directly to
-design artifacts.
+No `NEEDS CLARIFICATION` markers remain from the spec. All Technical Context
+unknowns are resolved by the decisions above (including two corrections made
+during `/speckit-analyze`: Decision 6's specs/001-023 scope, and the new
+Decision 8 on the constitution's version-bump tier); Phase 1 proceeds directly
+to design artifacts.
