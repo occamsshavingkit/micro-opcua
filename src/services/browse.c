@@ -102,7 +102,9 @@ opcua_statuscode_t mu_browse_request_decode(mu_binary_reader_t *reader, mu_brows
     if ((size_t)no_of_nodes > max_desc) {
         /* OPC-10000-4 §5.9.2 / §7.38.2: a Browse exceeding the server's operation
            limit is a Bad_TooManyOperations service fault (consistent with
-           Read/Write/Query), not an internal error. */
+           Read/Write/Query), not an internal error. Early return matches this
+           decoder's existing error-path style. */
+        /* cppcheck-suppress misra-c2012-15.5 */
         return MU_STATUS_BAD_TOOMANYOPERATIONS;
     }
 

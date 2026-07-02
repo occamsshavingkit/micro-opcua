@@ -61,9 +61,10 @@ def registered_tests(build_dir):
     ctest = shutil.which("ctest")
     if ctest is None:
         raise FileNotFoundError("ctest not found on PATH")
-    # Fixed argv (no shell); build_dir comes from CMake, not user input.
-    out = subprocess.run(  # nosec B603
-        [ctest, "-N", "--test-dir", build_dir],
+    # Fixed argv (no shell); ctest is resolved to a full path above and build_dir
+    # comes from CMake, not user input — running ctest is this checker's whole job.
+    out = subprocess.run(  # nosec B603  # nosemgrep
+        [ctest, "-N", "--test-dir", build_dir],  # nosemgrep
         capture_output=True, text=True, check=True,
     ).stdout
     names = set()

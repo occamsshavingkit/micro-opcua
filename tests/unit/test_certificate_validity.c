@@ -22,7 +22,10 @@
 #include "security/certificate.h"
 #include "security/security_policy.h"
 
+/* The static-analysis environment has no OpenSSL headers; the build does. */
+/* cppcheck-suppress missingIncludeSystem */
 #include <openssl/evp.h>
+/* cppcheck-suppress missingIncludeSystem */
 #include <openssl/x509.h>
 
 static mu_crypto_adapter_t crypto;
