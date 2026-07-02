@@ -64,18 +64,18 @@ ASAN green; the checker enforces the map.
 **Goal**: each audited defect fixed or its claim corrected honestly, pinned by a
 per-profile test.
 
-- [ ] T013 [P] [US2] Add a failing test in `tests/unit/test_browse_limits.c`: Browse with `>` node cap expects `Bad_TooManyOperations` (RED against current `Bad_InternalError`). OPC-10000-4 §5.9.2/§7.38.2.
-- [ ] T014 [US2] Fix `src/services/browse.c:103` to return `Bad_TooManyOperations` on node overflow (satisfies T013). OPC-10000-4 §5.9.2 / §7.38.2. Depends T013.
-- [ ] T015 [P] [US2] Add a per-profile test asserting what the Nano build actually exposes for the Server object / ServerStatus / ServerProfileArray / NamespaceArray (present or absent under `BASE_NODES` OFF). OPC-10000-5 (Server object / ServerStatus / ServerProfileArray) / OPC-10000-7 Core Server Facet.
-- [ ] T016 [US2] Correct `docs/conformance/profile-nano.md` Core-Server-Facet / Base-Information claim to match the Nano build (doc-correct per decision). OPC-10000-7 Core Server Facet / OPC-10000-5 Base Information. Depends T015.
-- [ ] T017 [P] [US2] Add a per-profile test asserting Nano returns the unsupported StatusCode for RegisterNodes/UnregisterNodes (built only in full). OPC-10000-4 §5.9.5 / §5.9.6.
-- [ ] T018 [US2] Correct the Nano "full View Service Set incl. RegisterNodes" claim in `docs/conformance/profile-nano.md` and `docs/conformance/services.md`. OPC-10000-4 §5.9.5 / §5.9.6; OPC-10000-7 View facet. Depends T017.
-- [ ] T019 [P] [US2] Remove/curate the Micro `MicroEmbeddedDevice2017` ServerProfileArray URI claim in `docs/conformance/profile-micro.md` (doc-correct; Micro has no base nodes). OPC-10000-7 §4.3 (ServerProfileArray / profile URIs) / OPC-10000-5.
-- [ ] T020 [P] [US2] Add a failing test: AddNodes with a duplicate NodeId expects `Bad_NodeIdExists` (RED). OPC-10000-4 §5.8 (NodeManagement / AddNodes) / §7.38.2.
-- [ ] T021 [US2] Implement the duplicate-NodeId → `Bad_NodeIdExists` path in `src/services/node_management.c` (satisfies T020). OPC-10000-4 §5.8 (AddNodes). Depends T020.
-- [ ] T022 [P] [US2] Remove the four unbacked StatusCode claims (`Bad_NodeIdRejected`, `Bad_SessionClosed`, `Bad_TcpServerTooBusy`, `Bad_Timeout`) from `docs/traceability/statuscodes.md`. OPC-10000-4 §7.38.2 (StatusCode set) — no emission site exists for these.
-- [ ] T023 [P] [US2] Scope the Guid / DiagnosticInfo built-in-type rows in the type traceability to UADP (where each is actually encoded/tested), not the binary service codec. OPC-10000-6 §5.2.2.6 (Guid) / §5.2.2.11 (DiagnosticInfo); OPC-10000-14 (UADP).
-- [ ] T024 [US2] Register the US2 claims (Browse limit, Nano base-info, RegisterNodes, Micro URI, NodeIdExists, removed codes, Guid/DiagnosticInfo scope) as rows in the claim→test map (T008).
+- [X] T013 [P] [US2] Add a failing test in `tests/unit/test_browse_limits.c`: Browse with `>` node cap expects `Bad_TooManyOperations` (RED against current `Bad_InternalError`). OPC-10000-4 §5.9.2/§7.38.2.
+- [X] T014 [US2] Fix `src/services/browse.c:103` to return `Bad_TooManyOperations` on node overflow (satisfies T013). OPC-10000-4 §5.9.2 / §7.38.2. Depends T013.
+- [X] T015 [P] [US2] Add a per-profile test asserting what the Nano build actually exposes for the Server object / ServerStatus / ServerProfileArray / NamespaceArray (present or absent under `BASE_NODES` OFF). OPC-10000-5 (Server object / ServerStatus / ServerProfileArray) / OPC-10000-7 Core Server Facet.
+- [X] T016 [US2] Correct `docs/conformance/profile-nano.md` Core-Server-Facet / Base-Information claim to match the Nano build (doc-correct per decision). OPC-10000-7 Core Server Facet / OPC-10000-5 Base Information. Depends T015.
+- [X] T017 [P] [US2] Add a per-profile test asserting Nano returns the unsupported StatusCode for RegisterNodes/UnregisterNodes (built only in full). OPC-10000-4 §5.9.5 / §5.9.6.
+- [X] T018 [US2] Correct the Nano "full View Service Set incl. RegisterNodes" claim in `docs/conformance/profile-nano.md` and `docs/conformance/services.md`. OPC-10000-4 §5.9.5 / §5.9.6; OPC-10000-7 View facet. Depends T017.
+- [X] T019 [P] [US2] Remove/curate the Micro `MicroEmbeddedDevice2017` ServerProfileArray URI claim in `docs/conformance/profile-micro.md` (doc-correct; Micro has no base nodes). OPC-10000-7 §4.3 (ServerProfileArray / profile URIs) / OPC-10000-5.
+- [X] T020 [P] [US2] Add a failing test: AddNodes with a duplicate NodeId expects `Bad_NodeIdExists` (RED). OPC-10000-4 §5.8 (NodeManagement / AddNodes) / §7.38.2.
+- [X] T021 [US2] Implement the duplicate-NodeId → `Bad_NodeIdExists` path in `src/services/node_management.c` (satisfies T020). OPC-10000-4 §5.8 (AddNodes). Depends T020.
+- [X] T022 [P] [US2] Remove the four unbacked StatusCode claims (`Bad_NodeIdRejected`, `Bad_SessionClosed`, `Bad_TcpServerTooBusy`, `Bad_Timeout`) from `docs/traceability/statuscodes.md`. OPC-10000-4 §7.38.2 (StatusCode set) — no emission site exists for these.
+- [X] T023 [P] [US2] Scope the Guid / DiagnosticInfo built-in-type rows in the type traceability to UADP (where each is actually encoded/tested), not the binary service codec. OPC-10000-6 §5.2.2.6 (Guid) / §5.2.2.11 (DiagnosticInfo); OPC-10000-14 (UADP).
+- [X] T024 [US2] Register the US2 claims (Browse limit, Nano base-info, RegisterNodes, Micro URI, NodeIdExists, removed codes, Guid/DiagnosticInfo scope) as rows in the claim→test map (T008).
 
 **Checkpoint**: US2 shippable — no known false claims; audited defect fixed; checker green for all profiles.
 

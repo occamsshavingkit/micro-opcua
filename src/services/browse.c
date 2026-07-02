@@ -100,7 +100,10 @@ opcua_statuscode_t mu_browse_request_decode(mu_binary_reader_t *reader, mu_brows
         return MU_STATUS_GOOD; /* null array */
     }
     if ((size_t)no_of_nodes > max_desc) {
-        return MU_STATUS_BAD_INTERNALERROR; /* Too many items for static array */
+        /* OPC-10000-4 §5.9.2 / §7.38.2: a Browse exceeding the server's operation
+           limit is a Bad_TooManyOperations service fault (consistent with
+           Read/Write/Query), not an internal error. */
+        return MU_STATUS_BAD_TOOMANYOPERATIONS;
     }
 
     req->num_nodes_to_browse = (size_t)no_of_nodes;

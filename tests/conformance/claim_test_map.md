@@ -16,7 +16,10 @@ Backing test column: comma-separated ctest names (as registered), no `test_` typ
 | Attribute Read service | OPC-10000-4 §5.11.2 | all | test_read_service |
 | View Browse service | OPC-10000-4 §5.9.2 | all | test_browse_service |
 | View Browse operation limit | OPC-10000-4 §5.9.2 / §7.38.2 | all | test_browse_limits |
-| View TranslateBrowsePaths / RegisterNodes | OPC-10000-4 §5.9.4 / §5.9.5 | all | test_view_services |
+| View TranslateBrowsePaths | OPC-10000-4 §5.9.4 | all | test_view_services |
+| View RegisterNodes/UnregisterNodes support (full-only; else Bad_ServiceUnsupported) | OPC-10000-4 §5.9.5 / §5.9.6 / §7.38.2 | all | test_view_services, test_profile_surface |
+| Base Information node set presence per profile | OPC-10000-5 / OPC-10000-7 Core Server Facet | all | test_profile_surface |
+| NodeManagement AddNodes duplicate NodeId → Bad_NodeIdExists | OPC-10000-4 §5.8 / §7.38.2 | full | test_node_management |
 | Discovery GetEndpoints / FindServers | OPC-10000-4 §5.5.4.2 | all | test_discovery_endpoint |
 | SecureChannel Open / policy rejection | OPC-10000-4 §5.5 / OPC-10000-6 §6.7 | all | test_secure_channel |
 | Session Create / Activate / Close | OPC-10000-4 §5.6 / §5.7 | all | test_session |
