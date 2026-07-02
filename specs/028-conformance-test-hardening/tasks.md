@@ -49,11 +49,11 @@ ASAN green; the checker enforces the map.
 - [x] T005 [US1] Add `Makefile` targets `test-nano`, `test-micro`, `test-embedded`, `test-full` that configure+build+`ctest` the respective profile (host).
 - [x] T006 [US1] Add per-profile build+ctest jobs (nano/micro/embedded/full) to `.github/workflows/ci.yml`; a profile that fails to build fails the job (no skip).
 - [x] T007 [US1] Verify gate-liveness: confirm a SUBSCRIPTIONS-gated test runs in micro/embedded/full and is absent in nano; record the differing test counts in quickstart.md. (Any gate found mis-wired is filed as its own follow-up task, not fixed inline.)
-- [ ] T008 [US1] Create the claim→test map artifact under `tests/conformance/` (checked manifest or ctest labels) per `contracts/claim-to-test-map.md`: one row per claimed conformance unit → backing test(s) + profiles + kind, seeded from `docs/conformance/*` + `docs/traceability/conformance-claims.md`. Grounding: OPC-10000-7 §4.2 (Conformance Units and Conformance Groups).
-- [ ] T009 [US1] Implement the checker in `tests/conformance/` that, for the profile it is compiled in, fails when a claimed unit for this profile has no registered+passing backing test (and when a doc claim has no map row). Per contract semantics. Grounding: OPC-10000-7 §4.2, §4.3 (profile/conformance-unit membership).
-- [ ] T010 [US1] Wire the checker into every profile's `ctest` run (T005/T006).
-- [ ] T011 [US1] Enforcement proof: remove a backing test (or its gate) for a mapped claim, confirm the claimed profile's build fails naming the unit, then restore. (SC-002 proof.)
-- [ ] T012 [US1] Run all four profile suites + ASAN + `scripts/measure_size.sh all`; confirm green within gates.
+- [x] T008 [US1] Create the claim→test map artifact under `tests/conformance/` (checked manifest or ctest labels) per `contracts/claim-to-test-map.md`: one row per claimed conformance unit → backing test(s) + profiles + kind, seeded from `docs/conformance/*` + `docs/traceability/conformance-claims.md`. Grounding: OPC-10000-7 §4.2 (Conformance Units and Conformance Groups).
+- [x] T009 [US1] Implement the checker in `tests/conformance/` that, for the profile it is compiled in, fails when a claimed unit for this profile has no registered+passing backing test (and when a doc claim has no map row). Per contract semantics. Grounding: OPC-10000-7 §4.2, §4.3 (profile/conformance-unit membership).
+- [x] T010 [US1] Wire the checker into every profile's `ctest` run (T005/T006).
+- [x] T011 [US1] Enforcement proof: remove a backing test (or its gate) for a mapped claim, confirm the claimed profile's build fails naming the unit, then restore. (SC-002 proof.)
+- [x] T012 [US1] Run all four profile suites + ASAN + `scripts/measure_size.sh all`; confirm green within gates.
 
 **Checkpoint**: US1 shippable — per-profile evidence + enforced claim→test map. **THIS IS THE MVP.**
 
