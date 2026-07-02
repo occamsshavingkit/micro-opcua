@@ -137,7 +137,13 @@ int main(void) {
     static mu_crypto_adapter_t crypto;
     if (mu_host_crypto_adapter_init(&crypto) == MU_STATUS_GOOD) {
         config.crypto_adapter = &crypto;
+        /* Demo/interop only: accept clients whose freshly generated self-signed
+           certificate is not in a trust list. A production server MUST instead
+           supply config.trust_list and leave this false so unknown certificates
+           are rejected (certificate validity is enforced either way). */
+        config.allow_untrusted_clients = 1;
         printf("SecurityPolicy Basic256Sha256 enabled (self-signed certificate)\n");
+        printf("WARNING: allow_untrusted_clients=1 (demo) — application authentication is disabled\n");
     }
 #endif
 #ifdef MUC_OPCUA_SERVICE_HISTORY
