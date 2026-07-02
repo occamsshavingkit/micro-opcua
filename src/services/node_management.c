@@ -537,12 +537,12 @@ opcua_statuscode_t mu_add_nodes_process(mu_server_t *server, mu_binary_reader_t 
            exists in the configured base space or the dynamic space. */
         {
             opcua_boolean_t node_exists = false;
-            if (server->config.address_space != NULL &&
-                mu_address_space_find_node(server->config.address_space, (mu_address_space_index_t *)0, &new_id) !=
-                    NULL) {
+            if ((server->config.address_space != NULL) &&
+                (mu_address_space_find_node(server->config.address_space, (mu_address_space_index_t *)0, &new_id) !=
+                 NULL)) {
                 node_exists = true;
             }
-            for (size_t j = 0; !node_exists && j < server->dynamic_address_space.nodes_count; ++j) {
+            for (size_t j = 0; (!node_exists) && (j < server->dynamic_address_space.nodes_count); ++j) {
                 if (mu_nodeid_equal(&server->dynamic_address_space.nodes[j].node_id, &new_id)) {
                     node_exists = true;
                 }

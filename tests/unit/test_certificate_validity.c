@@ -34,21 +34,26 @@ void tearDown(void) {
     mu_host_crypto_adapter_cleanup(&crypto);
 }
 
-/* Generate a self-signed DER certificate with the given RSA key size and validity
-   window (offsets in seconds relative to now). Returns the DER length, 0 on error.
-   Portable across OpenSSL 1.1.1 and 3.x (EVP_PKEY_keygen, not EVP_RSA_gen). */
-static size_t make_der_cert(int key_bits, long not_before_off, long not_after_off, opcua_byte_t *out,
-                            size_t out_cap) {
-    size_t written = 0;
+/* Generate an RSA key of the given size; NULL on failure. Portable across
+   OpenSSL 1.1.1 and 3.x (EVP_PKEY_keygen, not EVP_RSA_gen). */
+static EVP_PKEY *gen_rsa_key(int key_bits) {
     EVP_PKEY *pkey = NULL;
     EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, NULL);
-    X509 *x = NULL;
-
-    if (pctx && EVP_PKEY_keygen_init(pctx) == 1 &&
-        EVP_PKEY_CTX_set_rsa_keygen_bits(pctx, key_bits) == 1 && EVP_PKEY_keygen(pctx, &pkey) == 1) {
-        x = X509_new();
+    if (pctx != NULL) {
+        if ((EVP_PKEY_keygen_init(pctx) != 1) || (EVP_PKEY_CTX_set_rsa_keygen_bits(pctx, key_bits) != 1) ||
+            (EVP_PKEY_keygen(pctx, &pkey) != 1)) {
+            pkey = NULL;
+        }
+        EVP_PKEY_CTX_free(pctx);
     }
-    if (x) {
+    return pkey;
+}
+
+/* Build and self-sign an X.509 v3 cert with the given validity window (offsets in
+   seconds relative to now); NULL on failure. */
+static X509 *build_signed_cert(EVP_PKEY *pkey, long not_before_off, long not_after_off) {
+    X509 *x = X509_new();
+    if (x != NULL) {
         X509_set_version(x, 2); /* v3 */
         ASN1_INTEGER_set(X509_get_serialNumber(x), 1);
         X509_gmtime_adj(X509_getm_notBefore(x), not_before_off);
@@ -57,21 +62,31 @@ static size_t make_der_cert(int key_bits, long not_before_off, long not_after_of
         X509_NAME *name = X509_get_subject_name(x);
         X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, (const unsigned char *)"muc-opcua-test", -1, -1, 0);
         X509_set_issuer_name(x, name); /* self-signed */
-        if (X509_sign(x, pkey, EVP_sha256()) != 0) {
+        if (X509_sign(x, pkey, EVP_sha256()) == 0) {
+            X509_free(x);
+            x = NULL;
+        }
+    }
+    return x;
+}
+
+/* Generate a self-signed DER certificate with the given RSA key size and validity
+   window. Returns the DER length, 0 on error. */
+static size_t make_der_cert(int key_bits, long not_before_off, long not_after_off, opcua_byte_t *out, size_t out_cap) {
+    size_t written = 0;
+    EVP_PKEY *pkey = gen_rsa_key(key_bits);
+    if (pkey != NULL) {
+        X509 *x = build_signed_cert(pkey, not_before_off, not_after_off);
+        if (x != NULL) {
             int len = i2d_X509(x, NULL);
-            if (len > 0 && (size_t)len <= out_cap) {
+            if ((len > 0) && ((size_t)len <= out_cap)) {
                 unsigned char *p = out;
                 written = (size_t)i2d_X509(x, &p);
             }
+            X509_free(x);
         }
-    }
-
-    if (x)
-        X509_free(x);
-    if (pkey)
         EVP_PKEY_free(pkey);
-    if (pctx)
-        EVP_PKEY_CTX_free(pctx);
+    }
     return written;
 }
 

@@ -13,10 +13,36 @@ Usage:
 """
 import argparse
 import re
-import subprocess
+import shutil
+import subprocess  # nosec B404 — this checker's job is to invoke ctest on the build
 import sys
 
 VALID_PROFILES = {"nano", "micro", "embedded", "full"}
+
+
+def _parse_profiles(cell):
+    """Profiles cell -> set of profile names ('all' expands; '' is never applicable)."""
+    val = cell.strip().lower()
+    if val == "all":
+        return set(VALID_PROFILES)
+    if val == "":
+        return set()
+    return {p.strip() for p in cell.split(",") if p.strip()}
+
+
+def _parse_row(line):
+    """Parse one markdown table line into (claim, section, profiles, backing) or None."""
+    if not line.startswith("|"):
+        return None
+    cells = [c.strip() for c in line.strip().strip("|").split("|")]
+    if len(cells) < 4:
+        return None
+    claim, section, profiles_cell, backing_cell = cells[0], cells[1], cells[2], cells[3]
+    # Skip the header and separator rows.
+    if claim.lower().startswith("claim") or set(claim) <= set("-: "):
+        return None
+    backing = [re.sub(r"[`\s]", "", t) for t in backing_cell.split(",") if t.strip()]
+    return (claim, section, _parse_profiles(profiles_cell), backing)
 
 
 def parse_manifest(path):
@@ -24,29 +50,20 @@ def parse_manifest(path):
     rows = []
     with open(path, encoding="utf-8") as fh:
         for line in fh:
-            line = line.rstrip("\n")
-            if not line.startswith("|"):
-                continue
-            cells = [c.strip() for c in line.strip().strip("|").split("|")]
-            if len(cells) < 4:
-                continue
-            claim, section, profiles_cell, backing_cell = cells[0], cells[1], cells[2], cells[3]
-            # Skip the header and separator rows.
-            if claim.lower().startswith("claim") or set(claim) <= set("-: "):
-                continue
-            if profiles_cell.strip().lower() in ("all", ""):
-                profiles = set(VALID_PROFILES) if profiles_cell.strip().lower() == "all" else set()
-            else:
-                profiles = {p.strip() for p in profiles_cell.split(",") if p.strip()}
-            backing = [re.sub(r"[`\s]", "", t) for t in backing_cell.split(",") if t.strip()]
-            rows.append((claim, section, profiles, backing))
+            row = _parse_row(line.rstrip("\n"))
+            if row is not None:
+                rows.append(row)
     return rows
 
 
 def registered_tests(build_dir):
     """Set of ctest-registered test names in the build."""
-    out = subprocess.run(
-        ["ctest", "-N", "--test-dir", build_dir],
+    ctest = shutil.which("ctest")
+    if ctest is None:
+        raise FileNotFoundError("ctest not found on PATH")
+    # Fixed argv (no shell); build_dir comes from CMake, not user input.
+    out = subprocess.run(  # nosec B603
+        [ctest, "-N", "--test-dir", build_dir],
         capture_output=True, text=True, check=True,
     ).stdout
     names = set()
@@ -55,6 +72,26 @@ def registered_tests(build_dir):
         if m:
             names.add(m.group(1))
     return names
+
+
+def find_gaps(rows, profile, registered):
+    """Return (gaps, applicable_count) for the given profile."""
+    gaps = []
+    applicable = 0
+    for claim, section, profiles, backing in rows:
+        if profile not in profiles:
+            continue
+        applicable += 1
+        if not backing:
+            gaps.append(f"  [{claim}] ({section}) — no backing test listed")
+            continue
+        missing = [t for t in backing if t not in registered]
+        if missing:
+            gaps.append(
+                f"  [{claim}] ({section}) — backing test(s) not registered in "
+                f"profile '{profile}': {', '.join(missing)}"
+            )
+    return gaps, applicable
 
 
 def main():
@@ -74,21 +111,7 @@ def main():
         return 2
 
     registered = registered_tests(args.build_dir)
-    gaps = []
-    applicable = 0
-    for claim, section, profiles, backing in rows:
-        if not profiles or args.profile not in profiles:
-            continue
-        applicable += 1
-        if not backing:
-            gaps.append(f"  [{claim}] ({section}) — no backing test listed")
-            continue
-        missing = [t for t in backing if t not in registered]
-        if missing:
-            gaps.append(
-                f"  [{claim}] ({section}) — backing test(s) not registered in "
-                f"profile '{args.profile}': {', '.join(missing)}"
-            )
+    gaps, applicable = find_gaps(rows, args.profile, registered)
 
     if gaps:
         print(

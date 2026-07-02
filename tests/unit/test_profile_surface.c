@@ -55,16 +55,16 @@ void test_base_info_nodes_absent_in_minimal_build(void) {
 
 /* --- T017: RegisterNodes support tracks the build ------------------------- */
 
+/* mu_service_dispatch resolves the service descriptor and returns
+   Bad_ServiceUnsupported before touching the SecureChannel when the request type
+   has no built-in handler, so a zeroed server is sufficient for the probe. */
+static mu_server_t srv;
+
 void test_register_nodes_support_matches_build(void) {
-    /* mu_service_dispatch resolves the service descriptor and returns
-       Bad_ServiceUnsupported before touching the SecureChannel when the request
-       type has no built-in handler, so a zeroed server is sufficient here. */
-    static mu_server_t srv;
     opcua_byte_t body[16] = {0};
     opcua_byte_t resp[64];
     size_t resp_len = 0;
-    opcua_statuscode_t rc =
-        mu_service_dispatch(&srv, MU_ID_REGISTERNODESREQUEST, body, sizeof(body), resp, &resp_len);
+    opcua_statuscode_t rc = mu_service_dispatch(&srv, MU_ID_REGISTERNODESREQUEST, body, sizeof(body), resp, &resp_len);
 
 #if defined(MUC_OPCUA_SERVICE_REGISTER_NODES) && MUC_OPCUA_SERVICE_REGISTER_NODES
     TEST_ASSERT_NOT_EQUAL(MU_STATUS_BAD_SERVICEUNSUPPORTED, rc); /* dispatchable */
