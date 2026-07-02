@@ -146,7 +146,7 @@ static opcua_uint32_t parse_create_session_auth_token(mu_binary_reader_t *resp) 
     return auth_token.identifier.numeric;
 }
 
-static void run_handshake_for_policy(mu_security_policy_id_t policy_id, int tamper_signature) {
+static void run_handshake_for_policy(mu_security_policy_id_t policy_id, int tamper_signature, int allow_untrusted) {
     mock_t mock;
     memset(&mock, 0, sizeof(mock));
 
@@ -258,12 +258,18 @@ static void run_handshake_for_policy(mu_security_policy_id_t policy_id, int tamp
     config.tcp_adapter.shutdown = mock_shutdown;
     config.crypto_adapter = &server_crypto;
     config.address_space = &space;
-    /* Secured policies require a configured trust list (fail-closed). Trust the
-       test client's application-instance certificate. */
+    /* Secured policies require application authentication: either a trust list
+       containing the client cert (fail-closed default), or an explicit opt-in to
+       accept untrusted clients (the demo/interop path). Exercise both. */
     const opcua_byte_t *trusted_certs[1] = {client_cert};
     const size_t trusted_lens[1] = {client_cert_len};
     mu_trust_list_t trust = {trusted_certs, trusted_lens, 1};
-    config.trust_list = &trust;
+    if (allow_untrusted) {
+        config.trust_list = NULL;
+        config.allow_untrusted_clients = 1;
+    } else {
+        config.trust_list = &trust;
+    }
 
     _Alignas(8) opcua_byte_t storage[MU_SERVER_STORAGE_BYTES];
     mu_server_t *server = NULL;
@@ -447,17 +453,25 @@ static void run_handshake_for_policy(mu_security_policy_id_t policy_id, int tamp
 }
 
 void test_secure_handshake_aes128_oaep(void) {
-    run_handshake_for_policy(MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID, 0);
+    run_handshake_for_policy(MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID, 0, 0);
 }
 
 void test_secure_handshake_aes256_pss(void) {
-    run_handshake_for_policy(MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID, 0);
+    run_handshake_for_policy(MU_SECURITY_POLICY_AES256_SHA256_RSAPSS_ID, 0, 0);
 }
 
 /* OPC-10000-4 §5.7.3/§7.38.2: a bad application ClientSignature must block
    activation on a secured channel. */
 void test_secure_handshake_rejects_tampered_signature(void) {
-    run_handshake_for_policy(MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID, 1);
+    run_handshake_for_policy(MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID, 1, 0);
+}
+
+/* Feature 025 (F3): with no trust list but allow_untrusted_clients set, a secured
+   handshake from a client presenting a self-signed cert still completes. This is
+   the demo/interop path (the .NET reference client generates its own cert) and
+   guards against the fail-closed trust check regressing interop. */
+void test_secure_handshake_allow_untrusted_client(void) {
+    run_handshake_for_policy(MU_SECURITY_POLICY_AES128_SHA256_RSAOAEP_ID, 0, 1);
 }
 
 int main(void) {
@@ -465,6 +479,7 @@ int main(void) {
     RUN_TEST(test_secure_handshake_aes128_oaep);
     RUN_TEST(test_secure_handshake_aes256_pss);
     RUN_TEST(test_secure_handshake_rejects_tampered_signature);
+    RUN_TEST(test_secure_handshake_allow_untrusted_client);
     return UNITY_END();
 }
 

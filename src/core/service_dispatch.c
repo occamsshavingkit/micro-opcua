@@ -556,17 +556,22 @@ static opcua_statuscode_t handle_open_secure_channel(mu_server_t *server, mu_bin
         server_secure_channel.policy != MU_SECURITY_POLICY_INVALID_ID) {
         /* OPC-10000-4 §5.5 / §6.1.3: for any non-None policy, application
            authentication is mandatory. Fail closed when no trust list is
-           configured rather than silently accepting the certificate. */
-        if (server->config.trust_list == NULL) {
-            return MU_STATUS_BAD_SECURITYCHECKSFAILED;
-        }
-        const mu_bytestring_t *client_cert = current_opn_client_cert(server);
-        if (client_cert == NULL || client_cert->length <= 0) {
-            return MU_STATUS_BAD_SECURITYCHECKSFAILED;
-        }
-        if (mu_trust_list_match(server->config.trust_list, client_cert->data, (size_t)client_cert->length) !=
-            MU_STATUS_GOOD) {
-            return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+           configured rather than silently accepting the certificate — unless the
+           operator has explicitly opted into accepting untrusted clients (demos/
+           interop only). Certificate validity was already enforced during the OPN
+           asymmetric unwrap regardless of this flag. */
+        if (!server->config.allow_untrusted_clients) {
+            if (server->config.trust_list == NULL) {
+                return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+            }
+            const mu_bytestring_t *client_cert = current_opn_client_cert(server);
+            if (client_cert == NULL || client_cert->length <= 0) {
+                return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+            }
+            if (mu_trust_list_match(server->config.trust_list, client_cert->data, (size_t)client_cert->length) !=
+                MU_STATUS_GOOD) {
+                return MU_STATUS_BAD_SECURITYCHECKSFAILED;
+            }
         }
     }
 #endif

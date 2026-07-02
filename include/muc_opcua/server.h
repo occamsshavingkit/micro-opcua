@@ -72,6 +72,16 @@ typedef struct {
     /* TrustList for Application Authentication (optional) */
     const mu_trust_list_t *trust_list;
 
+    /* Feature 025 (F3): explicit opt-in to accept client application-instance
+       certificates that are not in the trust list, for a non-None SecurityPolicy.
+       Defaults to false (fail closed): a secured server with no trust list rejects
+       connections rather than silently accepting any certificate. Set true ONLY
+       for demos/interop/bring-up where clients present freshly generated
+       self-signed certificates; it disables application authentication and MUST
+       NOT be used in production. Certificate validity (notBefore/notAfter) is
+       still enforced. */
+    opcua_boolean_t allow_untrusted_clients;
+
 #ifdef MUC_OPCUA_PUBSUB
     /* PubSub Configuration (optional) */
     mu_pubsub_connection_t pubsub;
